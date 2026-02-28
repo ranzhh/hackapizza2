@@ -7,12 +7,12 @@ import json
 import logging
 from dataclasses import asdict, dataclass
 from enum import Enum
+from time import perf_counter
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 import aiohttp
 from pydantic import TypeAdapter
 
-from .settings import get_settings
 from .schema import (
     BidHistoryResponseSchema,
     MarketEntriesResponseSchema,
@@ -22,6 +22,8 @@ from .schema import (
     RecipesResponseSchema,
     RestaurantsResponseSchema,
 )
+from .settings import get_settings
+from .sql_logging_mixin import SqlLoggingMixin
 
 _RECIPES_ADAPTER = TypeAdapter(RecipesResponseSchema)
 _RESTAURANTS_ADAPTER = TypeAdapter(RestaurantsResponseSchema)
@@ -100,7 +102,7 @@ class IncomingMessage:
 # ---------------------------------------------------------------------------
 
 
-class HackapizzaClient:
+class HackapizzaClient(SqlLoggingMixin):
     """
     The main SDK client for interacting with the Hackapizza server.
     Manages API calls, MCP tool execution, and the SSE event loop.
@@ -111,12 +113,19 @@ class HackapizzaClient:
         team_id: int | None,
         api_key: str | None,
         base_url: str = "https://hackapizza.datapizza.tech",
+        *,
+        enable_sql_logging: bool = False,
+        log_db_path: str = "artifacts/calls.db",
     ):
         settings = get_settings() if team_id is None or api_key is None else None
         self.team_id = team_id or settings.hackapizza_team_id  # type: ignore
         self.api_key = api_key or settings.hackapizza_team_api_key  # type: ignore
         self.base_url = base_url.rstrip("/")
-        self.logger = logging.getLogger(f"HackapizzaClient[{self.team_id}]")
+        self.logger = logging.getLogger("HackapizzaClient[RAGù]")
+        self._sql_logging_enabled = enable_sql_logging
+
+        if self._sql_logging_enabled:
+            self._init_sql_logging(log_db_path)
 
         self._headers = {
             "x-api-key": self.api_key,
@@ -243,9 +252,34 @@ class HackapizzaClient:
             raise RuntimeError(
                 "Client session not initialized. Run within context manager or start()."
             )
-        async with self._session.get(f"{self.base_url}{endpoint}") as resp:
-            resp.raise_for_status()
-            return await resp.json()
+
+        started = perf_counter()
+        turn_id = self._extract_turn_id_from_endpoint(endpoint)
+
+        try:
+            async with self._session.get(f"{self.base_url}{endpoint}") as resp:
+                resp.raise_for_status()
+                payload = await resp.json()
+        except Exception as e:
+            self._safe_log_call(
+                source="http_get",
+                name=endpoint,
+                status="error",
+                duration_ms=(perf_counter() - started) * 1000,
+                turn_id=turn_id,
+                error_type=type(e).__name__,
+                error_message=str(e),
+            )
+            raise
+
+        self._safe_log_call(
+            source="http_get",
+            name=endpoint,
+            status="ok",
+            duration_ms=(perf_counter() - started) * 1000,
+            turn_id=turn_id,
+        )
+        return payload
 
     async def _http_get_typed(self, endpoint: str, adapter: TypeAdapter) -> Any:
         """GET + pydantic validation to guarantee typed endpoint responses."""
@@ -257,6 +291,9 @@ class HackapizzaClient:
         if not self._session:
             raise RuntimeError("Client session not initialized.")
 
+        started = perf_counter()
+        turn_id = kwargs.get("turn_id")
+
         payload = {
             "jsonrpc": "2.0",
             "method": "tools/call",
@@ -265,19 +302,66 @@ class HackapizzaClient:
         }
 
         self.logger.debug(f"MCP Call -> {tool_name} with args {kwargs}")
-        async with self._session.post(f"{self.base_url}/mcp", json=payload) as resp:
-            if resp.status == 401:
-                raise PermissionError("401 Unauthorized: Invalid API Key")
+        try:
+            async with self._session.post(f"{self.base_url}/mcp", json=payload) as resp:
+                if resp.status == 401:
+                    raise PermissionError("401 Unauthorized: Invalid API Key")
 
-            resp.raise_for_status()
-            data = await resp.json()
+                resp.raise_for_status()
+                data = await resp.json()
 
-            result = data.get("result", {})
-            if result.get("isError"):
-                error_msg = result.get("content", [{}])[0].get("text", "Unknown MCP Tool Error")
-                raise RuntimeError(f"MCP Error on '{tool_name}': {error_msg}")
+                result = data.get("result", {})
+                if result.get("isError"):
+                    error_msg = result.get("content", [{}])[0].get(
+                        "text", "Unknown MCP Tool Error"
+                    )
+                    raise RuntimeError(f"MCP Error on '{tool_name}': {error_msg}")
+        except Exception as e:
+            self._safe_log_call(
+                source="mcp_call",
+                name=tool_name,
+                status="error",
+                duration_ms=(perf_counter() - started) * 1000,
+                turn_id=turn_id,
+                error_type=type(e).__name__,
+                error_message=str(e),
+            )
+            raise
 
-            return result
+        self._safe_log_call(
+            source="mcp_call",
+            name=tool_name,
+            status="ok",
+            duration_ms=(perf_counter() - started) * 1000,
+            turn_id=turn_id,
+        )
+        return result
+
+    def _safe_log_call(
+        self,
+        *,
+        source: str,
+        name: str,
+        status: str,
+        duration_ms: float | None,
+        turn_id: str | None,
+        error_type: str | None = None,
+        error_message: str | None = None,
+    ) -> None:
+        if not self._sql_logging_enabled:
+            return
+        try:
+            self._log_call_metadata(
+                source=source,
+                name=name,
+                status=status,
+                duration_ms=duration_ms,
+                turn_id=turn_id,
+                error_type=error_type,
+                error_message=error_message,
+            )
+        except Exception as log_exc:
+            self.logger.debug("SQL logging failed: %s", log_exc, exc_info=True)
 
     # --- Event Loop / SSE Parsing ---
 
