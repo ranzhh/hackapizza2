@@ -4,12 +4,13 @@ import asyncio
 import json
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
-from datapizza.clients.openai_like import OpenAILikeClient
+from datapizza.clients.openai_like import OpenAILikeClient  # type: ignore
 
 from hp2.agents.base import BaseAgent
 from hp2.core.api import ClientOrder, GamePhase, GameStartedEvent, HackapizzaClient, IncomingMessage
+from hp2.core.schema.models import RecipeSchema
 from hp2.core.settings import get_settings
 
 logger = logging.getLogger("ServingAgent")
@@ -51,7 +52,6 @@ or
 @dataclass
 class PendingOrder:
     """A customer order waiting to be fulfilled."""
-    client_id: str
     client_name: str
     order_text: str
     matched_dish: Optional[str] = None
@@ -92,7 +92,7 @@ class ServingAgent(BaseAgent):
         self.pending_orders: List[PendingOrder] = []
         self.prepared_dishes: List[str] = []
         self.shadow_inventory: Dict[str, int] = {}
-        self.recipes: List[Dict[str, Any]] = []
+        self.recipes: List[RecipeSchema] = []
         self.menu_items: List[str] = []
 
     @classmethod
@@ -125,9 +125,8 @@ class ServingAgent(BaseAgent):
         if self.current_phase != GamePhase.SERVING:
             return
 
-        logger.info("[CUSTOMER] id=%s name=%s: %s", order.client_id, order.client_name, order.order_text)
+        logger.info("[CUSTOMER] name=%s: %s", order.client_name, order.order_text)
         pending = PendingOrder(
-            client_id=order.client_id,
             client_name=order.client_name,
             order_text=order.order_text,
         )
@@ -187,7 +186,7 @@ class ServingAgent(BaseAgent):
 
         # Deduct from shadow inventory
         if recipe:
-            for ing, qty in recipe.get("ingredients", {}).items():
+            for ing, qty in recipe.ingredients.items():
                 self.shadow_inventory[ing] = self.shadow_inventory.get(ing, 0) - qty
 
         order.matched_dish = dish_name
@@ -196,7 +195,7 @@ class ServingAgent(BaseAgent):
         # ── Programmatic: call prepare_dish ──
         try:
             await self.client.prepare_dish(dish_name=dish_name)
-            logger.info("[SERVING] Cooking '%s' for %s (id=%s).", dish_name, order.client_name, order.client_id)
+            logger.info("[SERVING] Cooking '%s' for %s.", dish_name, order.client_name)
         except Exception as exc:
             logger.error("[SERVING] prepare_dish failed for '%s': %s", dish_name, exc)
             order.preparing = False
@@ -225,6 +224,10 @@ class ServingAgent(BaseAgent):
 
         # Resolve canonical client ID from meals endpoint
         resolved_id = await self._resolve_client_id(target)
+
+        if not resolved_id:
+            logger.warning("[SERVING] Could not resolve client ID for %s — cannot serve.", target.client_name)
+            return
 
         try:
             await self.client.serve_dish(dish_name=dish_name, client_id=resolved_id)
@@ -287,51 +290,44 @@ class ServingAgent(BaseAgent):
     async def _refresh_context(self) -> None:
         """Pull latest recipes, menu, and inventory from the API."""
         try:
-            recipes = await self.client.get_recipes()
-            self.recipes = [
-                r.model_dump(by_alias=True) if hasattr(r, "model_dump") else r
-                for r in recipes
-            ]
+            self.recipes = await self.client.get_recipes()
         except Exception as exc:
             logger.warning("[SERVING] Could not fetch recipes: %s", exc)
 
         try:
             restaurant = await self.client.get_my_restaurant()
-            rest_data = restaurant.model_dump(by_alias=True) if hasattr(restaurant, "model_dump") else restaurant
-            self.shadow_inventory = dict(rest_data.get("inventory", {}))
-            menu = rest_data.get("menu", {})
-            items = menu.get("items", []) if isinstance(menu, dict) else []
+            self.shadow_inventory = restaurant.inventory
+            menu = restaurant.menu
+            items = menu.items
             self.menu_items = [it["name"] for it in items if isinstance(it, dict) and "name" in it]
         except Exception as exc:
             logger.warning("[SERVING] Could not fetch restaurant state: %s", exc)
 
-    async def _resolve_client_id(self, order: PendingOrder) -> str:
+    async def _resolve_client_id(self, order: PendingOrder) -> str | None:
         """Resolve canonical client ID from get_meals (typed MealSchema)."""
-        if not self.turn_id:
-            return order.client_id
 
         try:
-            meals = await self.client.get_meals(self.turn_id)
+            meals = await self.client.get_meals(self.turn_id or "0")
         except Exception:
-            return order.client_id
+            return None
 
         for meal in meals:
             customer_name = meal.customer.name if meal.customer else None
             if customer_name == order.client_name:
                 resolved = str(meal.customer_id)
-                logger.info("[RESOLVE] %s -> %s (meal.id)", order.client_name, resolved)
+                logger.info("[RESOLVE] %s -> %s (meal.customer_id)", order.client_name, resolved)
                 return resolved
 
-        return order.client_id
+        return None
 
-    def _find_recipe(self, dish_name: str) -> Optional[Dict[str, Any]]:
+    def _find_recipe(self, dish_name: str) -> Optional[RecipeSchema]:
         for r in self.recipes:
-            if r.get("name", "").lower() == dish_name.lower():
+            if r.name.lower() == dish_name.lower():
                 return r
         return None
 
-    def _has_ingredients(self, recipe: Dict[str, Any]) -> bool:
-        for ing, qty in recipe.get("ingredients", {}).items():
+    def _has_ingredients(self, recipe: RecipeSchema) -> bool:
+        for ing, qty in recipe.ingredients.items():
             if self.shadow_inventory.get(ing, 0) < qty:
                 return False
         return True
