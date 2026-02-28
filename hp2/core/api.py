@@ -12,6 +12,7 @@ from time import perf_counter
 from typing import Any, Awaitable, Callable, Concatenate, Dict, List, Optional, ParamSpec, TypeVar, cast
 
 import aiohttp
+import websockets
 from pydantic import TypeAdapter
 
 from .schema import (
@@ -170,9 +171,8 @@ class HackapizzaClient(SqlLoggingMixin):
         # Event Callbacks
         self._on_game_started: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None
         self._on_phase_changed: Optional[Callable[[GamePhase], Awaitable[None]]] = None
-        self._on_client_spawned: Optional[Callable[[ClientOrder], Awaitable[None]]] = None
+        self._on_client_order: Optional[Callable[[ClientOrder], Awaitable[None]]] = None
         self._on_preparation_complete: Optional[Callable[[str], Awaitable[None]]] = None
-        self._on_message: Optional[Callable[[str, Any], Awaitable[None]]] = None
         self._on_new_message: Optional[Callable[[IncomingMessage], Awaitable[None]]] = None
 
     # --- Decorators for Event Registration ---
@@ -185,8 +185,8 @@ class HackapizzaClient(SqlLoggingMixin):
         self._on_phase_changed = func
         return func
 
-    def on_client_spawned(self, func: Callable[[ClientOrder], Awaitable[None]]):
-        self._on_client_spawned = func
+    def on_client_order(self, func: Callable[[ClientOrder], Awaitable[None]]):
+        self._on_client_order = func
         return func
 
     def on_preparation_complete(self, func: Callable[[str], Awaitable[None]]):
@@ -498,6 +498,37 @@ class HackapizzaClient(SqlLoggingMixin):
             finally:
                 self._session = None
 
+    async def start_ws(self, ws_url: str = "ws://localhost:8765"):
+        """Connect to the event_logger WebSocket server instead of SSE directly.
+
+        The WS server relays the same JSON payloads the SSE stream produces,
+        so dispatching is identical.  An aiohttp session is still opened for
+        HTTP GET / MCP POST calls against the Hackapizza API.
+        """
+        timeout = aiohttp.ClientTimeout(total=None, sock_connect=15, sock_read=None)
+
+        async with aiohttp.ClientSession(timeout=timeout, headers=self._headers) as session:
+            self._session = session
+            self.logger.info(f"Connecting to event_logger WS: {ws_url}")
+
+            try:
+                async with websockets.connect(ws_url) as ws:
+                    self.logger.info("WS Connection Established.")
+                    async for raw_msg in ws:
+                        try:
+                            event_json = json.loads(raw_msg)
+                            event_type = event_json.get("type")
+                            data = event_json.get("data", {})
+                            if not isinstance(data, dict):
+                                data = {"value": data}
+                            await self._dispatch_event(event_type, data)
+                        except json.JSONDecodeError:
+                            self.logger.warning(f"Unparseable WS message: {str(raw_msg)[:200]}")
+            except Exception as e:
+                self.logger.error(f"WS Connection dropped: {e}")
+            finally:
+                self._session = None
+
     async def _parse_sse_line(self, raw_line: bytes):
         if not raw_line:
             return
@@ -546,13 +577,13 @@ class HackapizzaClient(SqlLoggingMixin):
                     phase = GamePhase.UNKNOWN
                 await self._on_phase_changed(phase)
 
-            elif event_type == "client_spawned" and self._on_client_spawned:
+            elif event_type == "client_spawned" and self._on_client_order:
                 order = ClientOrder(
                     client_id=str(data.get("clientId", data.get("client_id", data.get("id", "unknown")))),
                     client_name=data.get("clientName", data.get("name", "unknown")),
                     order_text=data.get("orderText", data.get("order_text", data.get("text", "unknown"))),
                 )
-                await self._on_client_spawned(order)
+                await self._on_client_order(order)
 
             elif event_type == "preparation_complete" and self._on_preparation_complete:
                 await self._on_preparation_complete(data.get("dish", "unknown"))
