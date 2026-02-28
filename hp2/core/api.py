@@ -157,7 +157,6 @@ class MenuItem:
 class ClientOrder:
     """Incoming order from a Multiverse customer."""
 
-    client_id: str
     client_name: str
     order_text: str
 
@@ -254,11 +253,11 @@ class HackapizzaClient(SqlLoggingMixin):
     # --- HTTP Data Endpoints ---
 
     @typed_endpoint(_MEALS_ADAPTER, persist_method_name="_persist_typed_meals")
-    async def _get_meals_typed(self, turn_id: int) -> str:
+    async def _get_meals_typed(self, turn_id: str) -> str:
         """Fetch meals/customer requests for the current turn."""
         return f"/meals?turn_id={turn_id}&restaurant_id={self.team_id}"
 
-    async def get_meals(self, turn_id: int) -> MealsResponseSchema:
+    async def get_meals(self, turn_id: str) -> MealsResponseSchema:
         return await self._get_meals_typed(turn_id)
 
     @typed_endpoint(_RESTAURANTS_ADAPTER, persist_method_name="_persist_typed_restaurants")
@@ -680,9 +679,6 @@ class HackapizzaClient(SqlLoggingMixin):
 
             elif event_type == "client_spawned" and self._on_client_spawned:
                 order = ClientOrder(
-                    client_id=str(
-                        data.get("clientId", data.get("client_id", data.get("id", "unknown")))
-                    ),
                     client_name=data.get("clientName", data.get("name", "unknown")),
                     order_text=data.get(
                         "orderText", data.get("order_text", data.get("text", "unknown"))
