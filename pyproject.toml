@@ -8,4 +8,5 @@ dependencies = [
     "aiohttp>=3.12.3",
     "datapizza-ai>=0.0.9",
     "datapizza-ai-clients-openai-like>=0.0.9",
+    "pytest>=9.0.2",
 ]

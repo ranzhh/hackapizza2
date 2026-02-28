@@ -1,5 +1,6 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -11,6 +12,7 @@ class Settings(BaseSettings):
 
     hackapizza_team_api_key: str
     hackapizza_team_id: int
+    regolo_api_key: str
 
 
 @lru_cache(maxsize=1)
