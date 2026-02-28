@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any, Optional
 from urllib.parse import parse_qs, urlparse
 
@@ -121,21 +120,20 @@ class BidHistoryLog(Base):
 
 
 class SqlLoggingMixin:
-    """SQLite-backed metadata logger for API/MCP calls."""
+    """SQL-backed metadata logger for API/MCP calls."""
 
-    def _init_sql_logging(self, db_path: str) -> None:
-        self._log_db_path = db_path
-        path = Path(db_path)
-        path.parent.mkdir(parents=True, exist_ok=True)
+    def _init_sql_logging(self, connstr: str) -> None:
+        self._log_connstr = connstr
+        self._log_engine = create_engine(connstr, future=True)
 
-        self._log_engine = create_engine(f"sqlite:///{path}", future=True)
+        if self._log_engine.dialect.name == "sqlite":
 
-        @event.listens_for(self._log_engine, "connect")
-        def _set_sqlite_pragmas(dbapi_connection, _connection_record):
-            cursor = dbapi_connection.cursor()
-            cursor.execute("PRAGMA journal_mode=WAL;")
-            cursor.execute("PRAGMA foreign_keys=ON;")
-            cursor.close()
+            @event.listens_for(self._log_engine, "connect")
+            def _set_sqlite_pragmas(dbapi_connection, _connection_record):
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA journal_mode=WAL;")
+                cursor.execute("PRAGMA foreign_keys=ON;")
+                cursor.close()
 
         Base.metadata.create_all(self._log_engine)
         self._log_session_factory = sessionmaker(

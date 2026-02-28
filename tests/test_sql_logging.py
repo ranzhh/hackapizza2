@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from hp2.core.api import HackapizzaClient
+from hp2.core.settings import get_sql_logging_settings
 from hp2.core.sql_logging_mixin import SqlLoggingMixin
 
 
@@ -67,7 +68,7 @@ def test_sql_logging_mixin_creates_db_and_inserts_metadata(tmp_path: Path):
     db_path = tmp_path / "calls.db"
     harness = _MixinHarness()
 
-    harness._init_sql_logging(str(db_path))
+    harness._init_sql_logging(f"sqlite:///{db_path}")
     harness._log_call_metadata(
         source="http_get",
         name="/recipes",
@@ -89,7 +90,7 @@ def test_http_get_and_mcp_call_are_logged(tmp_path: Path):
         team_id=6,
         api_key="test-key",
         enable_sql_logging=True,
-        log_db_path=str(db_path),
+        sql_connstr=f"sqlite:///{db_path}",
     )
 
     client._session = _FakeSession(get_response=_FakeResponse(payload={"ok": True}))
@@ -114,7 +115,7 @@ def test_http_get_error_is_logged_and_reraised(tmp_path: Path):
         team_id=6,
         api_key="test-key",
         enable_sql_logging=True,
-        log_db_path=str(db_path),
+        sql_connstr=f"sqlite:///{db_path}",
     )
 
     client._session = _FakeSession(
@@ -137,7 +138,7 @@ def test_get_recipes_persists_typed_rows(tmp_path: Path):
         team_id=6,
         api_key="test-key",
         enable_sql_logging=True,
-        log_db_path=str(db_path),
+        sql_connstr=f"sqlite:///{db_path}",
     )
 
     recipes_payload = [
@@ -177,7 +178,7 @@ def test_get_restaurants_persists_typed_rows(tmp_path: Path):
         team_id=6,
         api_key="test-key",
         enable_sql_logging=True,
-        log_db_path=str(db_path),
+        sql_connstr=f"sqlite:///{db_path}",
     )
 
     restaurants_payload = [
@@ -231,7 +232,7 @@ def test_remaining_endpoints_persist_typed_rows(tmp_path: Path):
         team_id=6,
         api_key="test-key",
         enable_sql_logging=True,
-        log_db_path=str(db_path),
+        sql_connstr=f"sqlite:///{db_path}",
     )
 
     meals_payload = [{"clientName": "A", "orderText": "Nebulosa"}]
@@ -255,3 +256,17 @@ def test_remaining_endpoints_persist_typed_rows(tmp_path: Path):
     assert _count_rows(db_path, "meals") == 1
     assert _count_rows(db_path, "market_entries") == 1
     assert _count_rows(db_path, "bid_history") == 1
+
+
+def test_sql_logging_defaults_can_be_loaded_from_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    db_path = tmp_path / "external_calls.db"
+    monkeypatch.setenv("HACKAPIZZA_SQL_CONNSTR", f"sqlite:///{db_path}")
+    get_sql_logging_settings.cache_clear()
+
+    try:
+        client = HackapizzaClient(team_id=6, api_key="test-key", enable_sql_logging=True)
+    finally:
+        get_sql_logging_settings.cache_clear()
+
+    client._close_sql_logging()
+    assert db_path.exists()

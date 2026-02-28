@@ -2,7 +2,7 @@
 
 Usage examples:
   uv run python demo_sql_logging.py --call recipes
-  uv run python demo_sql_logging.py --call my_restaurant --db-path artifacts/calls_demo.db
+  uv run python demo_sql_logging.py --call my_restaurant --sql-connstr sqlite:///artifacts/calls_demo.db
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ from typing import Literal
 import aiohttp
 
 from hp2.core.api import HackapizzaClient
+from hp2.core.settings import get_sql_logging_settings
 
 
 CallName = Literal["recipes", "my_restaurant", "restaurants"]
@@ -30,9 +31,9 @@ def _parse_args() -> argparse.Namespace:
         help="Which SDK call to execute",
     )
     parser.add_argument(
-        "--db-path",
-        default="artifacts/calls_demo.db",
-        help="Path to SQLite log database",
+        "--sql-connstr",
+        default=None,
+        help="SQLAlchemy connection string for logging DB (overrides HACKAPIZZA_SQL_CONNSTR)",
     )
     parser.add_argument(
         "--base-url",
@@ -131,12 +132,14 @@ def _print_log_summary(db_path: str) -> None:
 
 async def _main() -> None:
     args = _parse_args()
+    resolved_connstr = args.sql_connstr or get_sql_logging_settings().hackapizza_sql_connstr
+    sqlite_db_path = resolved_connstr.removeprefix("sqlite:///")
     client = HackapizzaClient(
         team_id=args.team_id,
         api_key=args.api_key,
         base_url=args.base_url,
         enable_sql_logging=True,
-        log_db_path=args.db_path,
+        sql_connstr=resolved_connstr,
     )
 
     try:
@@ -148,7 +151,8 @@ async def _main() -> None:
         client._session = None
         client._close_sql_logging()
 
-    _print_log_summary(args.db_path)
+    if resolved_connstr.startswith("sqlite:///"):
+        _print_log_summary(sqlite_db_path)
 
 
 if __name__ == "__main__":

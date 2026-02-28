@@ -23,7 +23,7 @@ from .schema import (
     RecipesResponseSchema,
     RestaurantsResponseSchema,
 )
-from .settings import get_settings
+from .settings import get_settings, get_sql_logging_settings
 from .sql_logging_mixin import SqlLoggingMixin
 
 _RECIPES_ADAPTER = TypeAdapter(RecipesResponseSchema)
@@ -143,7 +143,7 @@ class HackapizzaClient(SqlLoggingMixin):
         base_url: str = "https://hackapizza.datapizza.tech",
         *,
         enable_sql_logging: bool = False,
-        log_db_path: str = "artifacts/calls.db",
+        sql_connstr: str | None = None,
     ):
         settings = get_settings() if team_id is None or api_key is None else None
         self.team_id = team_id or settings.hackapizza_team_id  # type: ignore
@@ -153,7 +153,10 @@ class HackapizzaClient(SqlLoggingMixin):
         self._sql_logging_enabled = enable_sql_logging
 
         if self._sql_logging_enabled:
-            self._init_sql_logging(log_db_path)
+            resolved_sql_connstr = sql_connstr
+            if resolved_sql_connstr is None:
+                resolved_sql_connstr = get_sql_logging_settings().hackapizza_sql_connstr
+            self._init_sql_logging(resolved_sql_connstr)
 
         self._headers = {
             "x-api-key": self.api_key,
