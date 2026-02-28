@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 from datapizza.clients.openai_like import OpenAILikeClient
 
 from hp2.agents.base import BaseAgent
-from hp2.core.api import ClientOrder, GamePhase, HackapizzaClient, IncomingMessage
+from hp2.core.api import ClientOrder, GamePhase, GameStartedEvent, HackapizzaClient, IncomingMessage
 from hp2.core.settings import get_settings
 
 logger = logging.getLogger("ServingAgent")
@@ -72,7 +72,10 @@ class ServingAgent(BaseAgent):
 
     def __init__(self, client: HackapizzaClient | None = None):
         super().__init__(client)
+        self._init_serving_state()
 
+    def _init_serving_state(self) -> None:
+        """Initialise LLM client and per-turn state."""
         settings = get_settings()
 
         # LLM client — single-shot completions, no agent/tools
@@ -92,10 +95,22 @@ class ServingAgent(BaseAgent):
         self.recipes: List[Dict[str, Any]] = []
         self.menu_items: List[str] = []
 
+    @classmethod
+    def create(cls, client: HackapizzaClient) -> "ServingAgent":
+        """Create a ServingAgent that shares an existing client.
+
+        Skips BaseAgent.__init__ so no SSE handlers are registered —
+        use this when embedding inside another orchestrator (e.g. main.py).
+        """
+        instance = object.__new__(cls)
+        instance.client = client
+        instance._init_serving_state()
+        return instance
+
     # ── Lifecycle hooks (only serving matters) ───────────────────────
 
-    async def on_game_started(self, data: Dict[str, Any]) -> None:
-        self.turn_id = str(data.get("turnId") or data.get("turn_id") or data.get("value") or "")
+    async def on_game_started(self, event: GameStartedEvent) -> None:
+        self.turn_id = event.turn_id
         self._reset_state()
 
     async def on_phase_changed(self, phase: GamePhase) -> None:
@@ -106,7 +121,7 @@ class ServingAgent(BaseAgent):
         elif phase == GamePhase.STOPPED:
             self._reset_state()
 
-    async def on_client_order(self, order: ClientOrder) -> None:
+    async def on_client_spawned(self, order: ClientOrder) -> None:
         if self.current_phase != GamePhase.SERVING:
             return
 
@@ -229,8 +244,8 @@ class ServingAgent(BaseAgent):
         )
 
         try:
-            response = await self.llm.a_chat(prompt)
-            text = str(response).strip()
+            response = await self.llm.a_invoke(prompt)
+            text = str(response.text).strip()
             logger.info("[LLM] Response for %s: %s", order.client_name, text)
 
             # Parse JSON response
