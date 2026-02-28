@@ -299,7 +299,7 @@ class ServingAgent(BaseAgent):
             self.shadow_inventory = restaurant.inventory
             menu = restaurant.menu
             items = menu.items
-            self.menu_items = [it["name"] for it in items if isinstance(it, dict) and "name" in it]
+            self.menu_items = [item.name for item in items]
         except Exception as exc:
             logger.warning("[SERVING] Could not fetch restaurant state: %s", exc)
 
