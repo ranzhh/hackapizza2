@@ -1,0 +1,11 @@
+[project]
+name = "hackapizza2"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "aiohttp>=3.13.3",
+    "datapizza-ai>=0.0.9",
+    "datapizza-ai-clients-openai-like>=0.0.9",
+]
