@@ -585,7 +585,7 @@ async def main():
         logger.info(f"⏩ Phase changed → {phase.value}")
         await phase_mgr.handle_phase(phase)
 
-    @hackapizza_client.on_client_order
+    @hackapizza_client.on_client_spawned
     async def _on_client_spawned(order: ClientOrder):
         await phase_mgr.handle_customer(order)
 
