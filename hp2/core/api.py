@@ -6,11 +6,22 @@ Strictly typed, event-driven client for the Hackapizza Gastronomic Multiverse.
 import asyncio
 import json
 import logging
-from functools import wraps
 from dataclasses import asdict, dataclass
 from enum import Enum
+from functools import wraps
 from time import perf_counter
-from typing import Any, Awaitable, Callable, Concatenate, Dict, List, Optional, ParamSpec, TypeVar, cast
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Concatenate,
+    Dict,
+    List,
+    Optional,
+    ParamSpec,
+    TypeVar,
+    cast,
+)
 
 import aiohttp
 import websockets
@@ -49,7 +60,7 @@ def typed_endpoint(
     """Decorator for typed HTTP GET endpoints with optional typed persistence hook."""
 
     def decorator(
-        func: Callable[Concatenate["HackapizzaClient", P], Awaitable[str]]
+        func: Callable[Concatenate["HackapizzaClient", P], Awaitable[str]],
     ) -> Callable[Concatenate["HackapizzaClient", P], Awaitable[T]]:
         @wraps(func)
         async def wrapper(self: "HackapizzaClient", *args: P.args, **kwargs: P.kwargs) -> T:
@@ -62,6 +73,7 @@ def typed_endpoint(
         return wrapper
 
     return decorator
+
 
 # ---------------------------------------------------------------------------
 # Enums
@@ -145,7 +157,7 @@ class HackapizzaClient(SqlLoggingMixin):
         api_key: str | None,
         base_url: str = "https://hackapizza.datapizza.tech",
         *,
-        enable_sql_logging: bool = False,
+        enable_sql_logging: bool = True,
         sql_connstr: str | None = None,
     ):
         settings = get_settings() if team_id is None or api_key is None else None
@@ -366,7 +378,9 @@ class HackapizzaClient(SqlLoggingMixin):
 
         return cast(T, typed_payload)
 
-    def _persist_typed_recipes(self, *, call_id: int, typed_payload: RecipesResponseSchema) -> None:
+    def _persist_typed_recipes(
+        self, *, call_id: int, typed_payload: RecipesResponseSchema
+    ) -> None:
         self._persist_recipes(call_id=call_id, recipes=typed_payload)
 
     def _persist_typed_restaurants(
@@ -607,9 +621,13 @@ class HackapizzaClient(SqlLoggingMixin):
 
             elif event_type == "client_spawned" and self._on_client_spawned:
                 order = ClientOrder(
-                    client_id=str(data.get("clientId", data.get("client_id", data.get("id", "unknown")))),
+                    client_id=str(
+                        data.get("clientId", data.get("client_id", data.get("id", "unknown")))
+                    ),
                     client_name=data.get("clientName", data.get("name", "unknown")),
-                    order_text=data.get("orderText", data.get("order_text", data.get("text", "unknown"))),
+                    order_text=data.get(
+                        "orderText", data.get("order_text", data.get("text", "unknown"))
+                    ),
                 )
                 await self._on_client_spawned(order)
 

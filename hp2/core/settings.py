@@ -2,7 +2,6 @@ from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 _COMMON_SETTINGS_CONFIG = SettingsConfigDict(
     env_file=".env",
     env_file_encoding="utf-8",
