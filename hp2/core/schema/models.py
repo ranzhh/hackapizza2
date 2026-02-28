@@ -33,7 +33,7 @@ class RestaurantSchema(BaseModel):
     id: str
     name: str
     balance: float
-    inventory: Dict[str, float | int] = Field(default_factory=dict)
+    inventory: Dict[str, int] = Field(default_factory=dict)
     reputation: float
     is_open: bool = Field(alias="isOpen")
     kitchen: List[Dict[str, Any]] = Field(default_factory=list)
