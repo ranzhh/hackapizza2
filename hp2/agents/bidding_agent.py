@@ -218,21 +218,25 @@ def _compile_bids(
     recipes_section: Dict[str, List[Dict[str, Any]]] = config["recipes"]
     ingredients_section: Dict[str, Dict[str, List[Dict[str, Any]]]] = config["ingredients"]
 
-    # ── Step 1+2: Collect per-ingredient max bid price and base quantity ──
+    # ── Step 1+2: Collect per-ingredient max bid price and demand weight ──
     #
-    # ingredient_info maps ingredient_name → {"bid": max_price, "base_qty": int}
-    # base_qty = units needed for exactly 1 portion of every unique dish.
+    # ingredient_info maps ingredient_name → {"bid": max_price, "base_qty": float}
+    #
+    # base_qty is a demand-weighted count: each (archetype, dish) pair
+    # contributes its multiplier to every ingredient that dish requires.
+    # We intentionally do NOT deduplicate across archetypes: a dish listed
+    # under Saggi del Cosmo (1.5) AND Astrobarone (2.0) represents two
+    # independent demand streams, so its ingredients accumulate 3.5 units
+    # of demand — proportionally directing more budget toward high-value
+    # dishes.
     ingredient_info: Dict[str, Dict[str, float]] = {}
-
-    # Track unique dish names so we only count base quantities once even
-    # when the same dish appears under multiple archetypes.
-    dish_qty_counted: set = set()
 
     for archetype, dish_list in recipes_section.items():
         arch_ingredients = ingredients_section.get(archetype, {})
 
         for entry in dish_list:
             dish_name = entry["name"]
+            multiplier = float(entry.get("multiplier", 1.0))
             ingredient_list = arch_ingredients.get(dish_name, [])
 
             for ing in ingredient_list:
@@ -246,12 +250,8 @@ def _compile_bids(
                 if ing_price > ingredient_info[ing_name]["bid"]:
                     ingredient_info[ing_name]["bid"] = ing_price
 
-            # Count base quantities only the first time we see this dish.
-            if dish_name not in dish_qty_counted:
-                dish_qty_counted.add(dish_name)
-                for ing in ingredient_list:
-                    ing_name = ing["name"]
-                    ingredient_info[ing_name]["base_qty"] += 1
+                # Accumulate demand weighted by the archetype multiplier.
+                ingredient_info[ing_name]["base_qty"] += multiplier
 
     if not ingredient_info:
         return []
@@ -315,6 +315,34 @@ def _compile_bids(
             if qty > 0:
                 trimmed.append({**b, "quantity": qty})
         bids_raw = trimmed
+
+    # ── Step 6: Spend leftover budget by topping up highest-demand items ──
+    #
+    # After integer rounding we typically have some budget left.  We go
+    # through ingredients sorted by demand weight (base_qty) descending
+    # and add +1 to each until the budget is exhausted.  This prioritises
+    # ingredients that are needed by many / high-multiplier dishes.
+    spend = sum(b["bid"] * b["quantity"] for b in bids_raw)
+    remaining = budget - spend
+
+    # Build a lookup for quick quantity updates.
+    bid_map: Dict[str, Dict[str, Any]] = {b["ingredient"]: b for b in bids_raw}
+
+    # Sort by demand weight desc (use ingredient_info which is still in scope).
+    sorted_by_demand = sorted(
+        bids_raw,
+        key=lambda b: ingredient_info[b["ingredient"]]["base_qty"],
+        reverse=True,
+    )
+
+    for b in sorted_by_demand:
+        if remaining < b["bid"]:
+            break
+        bid_map[b["ingredient"]]["quantity"] += 1
+        remaining -= b["bid"]
+
+    if spend < sum(b["bid"] * b["quantity"] for b in bids_raw):
+        logger.info("Topped up ingredients with %.0f leftover budget.", budget - spend)
 
     return [
         BidRequest(ingredient=b["ingredient"], bid=b["bid"], quantity=b["quantity"])
