@@ -94,7 +94,7 @@ class GameState:
     # --- helpers ---
     def customer_list_json(self) -> str:
         return json.dumps(
-            [{"name": c.client_name, "order": c.order_text} for c in self.pending_customers],
+            [{"id": c.client_id, "name": c.client_name, "order": c.order_text} for c in self.pending_customers],
             indent=2,
         )
 
@@ -109,7 +109,7 @@ class GameState:
                 "menu": self.menu,
                 "kitchen": self.kitchen,
                 "pending_customers": [
-                    {"name": c.client_name, "order": c.order_text}
+                    {"id": c.client_id, "name": c.client_name, "order": c.order_text}
                     for c in self.pending_customers
                 ],
                 "prepared_dishes": self.prepared_dishes,
@@ -300,6 +300,17 @@ REMEMBER: Ingredients expire at turn end. Unsold surplus = pure loss.
     # ──────────────────────────────────────────────────────────────────────────
     async def _handle_serving(self):
         await self.refresh_state()
+
+        # Also fetch meals to see actual client IDs from the server
+        meals_info = "[]"
+        if self.state.turn_id:
+            try:
+                meals = await self.client.get_meals(self.state.turn_id)
+                meals_dump = [m.model_dump() if hasattr(m, 'model_dump') else m for m in meals]
+                meals_info = json.dumps(meals_dump, indent=2, default=str)
+                logger.info(f"[SERVING] Meals data: {meals_info}")
+            except Exception as e:
+                logger.warning(f"[SERVING] Could not fetch meals: {e}")
         prompt = f"""\
 PHASE: SERVING — Doors Are Open
 
@@ -351,7 +362,7 @@ CRITICAL: Never serve a dish that conflicts with a customer's intolerances!
     async def handle_customer(self, order: ClientOrder):
         """A new customer appeared during the serving phase."""
         self.state.pending_customers.append(order)
-        logger.info(f"[CUSTOMER] {order.client_name}: {order.order_text}")
+        logger.info(f"[CUSTOMER] id={order.client_id} name={order.client_name}: {order.order_text}")
 
         if self.state.current_phase != GamePhase.SERVING:
             logger.info("[CUSTOMER] Not in SERVING phase — queued for later.")
@@ -361,6 +372,7 @@ CRITICAL: Never serve a dish that conflicts with a customer's intolerances!
         prompt = f"""\
 🚨 NEW CUSTOMER ARRIVED during SERVING phase!
 
+Customer ID   : {order.client_id}
 Customer name : {order.client_name}
 Request       : {order.order_text}
 
@@ -373,15 +385,16 @@ Request       : {order.order_text}
 TASK:
 1. Match the request to a dish on your menu that you have ingredients for.
 2. Check for intolerance keywords in the request — do NOT serve conflicting food.
+   If the dish contains an ingredient the customer is intolerant to, DO NOT prepare it.
 3. Call prepare_dish(dish_name=<matched_dish>) to start cooking.
-4. After the dish is prepared (you'll be notified), call
-   serve_dish(dish_name=<dish>, client_id=<customer name or id>).
+4. Do NOT call serve_dish yet — the dish is not ready until you receive a
+   preparation_complete event. Only call prepare_dish now.
 """
         response = await self._run_agent(prompt)
-        logger.info(f"[CUSTOMER] Handled {order.client_name} — {_short(response)}")
+        logger.info(f"[CUSTOMER] Prepared for {order.client_name} — {_short(response)}")
 
     async def handle_preparation_complete(self, dish_name: str):
-        """A dish finished cooking — try to serve it immediately."""
+        """A dish finished cooking — serve it to the matching customer."""
         self.state.prepared_dishes.append(dish_name)
         logger.info(f"[PREP DONE] {dish_name}")
 
@@ -394,12 +407,19 @@ TASK:
         await self.refresh_state()
         prompt = f"""\
 A dish just finished cooking: "{dish_name}"
+It is NOW ready to be served.
 
 Pending customers still waiting:
 {self.state.customer_list_json()}
 
-TASK: Serve the dish to the most appropriate waiting customer.
-Call serve_dish(dish_name="{dish_name}", client_id=<best matching customer>).
+== Current restaurant state ==
+{self.state.summary()}
+
+TASK: Serve the dish to the correct customer.
+Call serve_dish(dish_name="{dish_name}", client_id=<matching customer ID>).
+
+IMPORTANT: client_id must be the customer's ID (a string like "abc123"),
+NOT their name. Check the pending customers list for the right ID.
 """
         response = await self._run_agent(prompt)
         logger.info(f"[SERVE] {dish_name} — {_short(response)}")

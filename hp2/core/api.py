@@ -110,6 +110,7 @@ class MenuItem:
 class ClientOrder:
     """Incoming order from a Multiverse customer."""
 
+    client_id: str
     client_name: str
     order_text: str
 
@@ -542,9 +543,11 @@ class HackapizzaClient(SqlLoggingMixin):
                 await self._on_phase_changed(phase)
 
             elif event_type == "client_spawned" and self._on_client_spawned:
+                self.logger.info(f"client_spawned raw data: {data}")
                 order = ClientOrder(
-                    client_name=data.get("clientName", "unknown"),
-                    order_text=data.get("orderText", "unknown"),
+                    client_id=str(data.get("clientId", data.get("client_id", data.get("id", "unknown")))),
+                    client_name=data.get("clientName", data.get("name", "unknown")),
+                    order_text=data.get("orderText", data.get("order_text", data.get("text", "unknown"))),
                 )
                 await self._on_client_spawned(order)
 
@@ -563,6 +566,9 @@ class HackapizzaClient(SqlLoggingMixin):
 
             elif event_type == "heartbeat":
                 pass
+
+            else:
+                self.logger.info(f"Unhandled SSE event: type={event_type} data={data}")
 
         except Exception as e:
             self.logger.error(f"Error in handler for {event_type}: {e}", exc_info=True)
