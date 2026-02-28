@@ -75,10 +75,9 @@ from __future__ import annotations
 
 import json
 import logging
-import math
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from hp2.core.api import (
     ClientOrder,
