@@ -149,12 +149,12 @@ def _load_dotenv() -> None:
 
 # Budget fraction — we spend at most this share of our balance on bids.
 # Matches the 60 % cap that the old LLM prompt enforced.
-BUDGET_FRACTION = 0.60
+BUDGET_FRACTION = 0.10
 
 # How many portions of each target dish we want to be able to cook.
 # The old prompt asked the LLM to "bid for enough ingredients to cook
 # 2 portions of each target dish".
-PORTIONS_PER_DISH = 2
+PORTIONS_PER_DISH = 1
 
 
 # ---------------------------------------------------------------------------
