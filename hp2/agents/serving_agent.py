@@ -318,7 +318,7 @@ class ServingAgent(BaseAgent):
         for meal in meals:
             customer_name = meal.customer.name if meal.customer else None
             if customer_name == order.client_name:
-                resolved = str(meal.id)
+                resolved = str(meal.customer_id)
                 logger.info("[RESOLVE] %s -> %s (meal.id)", order.client_name, resolved)
                 return resolved
 
