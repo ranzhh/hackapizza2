@@ -117,7 +117,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 # ---------------------------------------------------------------------------
 
 # Budget fraction — we spend at most this share of our balance on bids.
-BUDGET_FRACTION = 0.4
+BUDGET_FRACTION = 0.1
 
 # Maximum portions per dish we ever want to stock.  The budget is spent
 # proportionally across all ingredients; this cap prevents over-stocking
