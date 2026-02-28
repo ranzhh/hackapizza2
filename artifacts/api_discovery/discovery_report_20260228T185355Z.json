@@ -1,0 +1,150 @@
+{
+  "generated_at": "20260228T185355Z",
+  "team_id": 6,
+  "base_url": "https://hackapizza.datapizza.tech",
+  "include_actions": true,
+  "results": [
+    {
+      "endpoint": "get_meals",
+      "status": "error",
+      "duration_ms": 109.05612500209827,
+      "args": {
+        "turn_id": 5
+      },
+      "result": null,
+      "error_type": "ClientResponseError",
+      "error_message": "400, message='Bad Request', url='https://hackapizza.datapizza.tech/meals?turn_id=5&restaurant_id=6'"
+    },
+    {
+      "endpoint": "get_bid_history",
+      "status": "error",
+      "duration_ms": 29.36812499683583,
+      "args": {
+        "turn_id": 5
+      },
+      "result": null,
+      "error_type": "ClientResponseError",
+      "error_message": "400, message='Bad Request', url='https://hackapizza.datapizza.tech/bid_history?turn_id=5'"
+    },
+    {
+      "endpoint": "submit_closed_bids",
+      "status": "error",
+      "duration_ms": 120.43829100002768,
+      "args": {
+        "bids": [
+          {
+            "ingredient": "tomato",
+            "bid": 1.0,
+            "quantity": 1
+          }
+        ]
+      },
+      "result": null,
+      "error_type": "RuntimeError",
+      "error_message": "MCP Error on 'closed_bid': Cannot place bid in this phase"
+    },
+    {
+      "endpoint": "save_menu",
+      "status": "error",
+      "duration_ms": 31.108791998121887,
+      "args": {
+        "items": [
+          {
+            "name": "margherita",
+            "price": 9.99
+          }
+        ]
+      },
+      "result": null,
+      "error_type": "RuntimeError",
+      "error_message": "MCP Error on 'save_menu': MCP error -32602: Input validation error: Invalid arguments for tool save_menu: [\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"integer\",\n    \"received\": \"float\",\n    \"message\": \"Expected integer, received float\",\n    \"path\": [\n      \"items\",\n      0,\n      \"price\"\n    ]\n  }\n]"
+    },
+    {
+      "endpoint": "create_market_entry",
+      "status": "error",
+      "duration_ms": 34.83766700082924,
+      "args": {
+        "side": "BUY",
+        "ingredient_name": "tomato",
+        "quantity": 1,
+        "price": 1.0
+      },
+      "result": null,
+      "error_type": "RuntimeError",
+      "error_message": "MCP Error on 'create_market_entry': Cannot create market entry in this phase"
+    },
+    {
+      "endpoint": "execute_transaction",
+      "status": "error",
+      "duration_ms": 42.78704200260108,
+      "args": {
+        "market_entry_id": -1
+      },
+      "result": null,
+      "error_type": "RuntimeError",
+      "error_message": "MCP Error on 'execute_transaction': Cannot execute transaction in this phase"
+    },
+    {
+      "endpoint": "delete_market_entry",
+      "status": "error",
+      "duration_ms": 33.491207999759354,
+      "args": {
+        "market_entry_id": -1
+      },
+      "result": null,
+      "error_type": "RuntimeError",
+      "error_message": "MCP Error on 'delete_market_entry': Cannot delete market entry in this phase"
+    },
+    {
+      "endpoint": "prepare_dish",
+      "status": "error",
+      "duration_ms": 40.083874999254476,
+      "args": {
+        "dish_name": "margherita"
+      },
+      "result": null,
+      "error_type": "RuntimeError",
+      "error_message": "MCP Error on 'prepare_dish': Cannot prepare dishes outside of serving phase"
+    },
+    {
+      "endpoint": "serve_dish",
+      "status": "error",
+      "duration_ms": 40.60245800064877,
+      "args": {
+        "dish_name": "margherita",
+        "client_id": "unknown-client"
+      },
+      "result": null,
+      "error_type": "RuntimeError",
+      "error_message": "MCP Error on 'serve_dish': Cannot serve dishes outside of serving phase"
+    },
+    {
+      "endpoint": "set_restaurant_open_status",
+      "status": "error",
+      "duration_ms": 36.44587499729823,
+      "args": {
+        "is_open": true
+      },
+      "result": null,
+      "error_type": "RuntimeError",
+      "error_message": "MCP Error on 'update_restaurant_is_open': Cannot open/close restaurant in this phase"
+    },
+    {
+      "endpoint": "send_direct_message",
+      "status": "error",
+      "duration_ms": 38.892915996257216,
+      "args": {
+        "recipient_id": 6,
+        "text": "Automated endpoint discovery ping."
+      },
+      "result": null,
+      "error_type": "RuntimeError",
+      "error_message": "MCP Error on 'send_message': Cannot send message in this phase"
+    }
+  ],
+  "summary": {
+    "total": 11,
+    "ok": 0,
+    "error": 11
+  }
+}

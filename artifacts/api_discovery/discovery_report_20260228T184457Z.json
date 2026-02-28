@@ -1,0 +1,4978 @@
+{
+  "generated_at": "20260228T184457Z",
+  "team_id": 6,
+  "base_url": "https://hackapizza.datapizza.tech",
+  "include_actions": true,
+  "results": [
+    {
+      "endpoint": "get_my_restaurant",
+      "status": "ok",
+      "duration_ms": 218.71845799614675,
+      "args": {},
+      "result": {
+        "id": "6",
+        "name": "RAGù",
+        "balance": 8187.0,
+        "inventory": {},
+        "reputation": 98.0,
+        "is_open": false,
+        "kitchen": [],
+        "menu": {
+          "items": [
+            {
+              "name": "Portale Cosmico: Sinfonia di Gnocchi del Crepuscolo con Essenza di Tachioni e Sfumature di Fenice",
+              "price": 900.0
+            }
+          ]
+        },
+        "received_messages": []
+      },
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "endpoint": "get_restaurants",
+      "status": "ok",
+      "duration_ms": 74.88241599639878,
+      "args": {},
+      "result": [
+        {
+          "id": "5",
+          "name": "Piadina as a Service (PaaS)",
+          "balance": 6200.0,
+          "inventory": {},
+          "reputation": 96.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": [
+              {
+                "name": "Nebulosa Galattica",
+                "price": 625.0
+              },
+              {
+                "name": "Sinfonia del Multiverso Calante",
+                "price": 630.0
+              },
+              {
+                "name": "Sinfonia Temporale di Fenice e Xenodonte su Pane degli Abissi con Colata di Plasma Vitale e Polvere di Crononite",
+                "price": 640.0
+              }
+            ]
+          },
+          "received_messages": []
+        },
+        {
+          "id": "8",
+          "name": "Synapse AI",
+          "balance": 8346.0,
+          "inventory": {},
+          "reputation": 100.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": [
+              {
+                "name": "Nebulae Di-Cedri Risvegliati",
+                "price": 360.0
+              },
+              {
+                "name": "Nebulosa di Confini Sfondati",
+                "price": 414.0
+              },
+              {
+                "name": "Cosmic Synchrony: Il Destino di Pulsar",
+                "price": 310.0
+              },
+              {
+                "name": "Sinfonia Celestiale di Gnocchi del Crepuscolo",
+                "price": 317.0
+              }
+            ]
+          },
+          "received_messages": []
+        },
+        {
+          "id": "10",
+          "name": "Samur_ai",
+          "balance": 3704.0,
+          "inventory": {},
+          "reputation": 100.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": []
+          },
+          "received_messages": []
+        },
+        {
+          "id": "19",
+          "name": "ventre a terra",
+          "balance": 4814.0,
+          "inventory": {},
+          "reputation": 96.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": [
+              {
+                "name": "Portale Cosmico: Sinfonia di Gnocchi del Crepuscolo con Essenza di Tachioni e Sfumature di Fenice",
+                "price": 115.0
+              },
+              {
+                "name": "Sinfonia Temporale di Fenice e Xenodonte su Pane degli Abissi con Colata di Plasma Vitale e Polvere di Crononite",
+                "price": 110.0
+              },
+              {
+                "name": "Sinfonia del Multiverso Calante",
+                "price": 100.0
+              },
+              {
+                "name": "Sinfonia del Multiverso",
+                "price": 95.0
+              },
+              {
+                "name": "Sinfonia Cosmica di Proteine Interstellari",
+                "price": 92.0
+              }
+            ]
+          },
+          "received_messages": []
+        },
+        {
+          "id": "4",
+          "name": "Neural Nomads",
+          "balance": 8969.0,
+          "inventory": {},
+          "reputation": 100.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": [
+              {
+                "name": "Eterea Sinfonia di Gravità con Infusione Temporale",
+                "price": 353.0
+              },
+              {
+                "name": "Sinfonia del Multiverso Nascente",
+                "price": 353.0
+              },
+              {
+                "name": "Sinfonia Cosmica di Proteine Interstellari",
+                "price": 323.0
+              },
+              {
+                "name": "Viaggio Galattico: Sinfonia dei Sensi",
+                "price": 315.0
+              },
+              {
+                "name": "Universo Cosmico nel Piatto",
+                "price": 307.0
+              }
+            ]
+          },
+          "received_messages": []
+        },
+        {
+          "id": "7",
+          "name": "Siesta dopo pizza",
+          "balance": 6676.0,
+          "inventory": {},
+          "reputation": 100.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": [
+              {
+                "name": "Nebulosa Galattica",
+                "price": 45.0
+              },
+              {
+                "name": "Sinfonia Cosmica di Proteine Interstellari",
+                "price": 45.0
+              },
+              {
+                "name": "Il Crepuscolo dell’Unicorno",
+                "price": 45.0
+              },
+              {
+                "name": "Universo in Fusilli - Variazione Celestiale",
+                "price": 45.0
+              },
+              {
+                "name": "Essenze dell'Infinito",
+                "price": 45.0
+              }
+            ]
+          },
+          "received_messages": []
+        },
+        {
+          "id": "2",
+          "name": "team 2",
+          "balance": 9000.0,
+          "inventory": {},
+          "reputation": 100.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": []
+          },
+          "received_messages": []
+        },
+        {
+          "id": "1",
+          "name": "team 1",
+          "balance": 9000.0,
+          "inventory": {},
+          "reputation": 100.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": []
+          },
+          "received_messages": []
+        },
+        {
+          "id": "9",
+          "name": "The Hallucinators",
+          "balance": 1879.0,
+          "inventory": {},
+          "reputation": 100.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": [
+              {
+                "name": "Antipasto Celestiale",
+                "price": 850.0
+              }
+            ]
+          },
+          "received_messages": []
+        },
+        {
+          "id": "3",
+          "name": "Domenicaln",
+          "balance": 4737.0,
+          "inventory": {},
+          "reputation": 98.0,
+          "is_open": true,
+          "kitchen": [],
+          "menu": {
+            "items": [
+              {
+                "name": "Sinfonia Cosmica di Proteine Interstellari",
+                "price": 300.0
+              }
+            ]
+          },
+          "received_messages": []
+        },
+        {
+          "id": "26",
+          "name": "The Transformer guys",
+          "balance": 2046.0,
+          "inventory": {},
+          "reputation": 98.0,
+          "is_open": true,
+          "kitchen": [],
+          "menu": {
+            "items": [
+              {
+                "name": "Portale delle Meraviglie",
+                "price": 60.0
+              },
+              {
+                "name": "Viaggio Gastronomico tra le Stelle",
+                "price": 59.0
+              },
+              {
+                "name": "Nebulosa Celeste di Terrafirma",
+                "price": 56.0
+              },
+              {
+                "name": "Luce e Ombra di Nomea Spaziale",
+                "price": 48.0
+              },
+              {
+                "name": "Galassia di Cosmo-Delizie",
+                "price": 73.0
+              },
+              {
+                "name": "Universo in Fluttuazione",
+                "price": 67.0
+              },
+              {
+                "name": "Galassia di Celestial Delight",
+                "price": 85.0
+              },
+              {
+                "name": "Etereo Crepuscolare",
+                "price": 34.0
+              },
+              {
+                "name": "Enigma Celeste",
+                "price": 62.0
+              },
+              {
+                "name": "Nebulosa Galattica",
+                "price": 37.0
+              }
+            ]
+          },
+          "received_messages": []
+        },
+        {
+          "id": "22",
+          "name": "MARADONA",
+          "balance": 4484.0,
+          "inventory": {},
+          "reputation": 99.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": [
+              {
+                "name": "Portale Cosmico: Sinfonia di Gnocchi del Crepuscolo con Essenza di Tachioni e Sfumature di Fenice",
+                "price": 375.0
+              },
+              {
+                "name": "Sinfonia Temporale di Fenice e Xenodonte su Pane degli Abissi con Colata di Plasma Vitale e Polvere di Crononite",
+                "price": 375.0
+              },
+              {
+                "name": "Sinfonia Temporale delle Profondità Infrasoniche",
+                "price": 300.0
+              },
+              {
+                "name": "Sinfonia del Multiverso",
+                "price": 300.0
+              },
+              {
+                "name": "Sinfonia del Multiverso Calante",
+                "price": 300.0
+              },
+              {
+                "name": "Sinfonia di Multiverso: La Danza degli Elementi",
+                "price": 375.0
+              }
+            ]
+          },
+          "received_messages": []
+        },
+        {
+          "id": "12",
+          "name": "Bluers",
+          "balance": 3007.0,
+          "inventory": {},
+          "reputation": 94.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": [
+              {
+                "name": "Sinfonia Quantica dell'Oceano Interstellare",
+                "price": 694.0
+              }
+            ]
+          },
+          "received_messages": []
+        },
+        {
+          "id": "20",
+          "name": "sphacketti",
+          "balance": 9816.0,
+          "inventory": {},
+          "reputation": 100.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": [
+              {
+                "name": "Galassia di Sapore",
+                "price": 122.0
+              },
+              {
+                "name": "Il Viaggio Celeste",
+                "price": 98.0
+              },
+              {
+                "name": "Il Crepuscolo dell’Unicorno",
+                "price": 94.0
+              },
+              {
+                "name": "Il Risveglio della Fenice sull'Arcobaleno d'Oceano",
+                "price": 94.0
+              },
+              {
+                "name": "Luce e Ombra di Nomea Spaziale",
+                "price": 80.0
+              }
+            ]
+          },
+          "received_messages": []
+        },
+        {
+          "id": "14",
+          "name": "Claudio Opuscoli",
+          "balance": 7226.0,
+          "inventory": {},
+          "reputation": 99.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": [
+              {
+                "name": "Portale Cosmico: Sinfonia di Gnocchi del Crepuscolo con Essenza di Tachioni e Sfumature di Fenice",
+                "price": 400.0
+              },
+              {
+                "name": "Sinfonia Temporale di Fenice e Xenodonte su Pane degli Abissi con Colata di Plasma Vitale e Polvere di Crononite",
+                "price": 400.0
+              },
+              {
+                "name": "Piastrella Celestiale di Gnocchi del Crepuscolo con Nebulosa di Riso di Cassandra, Lacrime di Unicorno e Velo di Materia Oscura",
+                "price": 400.0
+              }
+            ]
+          },
+          "received_messages": []
+        },
+        {
+          "id": "24",
+          "name": "Accattoni",
+          "balance": 4544.0,
+          "inventory": {},
+          "reputation": 100.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": [
+              {
+                "name": "Portale Cosmico: Sinfonia di Gnocchi del Crepuscolo con Essenza di Tachioni e Sfumature di Fenice",
+                "price": 1000.0
+              }
+            ]
+          },
+          "received_messages": []
+        },
+        {
+          "id": "6",
+          "name": "RAGù",
+          "balance": 8187.0,
+          "inventory": {},
+          "reputation": 98.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": [
+              {
+                "name": "Portale Cosmico: Sinfonia di Gnocchi del Crepuscolo con Essenza di Tachioni e Sfumature di Fenice",
+                "price": 900.0
+              }
+            ]
+          },
+          "received_messages": []
+        },
+        {
+          "id": "25",
+          "name": "Prompt in the shell",
+          "balance": 8998.0,
+          "inventory": {},
+          "reputation": 100.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": []
+          },
+          "received_messages": []
+        },
+        {
+          "id": "18",
+          "name": "Starrats",
+          "balance": 1214.0,
+          "inventory": {},
+          "reputation": 98.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": [
+              {
+                "name": "Nebulosa Galattica",
+                "price": 100.0
+              }
+            ]
+          },
+          "received_messages": []
+        },
+        {
+          "id": "13",
+          "name": "Cavalli al trotto",
+          "balance": 7050.0,
+          "inventory": {},
+          "reputation": 91.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": [
+              {
+                "name": "Portale Cosmico: Sinfonia di Gnocchi del Crepuscolo con Essenza di Tachioni e Sfumature di Fenice",
+                "price": 100.0
+              },
+              {
+                "name": "Sinfonia Cosmica del Multiverso",
+                "price": 100.0
+              },
+              {
+                "name": "Galassie in Epifania: Risotto Celestiale con Preziosi dell'Universo",
+                "price": 97.0
+              },
+              {
+                "name": "Sinfonia Quantica dell'Oceano Interstellare",
+                "price": 65.0
+              },
+              {
+                "name": "Sinfonia Aromatica del Multiverso",
+                "price": 60.0
+              },
+              {
+                "name": "Sinfonia Cosmica: La Danza dell'Universo",
+                "price": 80.0
+              }
+            ]
+          },
+          "received_messages": []
+        },
+        {
+          "id": "17",
+          "name": "SPAM!",
+          "balance": 8138.0,
+          "inventory": {},
+          "reputation": 100.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": [
+              {
+                "name": "Sinfonia Quantica dell'Oceano Interstellare",
+                "price": 362.0
+              },
+              {
+                "name": "Sinfonia Temporale di Fenice e Xenodonte su Pane degli Abissi con Colata di Plasma Vitale e Polvere di Crononite",
+                "price": 363.0
+              },
+              {
+                "name": "Portale Cosmico: Sinfonia di Gnocchi del Crepuscolo con Essenza di Tachioni e Sfumature di Fenice",
+                "price": 371.0
+              },
+              {
+                "name": "Sinfonia Aromatica del Multiverso",
+                "price": 354.0
+              },
+              {
+                "name": "Piastrella Celestiale di Gnocchi del Crepuscolo con Nebulosa di Riso di Cassandra, Lacrime di Unicorno e Velo di Materia Oscura",
+                "price": 350.0
+              }
+            ]
+          },
+          "received_messages": []
+        },
+        {
+          "id": "11",
+          "name": "AIS Privè",
+          "balance": 8410.0,
+          "inventory": {},
+          "reputation": 100.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": [
+              {
+                "name": "Nebulosa Galattica",
+                "price": 200.0
+              }
+            ]
+          },
+          "received_messages": []
+        },
+        {
+          "id": "23",
+          "name": "AI Caramba",
+          "balance": 8994.0,
+          "inventory": {},
+          "reputation": 100.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": []
+          },
+          "received_messages": []
+        },
+        {
+          "id": "15",
+          "name": "DeepAiUG",
+          "balance": 8975.0,
+          "inventory": {},
+          "reputation": 100.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": []
+          },
+          "received_messages": []
+        },
+        {
+          "id": "21",
+          "name": "EGEnts",
+          "balance": 9000.0,
+          "inventory": {},
+          "reputation": 100.0,
+          "is_open": false,
+          "kitchen": [],
+          "menu": {
+            "items": []
+          },
+          "received_messages": []
+        },
+        {
+          "id": "16",
+          "name": "Desf-AI",
+          "balance": 8978.0,
+          "inventory": {},
+          "reputation": 100.0,
+          "is_open": true,
+          "kitchen": [],
+          "menu": {
+            "items": []
+          },
+          "received_messages": []
+        }
+      ],
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "endpoint": "get_recipes",
+      "status": "ok",
+      "duration_ms": 354.61854199820664,
+      "args": {},
+      "result": [
+        {
+          "name": "Nebulosa Galattica",
+          "preparation_time_ms": 3000,
+          "ingredients": {
+            "Radici di Gravità": 1,
+            "Alghe Bioluminescenti": 1,
+            "Foglie di Nebulosa": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 31
+        },
+        {
+          "name": "Sinfonia Cosmica di Proteine Interstellari",
+          "preparation_time_ms": 3042,
+          "ingredients": {
+            "Carne di Balena spaziale": 1,
+            "Carne di Mucca": 1,
+            "Carne di Xenodonte": 1,
+            "Pane degli Abissi": 1,
+            "Funghi dell’Etere": 1
+          },
+          "prestige": 77
+        },
+        {
+          "name": "L'Estasi Cosmica di Nova",
+          "preparation_time_ms": 3084,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Foglie di Mandragora": 1,
+            "Carne di Balena spaziale": 1,
+            "Pane di Luce": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Funghi Orbitali": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 63
+        },
+        {
+          "name": "Viaggio Galattico: Sinfonia dei Sensi",
+          "preparation_time_ms": 3126,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Baccacedro": 1,
+            "Carne di Xenodonte": 1,
+            "Carne di Kraken": 1,
+            "Biscotti della Galassia": 1,
+            "Amido di Stellarion": 1,
+            "Riso di Cassandra": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 75
+        },
+        {
+          "name": "Cosmic Synchrony: Il Destino di Pulsar",
+          "preparation_time_ms": 3168,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Foglie di Mandragora": 1,
+            "Spaghi del Sole": 1,
+            "Farina di Nettuno": 1,
+            "Plasma Vitale": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 72
+        },
+        {
+          "name": "Il Crepuscolo dell’Unicorno",
+          "preparation_time_ms": 3210,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Radici di Gravità": 1,
+            "Alghe Bioluminescenti": 1,
+            "Amido di Stellarion": 1,
+            "Lacrime di Unicorno": 1
+          },
+          "prestige": 47
+        },
+        {
+          "name": "Galassia di Sapore",
+          "preparation_time_ms": 3252,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Colonia di Mycoflora": 1,
+            "Lattuga Namecciana": 1,
+            "Carne di Balena spaziale": 1,
+            "Carne di Xenodonte": 1,
+            "Carne di Kraken": 1,
+            "Amido di Stellarion": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 61
+        },
+        {
+          "name": "Il Risveglio della Fenice sull'Arcobaleno d'Oceano",
+          "preparation_time_ms": 3294,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Colonia di Mycoflora": 1,
+            "Foglie di Nebulosa": 1,
+            "Uova di Fenice": 1,
+            "Pane degli Abissi": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Nettare di Sirena": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 47
+        },
+        {
+          "name": "Il Viaggio Celeste",
+          "preparation_time_ms": 3336,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Lattuga Namecciana": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Kraken": 1,
+            "Carne di Drago": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Muffa Lunare": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 49
+        },
+        {
+          "name": "Luce e Ombra di Nomea Spaziale",
+          "preparation_time_ms": 3378,
+          "ingredients": {
+            "Lattuga Namecciana": 1,
+            "Carne di Balena spaziale": 1,
+            "Fusilli del Vento": 1,
+            "Pane di Luce": 1,
+            "Lacrime di Unicorno": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 40
+        },
+        {
+          "name": "La Creazione di Nova",
+          "preparation_time_ms": 3420,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Lattuga Namecciana": 1,
+            "Radici di Gravità": 1,
+            "Fibra di Sintetex": 1,
+            "Teste di Idra": 1,
+            "Carne di Drago": 1,
+            "Riso di Cassandra": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 58
+        },
+        {
+          "name": "Eterea Sinfonia di Gravità con Infusione Temporale",
+          "preparation_time_ms": 3462,
+          "ingredients": {
+            "Colonia di Mycoflora": 1,
+            "Radici di Gravità": 1,
+            "Carne di Xenodonte": 1,
+            "Teste di Idra": 1,
+            "Funghi dell’Etere": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 84
+        },
+        {
+          "name": "Universo in Fusilli - Variazione Celestiale",
+          "preparation_time_ms": 3503,
+          "ingredients": {
+            "Teste di Idra": 1,
+            "Carne di Xenodonte": 1,
+            "Pane degli Abissi": 1,
+            "Fusilli del Vento": 1,
+            "Muffa Lunare": 1
+          },
+          "prestige": 62
+        },
+        {
+          "name": "Cosmic Serenade",
+          "preparation_time_ms": 3545,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Foglie di Mandragora": 1,
+            "Carne di Balena spaziale": 1,
+            "Carne di Kraken": 1,
+            "Amido di Stellarion": 1,
+            "Nettare di Sirena": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 65
+        },
+        {
+          "name": "Ecosistema Celeste",
+          "preparation_time_ms": 3587,
+          "ingredients": {
+            "Colonia di Mycoflora": 1,
+            "Liane di Plasmodio": 1,
+            "Baccacedro": 1,
+            "Amido di Stellarion": 1,
+            "Lacrime di Andromeda": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 56
+        },
+        {
+          "name": "Universo in Un Boccone",
+          "preparation_time_ms": 3629,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Radici di Singolarità": 1,
+            "Alghe Bioluminescenti": 1,
+            "Teste di Idra": 1,
+            "Carne di Drago": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Pane di Luce": 1,
+            "Muffa Lunare": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 62
+        },
+        {
+          "name": "Nebulosa Celestiale di Sogni Quantici",
+          "preparation_time_ms": 3671,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Baccacedro": 1,
+            "Colonia di Mycoflora": 1,
+            "Liane di Plasmodio": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Amido di Stellarion": 1,
+            "Lacrime di Unicorno": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 71
+        },
+        {
+          "name": "Universo Cosmico nel Piatto",
+          "preparation_time_ms": 3713,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Lattuga Namecciana": 1,
+            "Colonia di Mycoflora": 1,
+            "Uova di Fenice": 1,
+            "Carne di Kraken": 1,
+            "Spaghi del Sole": 1,
+            "Muffa Lunare": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 73
+        },
+        {
+          "name": "Galassia Speculare",
+          "preparation_time_ms": 3755,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Colonia di Mycoflora": 1,
+            "Radici di Singolarità": 1,
+            "Liane di Plasmodio": 1,
+            "Pane di Luce": 1,
+            "Fusilli del Vento": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 48
+        },
+        {
+          "name": "Sinfonia del Multiverso Nascente",
+          "preparation_time_ms": 3797,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Carne di Balena spaziale": 1,
+            "Fibra di Sintetex": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Muffa Lunare": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 84
+        },
+        {
+          "name": "Antipasto Stellare dell'Eterna Armonia",
+          "preparation_time_ms": 3839,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Baccacedro": 1,
+            "Fibra di Sintetex": 1,
+            "Teste di Idra": 1,
+            "Pane di Luce": 1,
+            "Farina di Nettuno": 1,
+            "Spore Quantiche": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 72
+        },
+        {
+          "name": "Essenze dell'Infinito",
+          "preparation_time_ms": 3881,
+          "ingredients": {
+            "Lattuga Namecciana": 1,
+            "Baccacedro": 1,
+            "Carne di Kraken": 1,
+            "Funghi Orbitali": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 36
+        },
+        {
+          "name": "Etereo Crepuscolare",
+          "preparation_time_ms": 3923,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Colonia di Mycoflora": 1,
+            "Lattuga Namecciana": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Granuli di Nebbia Arcobaleno": 1
+          },
+          "prestige": 28
+        },
+        {
+          "name": "Sinfonia del Multiverso Calante",
+          "preparation_time_ms": 3965,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Fusilli del Vento": 1,
+            "Pane degli Abissi": 1,
+            "Lacrime di Unicorno": 1
+          },
+          "prestige": 85
+        },
+        {
+          "name": "Sinfonia Quantica dell'Oceano Interstellare",
+          "preparation_time_ms": 4007,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Carne di Xenodonte": 1,
+            "Teste di Idra": 1,
+            "Carne di Kraken": 1,
+            "Nettare di Sirena": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 94
+        },
+        {
+          "name": "Sinfonia Temporale di Fenice e Xenodonte su Pane degli Abissi con Colata di Plasma Vitale e Polvere di Crononite",
+          "preparation_time_ms": 4049,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Uova di Fenice": 1,
+            "Carne di Xenodonte": 1,
+            "Pane degli Abissi": 1,
+            "Plasma Vitale": 1
+          },
+          "prestige": 95
+        },
+        {
+          "name": "Nebulare Asteroideo con Crepuscolo di Mucca",
+          "preparation_time_ms": 4091,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Foglie di Nebulosa": 1,
+            "Liane di Plasmodio": 1,
+            "Fibra di Sintetex": 1,
+            "Teste di Idra": 1,
+            "Carne di Mucca": 1,
+            "Pane degli Abissi": 1,
+            "Fusilli del Vento": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Plasma Vitale": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 40
+        },
+        {
+          "name": "Sinfonia Temporale del Drago",
+          "preparation_time_ms": 4133,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Radici di Gravità": 1,
+            "Baccacedro": 1,
+            "Carne di Drago": 1,
+            "Amido di Stellarion": 1,
+            "Biscotti della Galassia": 1,
+            "Nettare di Sirena": 1
+          },
+          "prestige": 82
+        },
+        {
+          "name": "Il Viaggio delle Dimensioni Confluenti",
+          "preparation_time_ms": 4175,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Baccacedro": 1,
+            "Carne di Balena spaziale": 1,
+            "Teste di Idra": 1,
+            "Carne di Mucca": 1,
+            "Riso di Cassandra": 1,
+            "Amido di Stellarion": 1,
+            "Funghi dell’Etere": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 55
+        },
+        {
+          "name": "Echi del Mare Eterno",
+          "preparation_time_ms": 4217,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Teste di Idra": 1,
+            "Carne di Kraken": 1,
+            "Plasma Vitale": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 47
+        },
+        {
+          "name": "Odissea Temporale",
+          "preparation_time_ms": 4259,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Foglie di Mandragora": 1,
+            "Carne di Drago": 1,
+            "Carne di Mucca": 1,
+            "Teste di Idra": 1,
+            "Lacrime di Unicorno": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 60
+        },
+        {
+          "name": "Rintocchi del Cosmo",
+          "preparation_time_ms": 4301,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Lattuga Namecciana": 1,
+            "Radici di Gravità": 1,
+            "Funghi dell’Etere": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 44
+        },
+        {
+          "name": "Armonia Cosmica alla Tavola d'Oro",
+          "preparation_time_ms": 4343,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Baccacedro": 1,
+            "Pane degli Abissi": 1,
+            "Muffa Lunare": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 68
+        },
+        {
+          "name": "Echi del Cosmo",
+          "preparation_time_ms": 4385,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Carne di Mucca": 1,
+            "Carne di Kraken": 1,
+            "Farina di Nettuno": 1,
+            "Riso di Cassandra": 1,
+            "Lacrime di Andromeda": 1
+          },
+          "prestige": 45
+        },
+        {
+          "name": "Ethereal Temporal Elixir",
+          "preparation_time_ms": 4427,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Baccacedro": 1,
+            "Colonia di Mycoflora": 1,
+            "Carne di Balena spaziale": 1,
+            "Pane di Luce": 1,
+            "Spaghi del Sole": 1,
+            "Funghi dell’Etere": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 44
+        },
+        {
+          "name": "Sinfonia Celestiale di Gnocchi del Crepuscolo",
+          "preparation_time_ms": 4469,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Foglie di Mandragora": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Farina di Nettuno": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 88
+        },
+        {
+          "name": "Eclissi Armonica di Sapori",
+          "preparation_time_ms": 4510,
+          "ingredients": {
+            "Foglie di Mandragora": 1,
+            "Carne di Xenodonte": 1,
+            "Riso di Cassandra": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Spaghi del Sole": 1,
+            "Muffa Lunare": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 29
+        },
+        {
+          "name": "Il Viaggio dell'Etereo Risveglio",
+          "preparation_time_ms": 4552,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Alghe Bioluminescenti": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Xenodonte": 1,
+            "Carne di Balena spaziale": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Amido di Stellarion": 1,
+            "Plasma Vitale": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 55
+        },
+        {
+          "name": "Sinfonia Cosmica di Mare e Stelle",
+          "preparation_time_ms": 4594,
+          "ingredients": {
+            "Carne di Balena spaziale": 1,
+            "Carne di Kraken": 1,
+            "Carne di Xenodonte": 1,
+            "Lacrime di Andromeda": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 77
+        },
+        {
+          "name": "Pane e Carne Rivisitato",
+          "preparation_time_ms": 4636,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Lattuga Namecciana": 1,
+            "Baccacedro": 1,
+            "Foglie di Nebulosa": 1,
+            "Carne di Drago": 1,
+            "Pane degli Abissi": 1,
+            "Pane di Luce": 1,
+            "Spaghi del Sole": 1,
+            "Plasma Vitale": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 50
+        },
+        {
+          "name": "Risotto Cosmico Multiversale",
+          "preparation_time_ms": 4678,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Carne di Xenodonte": 1,
+            "Carne di Mucca": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Muffa Lunare": 1
+          },
+          "prestige": 60
+        },
+        {
+          "name": "Il Risveglio del Multiverso",
+          "preparation_time_ms": 4720,
+          "ingredients": {
+            "Radici di Singolarità": 1,
+            "Alghe Bioluminescenti": 1,
+            "Foglie di Mandragora": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Plasma Vitale": 1
+          },
+          "prestige": 47
+        },
+        {
+          "name": "Sinfonia del Cosmo e della Leggenda",
+          "preparation_time_ms": 4762,
+          "ingredients": {
+            "Carne di Xenodonte": 1,
+            "Carne di Drago": 1,
+            "Teste di Idra": 1,
+            "Funghi Orbitali": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 57
+        },
+        {
+          "name": "Cosmos Quantum Fusion",
+          "preparation_time_ms": 4804,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Carne di Kraken": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Funghi Orbitali": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 55
+        },
+        {
+          "name": "Più-dimensionale Sinfonia di Sapori: La Carne del Cosmo",
+          "preparation_time_ms": 4846,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Carne di Balena spaziale": 1,
+            "Carne di Xenodonte": 1,
+            "Pane degli Abissi": 1,
+            "Muffa Lunare": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 95
+        },
+        {
+          "name": "Plasma Celestiale al Risotto di Kraken nell'Aura del Sole",
+          "preparation_time_ms": 4888,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Kraken": 1,
+            "Spaghi del Sole": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Biscotti della Galassia": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 88
+        },
+        {
+          "name": "Risotto Interdimensionale alla Carne di Drago e Balena Spaziale con Biscotti della Galassia Croccanti",
+          "preparation_time_ms": 4930,
+          "ingredients": {
+            "Baccacedro": 1,
+            "Liane di Plasmodio": 1,
+            "Radici di Gravità": 1,
+            "Carne di Drago": 1,
+            "Carne di Balena spaziale": 1,
+            "Biscotti della Galassia": 1,
+            "Pane di Luce": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 88
+        },
+        {
+          "name": "Alternate Realities Risotto",
+          "preparation_time_ms": 4972,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Radici di Singolarità": 1,
+            "Carne di Balena spaziale": 1,
+            "Carne di Drago": 1,
+            "Riso di Cassandra": 1,
+            "Nettare di Sirena": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 50
+        },
+        {
+          "name": "Sinfonia Cosmica: Versione Pizza",
+          "preparation_time_ms": 5014,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Radici di Gravità": 1,
+            "Radici di Singolarità": 1,
+            "Spaghi del Sole": 1,
+            "Riso di Cassandra": 1,
+            "Farina di Nettuno": 1,
+            "Funghi Orbitali": 1,
+            "Polvere di Stelle": 1,
+            "Spezie Melange": 1
+          },
+          "prestige": 79
+        },
+        {
+          "name": "Galassia di Sapore Interstellare",
+          "preparation_time_ms": 5056,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Colonia di Mycoflora": 1,
+            "Foglie di Nebulosa": 1,
+            "Carne di Mucca": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Kraken": 1,
+            "Spaghi del Sole": 1,
+            "Nettare di Sirena": 1,
+            "Polvere di Stelle": 1,
+            "Cioccorane": 1
+          },
+          "prestige": 94
+        },
+        {
+          "name": "Sinfonia Cosmica di Sapore",
+          "preparation_time_ms": 5098,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Carne di Xenodonte": 1,
+            "Fibra di Sintetex": 1,
+            "Farina di Nettuno": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Nduja Fritta Tanto": 1,
+            "Burrobirra": 1
+          },
+          "prestige": 80
+        },
+        {
+          "name": "Sinfonia Cosmica di Luminiscenze e Contrasti",
+          "preparation_time_ms": 5140,
+          "ingredients": {
+            "Uova di Fenice": 1,
+            "Carne di Drago": 1,
+            "Carne di Kraken": 1,
+            "Amido di Stellarion": 1,
+            "Riso di Cassandra": 1,
+            "Polvere di Stelle": 1,
+            "Slurm": 1
+          },
+          "prestige": 81
+        },
+        {
+          "name": "Sinfonia Cosmica in Otto Movimenti",
+          "preparation_time_ms": 5182,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Foglie di Nebulosa": 1,
+            "Alghe Bioluminescenti": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Mucca": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Lacrime di Andromeda": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 90
+        },
+        {
+          "name": "Portale Cosmico: Sinfonia di Gnocchi del Crepuscolo con Essenza di Tachioni e Sfumature di Fenice",
+          "preparation_time_ms": 5224,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Uova di Fenice": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Plasma Vitale": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 100
+        },
+        {
+          "name": "Sinfonia Cosmica: Versione Data",
+          "preparation_time_ms": 5266,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Radici di Gravità": 1,
+            "Colonia di Mycoflora": 1,
+            "Fusilli del Vento": 1,
+            "Pane degli Abissi": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 84
+        },
+        {
+          "name": "Sinfonia Cosmologica",
+          "preparation_time_ms": 5308,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Radici di Gravità": 1,
+            "Foglie di Nebulosa": 1,
+            "Biscotti della Galassia": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 68
+        },
+        {
+          "name": "Sinfonia Cosmica di Armonie Terrestri e Celesti",
+          "preparation_time_ms": 5350,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Uova di Fenice": 1,
+            "Carne di Kraken": 1,
+            "Fibra di Sintetex": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Lacrime di Andromeda": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 90
+        },
+        {
+          "name": "Cosmo Sferico di Sogni Rigenerativi",
+          "preparation_time_ms": 5392,
+          "ingredients": {
+            "Radici di Gravità": 1,
+            "Baccacedro": 1,
+            "Lattuga Namecciana": 1,
+            "Teste di Idra": 1,
+            "Carne di Xenodonte": 1,
+            "Farina di Nettuno": 1,
+            "Nettare di Sirena": 1
+          },
+          "prestige": 34
+        },
+        {
+          "name": "Sinfonia di Cristalli e Rigenerazione",
+          "preparation_time_ms": 5434,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Radici di Gravità": 1,
+            "Liane di Plasmodio": 1,
+            "Uova di Fenice": 1,
+            "Riso di Cassandra": 1,
+            "Pane degli Abissi": 1,
+            "Funghi dell’Etere": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 75
+        },
+        {
+          "name": "Stella Nova",
+          "preparation_time_ms": 5476,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Foglie di Nebulosa": 1,
+            "Fibra di Sintetex": 1,
+            "Fusilli del Vento": 1,
+            "Pane degli Abissi": 1,
+            "Pane di Luce": 1,
+            "Lacrime di Unicorno": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 40
+        },
+        {
+          "name": "Sinfonia del Multiverso",
+          "preparation_time_ms": 5517,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Foglie di Mandragora": 1,
+            "Radici di Singolarità": 1,
+            "Fusilli del Vento": 1,
+            "Plasma Vitale": 1
+          },
+          "prestige": 80
+        },
+        {
+          "name": "Sinfonia di Multiverso: La Danza degli Elementi",
+          "preparation_time_ms": 5559,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Carne di Balena spaziale": 1,
+            "Carne di Drago": 1,
+            "Teste di Idra": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 90
+        },
+        {
+          "name": "Più Lontano delle Stelle",
+          "preparation_time_ms": 5601,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Foglie di Mandragora": 1,
+            "Teste di Idra": 1,
+            "Lacrime di Unicorno": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 44
+        },
+        {
+          "name": "Sinfonia Cosmica del Multiverso",
+          "preparation_time_ms": 5643,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Baccacedro": 1,
+            "Radici di Gravità": 1,
+            "Colonia di Mycoflora": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Lacrime di Andromeda": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 100
+        },
+        {
+          "name": "Viaggio Celeste nel Multiverso",
+          "preparation_time_ms": 5685,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Lattuga Namecciana": 1,
+            "Foglie di Mandragora": 1,
+            "Carne di Balena spaziale": 1,
+            "Fibra di Sintetex": 1,
+            "Lacrime di Unicorno": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 74
+        },
+        {
+          "name": "Sinfonia di Gusti del Multiverso",
+          "preparation_time_ms": 5727,
+          "ingredients": {
+            "Alghe Bioluminescenti": 1,
+            "Carne di Kraken": 1,
+            "Carne di Drago": 1,
+            "Pane degli Abissi": 1,
+            "Pane di Luce": 1,
+            "Fusilli del Vento": 1
+          },
+          "prestige": 67
+        },
+        {
+          "name": "Portale del Cosmo: Sinfonia di Sapori Multidimensionali",
+          "preparation_time_ms": 5769,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Lattuga Namecciana": 1,
+            "Baccacedro": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 72
+        },
+        {
+          "name": "Sinfonia Galattica ai Cristalli di Nebulite",
+          "preparation_time_ms": 5811,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Colonia di Mycoflora": 1,
+            "Liane di Plasmodio": 1,
+            "Spaghi del Sole": 1,
+            "Lacrime di Unicorno": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 73
+        },
+        {
+          "name": "Sinfonia Tempolare Galattica",
+          "preparation_time_ms": 5853,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Radici di Gravità": 1,
+            "Liane di Plasmodio": 1,
+            "Foglie di Nebulosa": 1,
+            "Carne di Kraken": 1,
+            "Carne di Mucca": 1,
+            "Spaghi del Sole": 1,
+            "Pane di Luce": 1,
+            "Amido di Stellarion": 1,
+            "Funghi Orbitali": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 64
+        },
+        {
+          "name": "Cosmopolis delle Galassie Perdute",
+          "preparation_time_ms": 5895,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Colonia di Mycoflora": 1,
+            "Carne di Balena spaziale": 1,
+            "Carne di Drago": 1,
+            "Teste di Idra": 1,
+            "Farina di Nettuno": 1,
+            "Lacrime di Unicorno": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 55
+        },
+        {
+          "name": "Galassia Risvegliata",
+          "preparation_time_ms": 5937,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Colonia di Mycoflora": 1,
+            "Uova di Fenice": 1,
+            "Fibra di Sintetex": 1,
+            "Riso di Cassandra": 1,
+            "Nettare di Sirena": 1
+          },
+          "prestige": 47
+        },
+        {
+          "name": "Sinfonia Temporale nello Spaghi del Sole",
+          "preparation_time_ms": 5979,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Alghe Bioluminescenti": 1,
+            "Carne di Xenodonte": 1,
+            "Teste di Idra": 1,
+            "Spaghi del Sole": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 77
+        },
+        {
+          "name": "Sinfonia di Crepuscolo Celestiale",
+          "preparation_time_ms": 6021,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Amido di Stellarion": 1,
+            "Farina di Nettuno": 1,
+            "Lacrime di Unicorno": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 79
+        },
+        {
+          "name": "Sinfonia di Stagioni Stellari",
+          "preparation_time_ms": 6063,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Alghe Bioluminescenti": 1,
+            "Foglie di Nebulosa": 1,
+            "Carne di Drago": 1,
+            "Carne di Xenodonte": 1,
+            "Fibra di Sintetex": 1,
+            "Amido di Stellarion": 1,
+            "Funghi Orbitali": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 85
+        },
+        {
+          "name": "Viaggio dei Sensi: Bolla Temporale di Aromi Ancestrali",
+          "preparation_time_ms": 6105,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Carne di Xenodonte": 1,
+            "Carne di Kraken": 1,
+            "Teste di Idra": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 67
+        },
+        {
+          "name": "Sfogliare Galattico di Sogni Temporali",
+          "preparation_time_ms": 6147,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Alghe Bioluminescenti": 1,
+            "Lattuga Namecciana": 1,
+            "Carne di Xenodonte": 1,
+            "Fusilli del Vento": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 54
+        },
+        {
+          "name": "Nebulosa di Fenice con Sinfonia Eterea",
+          "preparation_time_ms": 6189,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Fibra di Sintetex": 1,
+            "Uova di Fenice": 1,
+            "Funghi dell’Etere": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 75
+        },
+        {
+          "name": "Sinfonia Temporale al Tocco di Crono",
+          "preparation_time_ms": 6231,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Lattuga Namecciana": 1,
+            "Baccacedro": 1,
+            "Carne di Mucca": 1,
+            "Uova di Fenice": 1,
+            "Pane degli Abissi": 1,
+            "Riso di Cassandra": 1,
+            "Spaghi del Sole": 1,
+            "Spore Quantiche": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 85
+        },
+        {
+          "name": "Viaggio Gastronomico tra le Stelle",
+          "preparation_time_ms": 6273,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Radici di Singolarità": 1,
+            "Carne di Balena spaziale": 1,
+            "Fusilli del Vento": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 49
+        },
+        {
+          "name": "Sinfonia del Cosmo Rigenerante",
+          "preparation_time_ms": 6315,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Carne di Balena spaziale": 1,
+            "Uova di Fenice": 1,
+            "Biscotti della Galassia": 1,
+            "Lacrime di Unicorno": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 70
+        },
+        {
+          "name": "Delizia Astrale all'Essenza del Multiverso",
+          "preparation_time_ms": 6357,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Alghe Bioluminescenti": 1,
+            "Radici di Singolarità": 1,
+            "Foglie di Nebulosa": 1,
+            "Uova di Fenice": 1,
+            "Carne di Kraken": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Lacrime di Andromeda": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 82
+        },
+        {
+          "name": "Melodia del Multiverso Parallelo",
+          "preparation_time_ms": 6399,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Carne di Mucca": 1,
+            "Uova di Fenice": 1,
+            "Teste di Idra": 1,
+            "Fusilli del Vento": 1,
+            "Pane degli Abissi": 1,
+            "Amido di Stellarion": 1,
+            "Nettare di Sirena": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 70
+        },
+        {
+          "name": "Portale Interdimensionale di Sapori",
+          "preparation_time_ms": 6441,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Foglie di Mandragora": 1,
+            "Carne di Kraken": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Riso di Cassandra": 1,
+            "Lacrime di Andromeda": 1
+          },
+          "prestige": 62
+        },
+        {
+          "name": "Ode al Crepuscolo del Multiverso",
+          "preparation_time_ms": 6483,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Carne di Mucca": 1,
+            "Pane degli Abissi": 1,
+            "Pane di Luce": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Lacrime di Unicorno": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 69
+        },
+        {
+          "name": "Sinfonia Interstellare di Fusilli del Vento con Nettare di Sirena",
+          "preparation_time_ms": 6524,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Foglie di Mandragora": 1,
+            "Radici di Gravità": 1,
+            "Teste di Idra": 1,
+            "Fusilli del Vento": 1,
+            "Nettare di Sirena": 1
+          },
+          "prestige": 79
+        },
+        {
+          "name": "La Voce del Vento",
+          "preparation_time_ms": 6566,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Foglie di Nebulosa": 1,
+            "Carne di Balena spaziale": 1,
+            "Funghi dell’Etere": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 35
+        },
+        {
+          "name": "Nebulose a Strati",
+          "preparation_time_ms": 6608,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Colonia di Mycoflora": 1,
+            "Baccacedro": 1,
+            "Radici di Gravità": 1,
+            "Carne di Kraken": 1,
+            "Carne di Mucca": 1,
+            "Farina di Nettuno": 1,
+            "Plasma Vitale": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 50
+        },
+        {
+          "name": "Sinfonia Aromatica del Multiverso",
+          "preparation_time_ms": 6650,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Foglie di Nebulosa": 1,
+            "Lattuga Namecciana": 1,
+            "Spore Quantiche": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 89
+        },
+        {
+          "name": "Serenata del Multiverso",
+          "preparation_time_ms": 6692,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Liane di Plasmodio": 1,
+            "Carne di Balena spaziale": 1,
+            "Fibra di Sintetex": 1,
+            "Nettare di Sirena": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 60
+        },
+        {
+          "name": "Euforia Cosmica",
+          "preparation_time_ms": 6734,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Radici di Singolarità": 1,
+            "Alghe Bioluminescenti": 1,
+            "Carne di Drago": 1,
+            "Uova di Fenice": 1,
+            "Funghi dell’Etere": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 64
+        },
+        {
+          "name": "Galassie Riflesse: Sinfonia del Multiverso",
+          "preparation_time_ms": 6776,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Radici di Singolarità": 1,
+            "Liane di Plasmodio": 1,
+            "Carne di Drago": 1,
+            "Teste di Idra": 1,
+            "Carne di Mucca": 1,
+            "Pane di Luce": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Riso di Cassandra": 1,
+            "Funghi dell’Etere": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 83
+        },
+        {
+          "name": "Sinfonia Cosmica di Terracotta",
+          "preparation_time_ms": 6818,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Radici di Gravità": 1,
+            "Foglie di Mandragora": 1,
+            "Plasma Vitale": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 85
+        },
+        {
+          "name": "Viaggio Cosmico nel Multiverso",
+          "preparation_time_ms": 6860,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Foglie di Nebulosa": 1,
+            "Foglie di Mandragora": 1,
+            "Carne di Mucca": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 89
+        },
+        {
+          "name": "Dimensioni del Mare Stellato",
+          "preparation_time_ms": 6902,
+          "ingredients": {
+            "Liane di Plasmodio": 1,
+            "Carne di Kraken": 1,
+            "Carne di Xenodonte": 1,
+            "Nettare di Sirena": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 34
+        },
+        {
+          "name": "Danza Luminosa del Multiverso",
+          "preparation_time_ms": 6944,
+          "ingredients": {
+            "Uova di Fenice": 1,
+            "Biscotti della Galassia": 1,
+            "Farina di Nettuno": 1,
+            "Nettare di Sirena": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 53
+        },
+        {
+          "name": "Microcosmo in un Boccone",
+          "preparation_time_ms": 6986,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Baccacedro": 1,
+            "Carne di Mucca": 1,
+            "Carne di Xenodonte": 1,
+            "Carne di Drago": 1,
+            "Biscotti della Galassia": 1,
+            "Pane di Luce": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Funghi Orbitali": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 50
+        },
+        {
+          "name": "Nebulose della Fenice su Vento Lunare",
+          "preparation_time_ms": 7028,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Baccacedro": 1,
+            "Foglie di Nebulosa": 1,
+            "Uova di Fenice": 1,
+            "Fusilli del Vento": 1,
+            "Muffa Lunare": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 61
+        },
+        {
+          "name": "Nebulose Pensanti: Sinfonia del Multiverso",
+          "preparation_time_ms": 7070,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Foglie di Nebulosa": 1,
+            "Radici di Gravità": 1,
+            "Carne di Kraken": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Fusilli del Vento": 1,
+            "Farina di Nettuno": 1,
+            "Funghi Orbitali": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 90
+        },
+        {
+          "name": "Nebulosa Celestiale alla Stellaris",
+          "preparation_time_ms": 7112,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Carne di Balena spaziale": 1,
+            "Carne di Mucca": 1,
+            "Teste di Idra": 1,
+            "Riso di Cassandra": 1,
+            "Biscotti della Galassia": 1,
+            "Pane di Luce": 1,
+            "Funghi dell’Etere": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 90
+        },
+        {
+          "name": "Sinfonia Cosmica ma Fatta Male",
+          "preparation_time_ms": 7154,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Radici di Singolarità": 1,
+            "Lattuga Namecciana": 1,
+            "Baccacedro": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Funghi dell’Etere": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 64
+        },
+        {
+          "name": "Astro-Risotto alle Onde Temporali",
+          "preparation_time_ms": 7196,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Foglie di Nebulosa": 1,
+            "Radici di Singolarità": 1,
+            "Baccacedro": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 40
+        },
+        {
+          "name": "Sinfonia Galattica alla Griglia Cangiante",
+          "preparation_time_ms": 7238,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Teste di Idra": 1,
+            "Amido di Stellarion": 1,
+            "Fusilli del Vento": 1,
+            "Spore Quantiche": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 70
+        },
+        {
+          "name": "Galassie Infiammate: Sinfonia Cosmica in Sei Dimensioni",
+          "preparation_time_ms": 7280,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Uova di Fenice": 1,
+            "Carne di Mucca": 1,
+            "Riso di Cassandra": 1,
+            "Spaghi del Sole": 1,
+            "Biscotti della Galassia": 1,
+            "Lacrime di Unicorno": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 95
+        },
+        {
+          "name": "Galassie Sospese: Un Viaggio di Sapori Cosmogalattici",
+          "preparation_time_ms": 7322,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Radici di Gravità": 1,
+            "Pane degli Abissi": 1,
+            "Biscotti della Galassia": 1,
+            "Lacrime di Unicorno": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 60
+        },
+        {
+          "name": "Pioggia di Andromeda",
+          "preparation_time_ms": 7364,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Lattuga Namecciana": 1,
+            "Radici di Singolarità": 1,
+            "Carne di Kraken": 1,
+            "Uova di Fenice": 1,
+            "Fibra di Sintetex": 1,
+            "Fusilli del Vento": 1,
+            "Lacrime di Andromeda": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 56
+        },
+        {
+          "name": "Sinfonia Cosmica ma Fatta Bene",
+          "preparation_time_ms": 7406,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Colonia di Mycoflora": 1,
+            "Carne di Balena spaziale": 1,
+            "Amido di Stellarion": 1,
+            "Nettare di Sirena": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 82
+        },
+        {
+          "name": "Odissea Cosmica di Nettuno",
+          "preparation_time_ms": 7448,
+          "ingredients": {
+            "Pane di Luce": 1,
+            "Farina di Nettuno": 1,
+            "Amido di Stellarion": 1,
+            "Nettare di Sirena": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 49
+        },
+        {
+          "name": "Galassia Commovente di Stellari",
+          "preparation_time_ms": 7490,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Alghe Bioluminescenti": 1,
+            "Baccacedro": 1,
+            "Carne di Balena spaziale": 1,
+            "Teste di Idra": 1,
+            "Fibra di Sintetex": 1,
+            "Funghi Orbitali": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 79
+        },
+        {
+          "name": "Risotto dei Multiversi",
+          "preparation_time_ms": 7531,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Riso di Cassandra": 1,
+            "Spaghi del Sole": 1,
+            "Lacrime di Unicorno": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 43
+        },
+        {
+          "name": "Panetto di Carne",
+          "preparation_time_ms": 7573,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Carne di Kraken": 1,
+            "Carne di Xenodonte": 1,
+            "Farina di Nettuno": 1,
+            "Pane degli Abissi": 1,
+            "Pane di Luce": 1,
+            "Funghi Orbitali": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 40
+        },
+        {
+          "name": "Cosmos Risotto Reale",
+          "preparation_time_ms": 7615,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Carne di Kraken": 1,
+            "Amido di Stellarion": 1,
+            "Pane di Luce": 1,
+            "Funghi Orbitali": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 46
+        },
+        {
+          "name": "La Balena incontra la Mandragora",
+          "preparation_time_ms": 7657,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Radici di Singolarità": 1,
+            "Foglie di Mandragora": 1,
+            "Carne di Balena spaziale": 1,
+            "Pane di Luce": 1,
+            "Muffa Lunare": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 60
+        },
+        {
+          "name": "Armonia Cosmica della Fenice",
+          "preparation_time_ms": 7699,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Carne di Mucca": 1,
+            "Uova di Fenice": 1,
+            "Fibra di Sintetex": 1,
+            "Lacrime di Unicorno": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 78
+        },
+        {
+          "name": "Fenice Galattica",
+          "preparation_time_ms": 7741,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Alghe Bioluminescenti": 1,
+            "Lattuga Namecciana": 1,
+            "Uova di Fenice": 1,
+            "Riso di Cassandra": 1,
+            "Muffa Lunare": 1
+          },
+          "prestige": 35
+        },
+        {
+          "name": "Rapsodia Quantistica nel Cosmo",
+          "preparation_time_ms": 7783,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Carne di Balena spaziale": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Xenodonte": 1,
+            "Lacrime di Unicorno": 1
+          },
+          "prestige": 35
+        },
+        {
+          "name": "Galassia di Sapore Quantum",
+          "preparation_time_ms": 7825,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Alghe Bioluminescenti": 1,
+            "Fusilli del Vento": 1,
+            "Biscotti della Galassia": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 72
+        },
+        {
+          "name": "Tris di Carne con Pane",
+          "preparation_time_ms": 7867,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Carne di Xenodonte": 1,
+            "Carne di Kraken": 1,
+            "Carne di Balena spaziale": 1,
+            "Pane di Luce": 1,
+            "Pane degli Abissi": 1,
+            "Fusilli del Vento": 1,
+            "Lacrime di Unicorno": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 50
+        },
+        {
+          "name": "Galassia Riflessa",
+          "preparation_time_ms": 7909,
+          "ingredients": {
+            "Foglie di Nebulosa": 1,
+            "Colonia di Mycoflora": 1,
+            "Carne di Balena spaziale": 1,
+            "Uova di Fenice": 1,
+            "Pane degli Abissi": 1,
+            "Lacrime di Unicorno": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 56
+        },
+        {
+          "name": "Enigma Celeste",
+          "preparation_time_ms": 7951,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Carne di Drago": 1,
+            "Pane di Luce": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Spore Quantiche": 1
+          },
+          "prestige": 52
+        },
+        {
+          "name": "Galassia d'Aromi Perduti",
+          "preparation_time_ms": 7993,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Pane di Luce": 1,
+            "Spaghi del Sole": 1,
+            "Lacrime di Unicorno": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 42
+        },
+        {
+          "name": "Galassia a Tavola: Sinfonia di Tempeste Cosmiche",
+          "preparation_time_ms": 8035,
+          "ingredients": {
+            "Foglie di Nebulosa": 1,
+            "Liane di Plasmodio": 1,
+            "Teste di Idra": 1,
+            "Carne di Xenodonte": 1,
+            "Funghi Orbitali": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 82
+        },
+        {
+          "name": "Portale Astrale di Sapori",
+          "preparation_time_ms": 8077,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Carne di Kraken": 1,
+            "Carne di Balena spaziale": 1,
+            "Pane di Luce": 1,
+            "Nettare di Sirena": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 47
+        },
+        {
+          "name": "Cosmic Harmony Risotto",
+          "preparation_time_ms": 8119,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Riso di Cassandra": 1,
+            "Pane di Luce": 1,
+            "Lacrime di Unicorno": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 55
+        },
+        {
+          "name": "Galassia di Celestial Delight",
+          "preparation_time_ms": 8161,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Colonia di Mycoflora": 1,
+            "Radici di Singolarità": 1,
+            "Uova di Fenice": 1,
+            "Farina di Nettuno": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 71
+        },
+        {
+          "name": "Pioggia Calante dell'Universo",
+          "preparation_time_ms": 8203,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Baccacedro": 1,
+            "Foglie di Mandragora": 1,
+            "Carne di Balena spaziale": 1,
+            "Spaghi del Sole": 1,
+            "Plasma Vitale": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 62
+        },
+        {
+          "name": "Creazione Celestiale: L'Alba del Cosmo",
+          "preparation_time_ms": 8245,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Liane di Plasmodio": 1,
+            "Carne di Balena spaziale": 1,
+            "Spaghi del Sole": 1,
+            "Biscotti della Galassia": 1,
+            "Muffa Lunare": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 66
+        },
+        {
+          "name": "Cosmic Rhapsody",
+          "preparation_time_ms": 8287,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Carne di Drago": 1,
+            "Carne di Kraken": 1,
+            "Amido di Stellarion": 1,
+            "Funghi dell’Etere": 1
+          },
+          "prestige": 49
+        },
+        {
+          "name": "Rivisitazione del Kraken sotto Molecole",
+          "preparation_time_ms": 8329,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Foglie di Mandragora": 1,
+            "Colonia di Mycoflora": 1,
+            "Carne di Kraken": 1,
+            "Fibra di Sintetex": 1,
+            "Fusilli del Vento": 1,
+            "Pane di Luce": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 60
+        },
+        {
+          "name": "Sinfonia Celestiale",
+          "preparation_time_ms": 8371,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Uova di Fenice": 1,
+            "Teste di Idra": 1,
+            "Pane degli Abissi": 1,
+            "Biscotti della Galassia": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Muffa Lunare": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 89
+        },
+        {
+          "name": "Sinfonia Cosmica di Sapori",
+          "preparation_time_ms": 8413,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Lattuga Namecciana": 1,
+            "Alghe Bioluminescenti": 1,
+            "Liane di Plasmodio": 1,
+            "Teste di Idra": 1,
+            "Biscotti della Galassia": 1,
+            "Nettare di Sirena": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 81
+        },
+        {
+          "name": "Galassia di Sogni Cosmogastronomici",
+          "preparation_time_ms": 8455,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Baccacedro": 1,
+            "Spaghi del Sole": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Nettare di Sirena": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 52
+        },
+        {
+          "name": "Entropia Eterna",
+          "preparation_time_ms": 8497,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Radici di Gravità": 1,
+            "Teste di Idra": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Balena spaziale": 1,
+            "Biscotti della Galassia": 1
+          },
+          "prestige": 38
+        },
+        {
+          "name": "Valzer delle Stelle",
+          "preparation_time_ms": 8538,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Carne di Drago": 1,
+            "Carne di Kraken": 1,
+            "Uova di Fenice": 1,
+            "Amido di Stellarion": 1,
+            "Spaghi del Sole": 1,
+            "Pane di Luce": 1,
+            "Spore Quantiche": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 50
+        },
+        {
+          "name": "Sinfonia di Galassie Riflesse",
+          "preparation_time_ms": 8580,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Colonia di Mycoflora": 1,
+            "Foglie di Mandragora": 1,
+            "Carne di Kraken": 1,
+            "Fusilli del Vento": 1,
+            "Funghi dell’Etere": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 67
+        },
+        {
+          "name": "Valzer Cosmico di Asteria",
+          "preparation_time_ms": 8622,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Uova di Fenice": 1,
+            "Carne di Xenodonte": 1,
+            "Pane di Luce": 1,
+            "Nettare di Sirena": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 65
+        },
+        {
+          "name": "Galassia Infinita: Viaggio tra Memorie e Stelle",
+          "preparation_time_ms": 8664,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Pane di Luce": 1,
+            "Farina di Nettuno": 1,
+            "Biscotti della Galassia": 1,
+            "Spore Quantiche": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 67
+        },
+        {
+          "name": "Eterna Sinfonia del Cosmo",
+          "preparation_time_ms": 8706,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Alghe Bioluminescenti": 1,
+            "Teste di Idra": 1,
+            "Carne di Mucca": 1,
+            "Biscotti della Galassia": 1,
+            "Nettare di Sirena": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 66
+        },
+        {
+          "name": "Sinfonia Cosmica di Aurora",
+          "preparation_time_ms": 8748,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Riso di Cassandra": 1,
+            "Pane di Luce": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 66
+        },
+        {
+          "name": "Galaxia Gustativa",
+          "preparation_time_ms": 8790,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Baccacedro": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Amido di Stellarion": 1,
+            "Funghi Orbitali": 1
+          },
+          "prestige": 35
+        },
+        {
+          "name": "Crescendo Cosmico",
+          "preparation_time_ms": 8832,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Radici di Singolarità": 1,
+            "Colonia di Mycoflora": 1,
+            "Carne di Xenodonte": 1,
+            "Spaghi del Sole": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Spore Quantiche": 1
+          },
+          "prestige": 64
+        },
+        {
+          "name": "Simfonia Celeste di Aurora",
+          "preparation_time_ms": 8874,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Alghe Bioluminescenti": 1,
+            "Colonia di Mycoflora": 1,
+            "Carne di Xenodonte": 1,
+            "Amido di Stellarion": 1,
+            "Fusilli del Vento": 1,
+            "Muffa Lunare": 1
+          },
+          "prestige": 52
+        },
+        {
+          "name": "Portale del Cosmo: Sinfonia di Sapori e Tempi",
+          "preparation_time_ms": 8916,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Radici di Gravità": 1,
+            "Baccacedro": 1,
+            "Colonia di Mycoflora": 1,
+            "Fibra di Sintetex": 1,
+            "Pane di Luce": 1,
+            "Biscotti della Galassia": 1,
+            "Pane degli Abissi": 1,
+            "Muffa Lunare": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 75
+        },
+        {
+          "name": "Verso l'Inedito Oltre",
+          "preparation_time_ms": 8958,
+          "ingredients": {
+            "Lattuga Namecciana": 1,
+            "Carne di Drago": 1,
+            "Carne di Mucca": 1,
+            "Teste di Idra": 1,
+            "Nettare di Sirena": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 30
+        },
+        {
+          "name": "Sinfonia di Galassie Perdute",
+          "preparation_time_ms": 9000,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Radici di Singolarità": 1,
+            "Lattuga Namecciana": 1,
+            "Muffa Lunare": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 63
+        },
+        {
+          "name": "Sinfonia degli Elementi Eterni",
+          "preparation_time_ms": 9042,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Liane di Plasmodio": 1,
+            "Radici di Singolarità": 1,
+            "Foglie di Mandragora": 1,
+            "Uova di Fenice": 1,
+            "Carne di Kraken": 1,
+            "Farina di Nettuno": 1,
+            "Pane di Luce": 1,
+            "Lacrime di Andromeda": 1
+          },
+          "prestige": 70
+        },
+        {
+          "name": "Galassie in Epifania: Risotto Celestiale con Preziosi dell'Universo",
+          "preparation_time_ms": 9084,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Carne di Xenodonte": 1,
+            "Carne di Balena spaziale": 1,
+            "Teste di Idra": 1,
+            "Spaghi del Sole": 1,
+            "Riso di Cassandra": 1,
+            "Farina di Nettuno": 1,
+            "Lacrime di Andromeda": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 97
+        },
+        {
+          "name": "Galassia Suprema",
+          "preparation_time_ms": 9126,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Foglie di Nebulosa": 1,
+            "Carne di Drago": 1,
+            "Carne di Mucca": 1,
+            "Fibra di Sintetex": 1,
+            "Lacrime di Unicorno": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 66
+        },
+        {
+          "name": "Fusione Celeste",
+          "preparation_time_ms": 9168,
+          "ingredients": {
+            "Radici di Singolarità": 1,
+            "Foglie di Nebulosa": 1,
+            "Colonia di Mycoflora": 1,
+            "Carne di Mucca": 1,
+            "Carne di Kraken": 1,
+            "Riso di Cassandra": 1,
+            "Fusilli del Vento": 1,
+            "Biscotti della Galassia": 1,
+            "Spore Quantiche": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 62
+        },
+        {
+          "name": "Sinfonia Cosmica di Andromeda",
+          "preparation_time_ms": 9210,
+          "ingredients": {
+            "Foglie di Mandragora": 1,
+            "Radici di Singolarità": 1,
+            "Riso di Cassandra": 1,
+            "Lacrime di Andromeda": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 85
+        },
+        {
+          "name": "Risveglio Cosmico: Una Sinfonia di Sapori Universali",
+          "preparation_time_ms": 9252,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Lattuga Namecciana": 1,
+            "Carne di Mucca": 1,
+            "Fibra di Sintetex": 1,
+            "Amido di Stellarion": 1,
+            "Riso di Cassandra": 1,
+            "Muffa Lunare": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 92
+        },
+        {
+          "name": "Galassia Incantata: Un Viaggio Attraverso l'Infinito",
+          "preparation_time_ms": 9294,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Carne di Xenodonte": 1,
+            "Teste di Idra": 1,
+            "Fibra di Sintetex": 1,
+            "Riso di Cassandra": 1,
+            "Pane di Luce": 1,
+            "Pane degli Abissi": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 74
+        },
+        {
+          "name": "Sinfonia Celestiale di Echi Galattici",
+          "preparation_time_ms": 9336,
+          "ingredients": {
+            "Baccacedro": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Balena spaziale": 1,
+            "Carne di Kraken": 1,
+            "Lacrime di Unicorno": 1
+          },
+          "prestige": 77
+        },
+        {
+          "name": "Porta Celestiale alle Stelle",
+          "preparation_time_ms": 9378,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Liane di Plasmodio": 1,
+            "Carne di Kraken": 1,
+            "Teste di Idra": 1,
+            "Funghi dell’Etere": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 50
+        },
+        {
+          "name": "Sinfonia Celeste dell'Equilibrio Temporale",
+          "preparation_time_ms": 9420,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Carne di Balena spaziale": 1,
+            "Carne di Mucca": 1,
+            "Uova di Fenice": 1,
+            "Funghi dell’Etere": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 92
+        },
+        {
+          "name": "Il Risveglio delle Stelle",
+          "preparation_time_ms": 9462,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Baccacedro": 1,
+            "Carne di Balena spaziale": 1,
+            "Biscotti della Galassia": 1,
+            "Pane degli Abissi": 1,
+            "Muffa Lunare": 1
+          },
+          "prestige": 37
+        },
+        {
+          "name": "Nebulosa di Drago Interdimensionale",
+          "preparation_time_ms": 9503,
+          "ingredients": {
+            "Carne di Drago": 1,
+            "Amido di Stellarion": 1,
+            "Pane di Luce": 1,
+            "Nettare di Sirena": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 52
+        },
+        {
+          "name": "Sinfonia Cosmica: La Danza dell'Universo",
+          "preparation_time_ms": 9545,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Colonia di Mycoflora": 1,
+            "Alghe Bioluminescenti": 1,
+            "Foglie di Nebulosa": 1,
+            "Carne di Drago": 1,
+            "Pane degli Abissi": 1,
+            "Pane di Luce": 1,
+            "Lacrime di Andromeda": 1
+          },
+          "prestige": 96
+        },
+        {
+          "name": "Interstellar Requiem",
+          "preparation_time_ms": 9587,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Colonia di Mycoflora": 1,
+            "Alghe Bioluminescenti": 1,
+            "Funghi Orbitali": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 60
+        },
+        {
+          "name": "Nebulae Di-Cedri Risvegliati",
+          "preparation_time_ms": 9629,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Radici di Singolarità": 1,
+            "Foglie di Mandragora": 1,
+            "Baccacedro": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Spore Quantiche": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 37
+        },
+        {
+          "name": "Nebulosa dell'Infinito: Un Viaggio attraverso il Cosmo del Gusto",
+          "preparation_time_ms": 9671,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Alghe Bioluminescenti": 1,
+            "Carne di Kraken": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Balena spaziale": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Spaghi del Sole": 1,
+            "Pane di Luce": 1,
+            "Nettare di Sirena": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 54
+        },
+        {
+          "name": "Nebulosa Eterna",
+          "preparation_time_ms": 9713,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Alghe Bioluminescenti": 1,
+            "Foglie di Nebulosa": 1,
+            "Carne di Drago": 1,
+            "Riso di Cassandra": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Pane degli Abissi": 1,
+            "Plasma Vitale": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 50
+        },
+        {
+          "name": "Risveglio Cosmico",
+          "preparation_time_ms": 9755,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Carne di Kraken": 1,
+            "Pane di Luce": 1,
+            "Farina di Nettuno": 1,
+            "Amido di Stellarion": 1,
+            "Muffa Lunare": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 77
+        },
+        {
+          "name": "Aurora del Cosmo",
+          "preparation_time_ms": 9797,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Radici di Singolarità": 1,
+            "Foglie di Nebulosa": 1,
+            "Fibra di Sintetex": 1,
+            "Nettare di Sirena": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 53
+        },
+        {
+          "name": "Galassia nel Piatto: Sinfonia di Sapori e Dimensioni",
+          "preparation_time_ms": 9839,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Lattuga Namecciana": 1,
+            "Radici di Singolarità": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Nettare di Sirena": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 87
+        },
+        {
+          "name": "Nebulosa Celeste di Terrafirma",
+          "preparation_time_ms": 9881,
+          "ingredients": {
+            "Carne di Drago": 1,
+            "Carne di Balena spaziale": 1,
+            "Uova di Fenice": 1,
+            "Pane di Luce": 1,
+            "Fusilli del Vento": 1,
+            "Lacrime di Unicorno": 1
+          },
+          "prestige": 47
+        },
+        {
+          "name": "Universo in Fluttuazione",
+          "preparation_time_ms": 9923,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Carne di Drago": 1,
+            "Farina di Nettuno": 1,
+            "Amido di Stellarion": 1,
+            "Pane di Luce": 1,
+            "Lacrime di Unicorno": 1
+          },
+          "prestige": 56
+        },
+        {
+          "name": "Sinfonia Astrale - Risotto Multiversale con Risacca Celeste",
+          "preparation_time_ms": 9965,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Lattuga Namecciana": 1,
+            "Carne di Xenodonte": 1,
+            "Teste di Idra": 1,
+            "Farina di Nettuno": 1,
+            "Amido di Stellarion": 1,
+            "Riso di Cassandra": 1,
+            "Lacrime di Andromeda": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 100
+        },
+        {
+          "name": "Sinfonia Temporale Galattica",
+          "preparation_time_ms": 10007,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Colonia di Mycoflora": 1,
+            "Baccacedro": 1,
+            "Fibra di Sintetex": 1,
+            "Spore Quantiche": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 73
+        },
+        {
+          "name": "Sinfonia del Multiverso di Gusto",
+          "preparation_time_ms": 10049,
+          "ingredients": {
+            "Carne di Xenodonte": 1,
+            "Carne di Kraken": 1,
+            "Carne di Mucca": 1,
+            "Amido di Stellarion": 1,
+            "Fusilli del Vento": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 74
+        },
+        {
+          "name": "Sinfonia Cosmica",
+          "preparation_time_ms": 10091,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Radici di Singolarità": 1,
+            "Baccacedro": 1,
+            "Colonia di Mycoflora": 1,
+            "Carne di Balena spaziale": 1,
+            "Pane degli Abissi": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Funghi dell’Etere": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 85
+        },
+        {
+          "name": "Danza Cosmica al Crepuscolo",
+          "preparation_time_ms": 10133,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Carne di Drago": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Muffa Lunare": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 60
+        },
+        {
+          "name": "Sinfonia Astrale",
+          "preparation_time_ms": 10175,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Uova di Fenice": 1,
+            "Riso di Cassandra": 1,
+            "Pane degli Abissi": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Lacrime di Unicorno": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 82
+        },
+        {
+          "name": "Dimensioni di Sapori Infusi",
+          "preparation_time_ms": 10217,
+          "ingredients": {
+            "Foglie di Nebulosa": 1,
+            "Colonia di Mycoflora": 1,
+            "Carne di Mucca": 1,
+            "Pane di Luce": 1,
+            "Riso di Cassandra": 1,
+            "Nettare di Sirena": 1
+          },
+          "prestige": 23
+        },
+        {
+          "name": "Cosmos Culinary Symphony",
+          "preparation_time_ms": 10259,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Radici di Gravità": 1,
+            "Lattuga Namecciana": 1,
+            "Uova di Fenice": 1,
+            "Carne di Mucca": 1,
+            "Spaghi del Sole": 1,
+            "Amido di Stellarion": 1,
+            "Biscotti della Galassia": 1,
+            "Plasma Vitale": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 50
+        },
+        {
+          "name": "Portale delle Meraviglie",
+          "preparation_time_ms": 10301,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Radici di Singolarità": 1,
+            "Radici di Gravità": 1,
+            "Carne di Balena spaziale": 1,
+            "Uova di Fenice": 1,
+            "Carne di Drago": 1,
+            "Pane di Luce": 1,
+            "Amido di Stellarion": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 50
+        },
+        {
+          "name": "Galassia di Sapori Interstellari",
+          "preparation_time_ms": 10343,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Foglie di Nebulosa": 1,
+            "Baccacedro": 1,
+            "Radici di Singolarità": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Amido di Stellarion": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Spore Quantiche": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 82
+        },
+        {
+          "name": "Galassia Aurorale",
+          "preparation_time_ms": 10385,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Liane di Plasmodio": 1,
+            "Foglie di Nebulosa": 1,
+            "Radici di Gravità": 1,
+            "Carne di Xenodonte": 1,
+            "Carne di Drago": 1,
+            "Uova di Fenice": 1,
+            "Farina di Nettuno": 1,
+            "Amido di Stellarion": 1,
+            "Spaghi del Sole": 1,
+            "Plasma Vitale": 1
+          },
+          "prestige": 66
+        },
+        {
+          "name": "Galassia di Sapori: L'Eterno Ritorno",
+          "preparation_time_ms": 10427,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Radici di Singolarità": 1,
+            "Carne di Drago": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Balena spaziale": 1,
+            "Riso di Cassandra": 1,
+            "Farina di Nettuno": 1,
+            "Pane di Luce": 1,
+            "Lacrime di Andromeda": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 71
+        },
+        {
+          "name": "Rivelazione del Multiverso",
+          "preparation_time_ms": 10469,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Baccacedro": 1,
+            "Carne di Kraken": 1,
+            "Pane degli Abissi": 1,
+            "Farina di Nettuno": 1,
+            "Lacrime di Andromeda": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 65
+        },
+        {
+          "name": "Sinfonia Cosmica della Rinascita",
+          "preparation_time_ms": 10510,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Foglie di Nebulosa": 1,
+            "Radici di Singolarità": 1,
+            "Carne di Mucca": 1,
+            "Uova di Fenice": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Biscotti della Galassia": 1,
+            "Spaghi del Sole": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 78
+        },
+        {
+          "name": "Galassia di Sapori",
+          "preparation_time_ms": 10552,
+          "ingredients": {
+            "Radici di Gravità": 1,
+            "Carne di Mucca": 1,
+            "Carne di Drago": 1,
+            "Nettare di Sirena": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 44
+        },
+        {
+          "name": "Stellar Fusion",
+          "preparation_time_ms": 10594,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Fibra di Sintetex": 1,
+            "Farina di Nettuno": 1,
+            "Funghi Orbitali": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 46
+        },
+        {
+          "name": "Portale delle Stelle",
+          "preparation_time_ms": 10636,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Carne di Xenodonte": 1,
+            "Biscotti della Galassia": 1,
+            "Funghi dell’Etere": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 49
+        },
+        {
+          "name": "Sogni di Abisso Cosmico",
+          "preparation_time_ms": 10678,
+          "ingredients": {
+            "Uova di Fenice": 1,
+            "Carne di Kraken": 1,
+            "Teste di Idra": 1,
+            "Pane degli Abissi": 1,
+            "Farina di Nettuno": 1,
+            "Fusilli del Vento": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 56
+        },
+        {
+          "name": "Viaggio Cosmico tra Mare e Stelle",
+          "preparation_time_ms": 10720,
+          "ingredients": {
+            "Carne di Balena spaziale": 1,
+            "Carne di Kraken": 1,
+            "Teste di Idra": 1,
+            "Riso di Cassandra": 1,
+            "Pane degli Abissi": 1,
+            "Lacrime di Andromeda": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 78
+        },
+        {
+          "name": "Nebulosa di Dragone all'Essenza di Vuoto",
+          "preparation_time_ms": 10762,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Lattuga Namecciana": 1,
+            "Carne di Drago": 1,
+            "Spore Quantiche": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 69
+        },
+        {
+          "name": "Il Viaggio Cosmico di Marinetti",
+          "preparation_time_ms": 10804,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Colonia di Mycoflora": 1,
+            "Alghe Bioluminescenti": 1,
+            "Teste di Idra": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Pane degli Abissi": 1
+          },
+          "prestige": 62
+        },
+        {
+          "name": "Piastrella Celestiale di Gnocchi del Crepuscolo con Nebulosa di Riso di Cassandra, Lacrime di Unicorno e Velo di Materia Oscura",
+          "preparation_time_ms": 10846,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Riso di Cassandra": 1,
+            "Lacrime di Unicorno": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 86
+        },
+        {
+          "name": "Sinfonia Celeste di Granuli Arcobaleno e Riso di Cassandra",
+          "preparation_time_ms": 10888,
+          "ingredients": {
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Fusilli del Vento": 1,
+            "Riso di Cassandra": 1,
+            "Nettare di Sirena": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 70
+        },
+        {
+          "name": "Cosmos in Tavola",
+          "preparation_time_ms": 10930,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Carne di Drago": 1,
+            "Amido di Stellarion": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Biscotti della Galassia": 1,
+            "Nettare di Sirena": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 42
+        },
+        {
+          "name": "Eclissi del Drago nell'Abbraccio del Kraken",
+          "preparation_time_ms": 10972,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Colonia di Mycoflora": 1,
+            "Carne di Drago": 1,
+            "Carne di Kraken": 1,
+            "Riso di Cassandra": 1,
+            "Plasma Vitale": 1
+          },
+          "prestige": 66
+        },
+        {
+          "name": "Sinfonia Quantica Galattica",
+          "preparation_time_ms": 11014,
+          "ingredients": {
+            "Lattuga Namecciana": 1,
+            "Carne di Drago": 1,
+            "Biscotti della Galassia": 1,
+            "Riso di Cassandra": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 49
+        },
+        {
+          "name": "Sinfonia Galattica Agentica",
+          "preparation_time_ms": 11056,
+          "ingredients": {
+            "Carne di Balena spaziale": 1,
+            "Carne di Drago": 1,
+            "Carne di Kraken": 1,
+            "Pane di Luce": 1,
+            "Plasma Vitale": 1
+          },
+          "prestige": 55
+        },
+        {
+          "name": "Galassia di Sapori Eterei",
+          "preparation_time_ms": 11098,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Liane di Plasmodio": 1,
+            "Foglie di Nebulosa": 1,
+            "Riso di Cassandra": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Farina di Nettuno": 1,
+            "Lacrime di Andromeda": 1
+          },
+          "prestige": 56
+        },
+        {
+          "name": "Il Risveglio del Drago Celeste",
+          "preparation_time_ms": 11140,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Radici di Singolarità": 1,
+            "Carne di Mucca": 1,
+            "Teste di Idra": 1,
+            "Carne di Drago": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Riso di Cassandra": 1,
+            "Spore Quantiche": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 70
+        },
+        {
+          "name": "L'Abbraccio del Cosmo",
+          "preparation_time_ms": 11182,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Teste di Idra": 1,
+            "Carne di Kraken": 1,
+            "Carne di Xenodonte": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 35
+        },
+        {
+          "name": "Cosmic Harmony Infusion",
+          "preparation_time_ms": 11224,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Carne di Balena spaziale": 1,
+            "Carne di Kraken": 1,
+            "Carne di Xenodonte": 1,
+            "Pane degli Abissi": 1,
+            "Pane di Luce": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 64
+        },
+        {
+          "name": "Concordanza Cosmica",
+          "preparation_time_ms": 11266,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Radici di Singolarità": 1,
+            "Carne di Balena spaziale": 1,
+            "Uova di Fenice": 1,
+            "Farina di Nettuno": 1,
+            "Pane di Luce": 1,
+            "Nettare di Sirena": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 65
+        },
+        {
+          "name": "Universo Incantato: Sinfonia dei Gusti Cosmogonici",
+          "preparation_time_ms": 11308,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Foglie di Nebulosa": 1,
+            "Lattuga Namecciana": 1,
+            "Spaghi del Sole": 1,
+            "Nettare di Sirena": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 67
+        },
+        {
+          "name": "Eclissi Quantica: Viaggio nei Reami del Gusto",
+          "preparation_time_ms": 11350,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Colonia di Mycoflora": 1,
+            "Alghe Bioluminescenti": 1,
+            "Foglie di Mandragora": 1,
+            "Carne di Mucca": 1,
+            "Fibra di Sintetex": 1,
+            "Farina di Nettuno": 1,
+            "Amido di Stellarion": 1,
+            "Funghi Orbitali": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 47
+        },
+        {
+          "name": "Sinfonia Multiversale in Otto Movimenti",
+          "preparation_time_ms": 11392,
+          "ingredients": {
+            "Liane di Plasmodio": 1,
+            "Alghe Bioluminescenti": 1,
+            "Lattuga Namecciana": 1,
+            "Teste di Idra": 1,
+            "Riso di Cassandra": 1,
+            "Muffa Lunare": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 56
+        },
+        {
+          "name": "La Sinfonia dell'Universo",
+          "preparation_time_ms": 11434,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Carne di Mucca": 1,
+            "Carne di Drago": 1,
+            "Farina di Nettuno": 1,
+            "Spaghi del Sole": 1,
+            "Biscotti della Galassia": 1,
+            "Nettare di Sirena": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 68
+        },
+        {
+          "name": "Sinfonia dell'Universo Morente",
+          "preparation_time_ms": 11476,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Liane di Plasmodio": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Riso di Cassandra": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Funghi Orbitali": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 75
+        },
+        {
+          "name": "Sinfonia Cosmica: la Vendetta Fantasma",
+          "preparation_time_ms": 11517,
+          "ingredients": {
+            "Colonia di Mycoflora": 1,
+            "Fusilli del Vento": 1,
+            "Spaghi del Sole": 1,
+            "Biscotti della Galassia": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 73
+        },
+        {
+          "name": "Antipasto Celestiale",
+          "preparation_time_ms": 11559,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Carne di Balena spaziale": 1,
+            "Carne di Kraken": 1,
+            "Teste di Idra": 1,
+            "Pane di Luce": 1,
+            "Fusilli del Vento": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 60
+        },
+        {
+          "name": "Sinfonia Cosmica: il Ritorno dell'Imperatore",
+          "preparation_time_ms": 11601,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Carne di Mucca": 1,
+            "Carne di Balena spaziale": 1,
+            "Spore Quantiche": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 82
+        },
+        {
+          "name": "Evanescenza Cosmica",
+          "preparation_time_ms": 11643,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Foglie di Mandragora": 1,
+            "Fibra di Sintetex": 1,
+            "Uova di Fenice": 1,
+            "Fusilli del Vento": 1,
+            "Plasma Vitale": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 65
+        },
+        {
+          "name": "Galassia nel Piatto: Sinfonia Universale di Aromi e Sapori",
+          "preparation_time_ms": 11685,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Drago": 1,
+            "Carne di Xenodonte": 1,
+            "Biscotti della Galassia": 1,
+            "Riso di Cassandra": 1,
+            "Spaghi del Sole": 1,
+            "Muffa Lunare": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 83
+        },
+        {
+          "name": "Sinfonia Galattica di Sapori con Sorpresa di Drago Fiammante",
+          "preparation_time_ms": 11727,
+          "ingredients": {
+            "Lattuga Namecciana": 1,
+            "Teste di Idra": 1,
+            "Carne di Balena spaziale": 1,
+            "Fibra di Sintetex": 1,
+            "Funghi Orbitali": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 68
+        },
+        {
+          "name": "Galassia di Sapori di Aurora",
+          "preparation_time_ms": 11769,
+          "ingredients": {
+            "Carne di Mucca": 1,
+            "Fibra di Sintetex": 1,
+            "Uova di Fenice": 1,
+            "Amido di Stellarion": 1,
+            "Funghi dell’Etere": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 52
+        },
+        {
+          "name": "Galassia di Sapore Interdimensionale",
+          "preparation_time_ms": 11811,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Carne di Mucca": 1,
+            "Carne di Balena spaziale": 1,
+            "Riso di Cassandra": 1,
+            "Pane di Luce": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 60
+        },
+        {
+          "name": "Galassia di Sapori: Sinfonia Transdimensionale",
+          "preparation_time_ms": 11853,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Pane degli Abissi": 1,
+            "Spaghi del Sole": 1,
+            "Muffa Lunare": 1
+          },
+          "prestige": 80
+        },
+        {
+          "name": "Il Ricordo del Fuoco Celeste",
+          "preparation_time_ms": 11895,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Lattuga Namecciana": 1,
+            "Carne di Drago": 1,
+            "Uova di Fenice": 1,
+            "Spaghi del Sole": 1,
+            "Farina di Nettuno": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 49
+        },
+        {
+          "name": "Sinfonia dei Ricordi Celesti",
+          "preparation_time_ms": 11937,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Carne di Balena spaziale": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Spore Quantiche": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 70
+        },
+        {
+          "name": "Sinfonia del Cosmo",
+          "preparation_time_ms": 11979,
+          "ingredients": {
+            "Foglie di Nebulosa": 1,
+            "Liane di Plasmodio": 1,
+            "Fibra di Sintetex": 1,
+            "Funghi Orbitali": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 51
+        },
+        {
+          "name": "Rapsodia dei Ricordi Celesti",
+          "preparation_time_ms": 12021,
+          "ingredients": {
+            "Foglie di Nebulosa": 1,
+            "Carne di Xenodonte": 1,
+            "Carne di Mucca": 1,
+            "Carne di Drago": 1,
+            "Farina di Nettuno": 1,
+            "Lacrime di Andromeda": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 46
+        },
+        {
+          "name": "Il Simposio degli Infiniti Ricordi",
+          "preparation_time_ms": 12063,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Uova di Fenice": 1,
+            "Carne di Xenodonte": 1,
+            "Carne di Balena spaziale": 1,
+            "Pane degli Abissi": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Biscotti della Galassia": 1,
+            "Lacrime di Unicorno": 1
+          },
+          "prestige": 48
+        },
+        {
+          "name": "Viaggio dei Ricordi Stellari",
+          "preparation_time_ms": 12105,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Liane di Plasmodio": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Pane degli Abissi": 1,
+            "Plasma Vitale": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 65
+        },
+        {
+          "name": "Sinfonia Crepuscolare",
+          "preparation_time_ms": 12147,
+          "ingredients": {
+            "Gnocchi del Crepuscolo": 1,
+            "Pane di Luce": 1,
+            "Biscotti della Galassia": 1,
+            "Spore Quantiche": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 61
+        },
+        {
+          "name": "Sinfonia Celestiale dei Ricordi",
+          "preparation_time_ms": 12189,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Colonia di Mycoflora": 1,
+            "Teste di Idra": 1,
+            "Farina di Nettuno": 1,
+            "Biscotti della Galassia": 1,
+            "Spaghi del Sole": 1,
+            "Muffa Lunare": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 81
+        },
+        {
+          "name": "Sfere del Ricordo Astrale",
+          "preparation_time_ms": 12231,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Liane di Plasmodio": 1,
+            "Carne di Drago": 1,
+            "Pane degli Abissi": 1,
+            "Funghi dell’Etere": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 39
+        },
+        {
+          "name": "Pizza Fra",
+          "preparation_time_ms": 12273,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Baccacedro": 1,
+            "Radici di Gravità": 1,
+            "Fibra di Sintetex": 1,
+            "Amido di Stellarion": 1,
+            "Farina di Nettuno": 1,
+            "Lacrime di Unicorno": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 46
+        },
+        {
+          "name": "Pizza Gio",
+          "preparation_time_ms": 12315,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Radici di Gravità": 1,
+            "Liane di Plasmodio": 1,
+            "Pane di Luce": 1,
+            "Lacrime di Andromeda": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 44
+        },
+        {
+          "name": "Pizza Emma",
+          "preparation_time_ms": 12357,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Liane di Plasmodio": 1,
+            "Colonia di Mycoflora": 1,
+            "Foglie di Mandragora": 1,
+            "Funghi dell’Etere": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 43
+        },
+        {
+          "name": "Pizza Luca",
+          "preparation_time_ms": 12399,
+          "ingredients": {
+            "Alghe Bioluminescenti": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Farina di Nettuno": 1,
+            "Pane degli Abissi": 1,
+            "Funghi Orbitali": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 23
+        },
+        {
+          "name": "Pizza Raul",
+          "preparation_time_ms": 12441,
+          "ingredients": {
+            "Teste di Idra": 1,
+            "Amido di Stellarion": 1,
+            "Riso di Cassandra": 1,
+            "Farina di Nettuno": 1,
+            "Spore Quantiche": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 44
+        },
+        {
+          "name": "Pizza Cri",
+          "preparation_time_ms": 12483,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Baccacedro": 1,
+            "Radici di Gravità": 1,
+            "Radici di Singolarità": 1,
+            "Uova di Fenice": 1,
+            "Fusilli del Vento": 1,
+            "Farina di Nettuno": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Funghi dell’Etere": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 50
+        },
+        {
+          "name": "Pizza Baby Daniele",
+          "preparation_time_ms": 12524,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Radici di Singolarità": 1,
+            "Foglie di Nebulosa": 1,
+            "Uova di Fenice": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Balena spaziale": 1,
+            "Biscotti della Galassia": 1,
+            "Spaghi del Sole": 1,
+            "Lacrime di Andromeda": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 50
+        },
+        {
+          "name": "Pizza Baby Lorenzo",
+          "preparation_time_ms": 12566,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Radici di Gravità": 1,
+            "Baccacedro": 1,
+            "Carne di Drago": 1,
+            "Carne di Balena spaziale": 1,
+            "Uova di Fenice": 1,
+            "Riso di Cassandra": 1,
+            "Pane di Luce": 1,
+            "Lacrime di Andromeda": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 50
+        },
+        {
+          "name": "Pizza Baby Simone e Alessandro",
+          "preparation_time_ms": 12608,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Radici di Singolarità": 1,
+            "Lattuga Namecciana": 1,
+            "Baccacedro": 1,
+            "Carne di Xenodonte": 1,
+            "Pane di Luce": 1,
+            "Fusilli del Vento": 1,
+            "Spaghi del Sole": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 50
+        },
+        {
+          "name": "Quadrifonia Cosmica: Sinfonia di Sapori e Dimensioni",
+          "preparation_time_ms": 12650,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Foglie di Nebulosa": 1,
+            "Baccacedro": 1,
+            "Foglie di Mandragora": 1,
+            "Teste di Idra": 1,
+            "Pane di Luce": 1,
+            "Spaghi del Sole": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Lacrime di Unicorno": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 95
+        },
+        {
+          "name": "Sinfonia Cosmica di Terre e Stelle",
+          "preparation_time_ms": 12692,
+          "ingredients": {
+            "Baccacedro": 1,
+            "Liane di Plasmodio": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Xenodonte": 1,
+            "Pane di Luce": 1,
+            "Pane degli Abissi": 1
+          },
+          "prestige": 65
+        },
+        {
+          "name": "Lumière Cosmica",
+          "preparation_time_ms": 12734,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Radici di Gravità": 1,
+            "Pane degli Abissi": 1,
+            "Funghi Orbitali": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 49
+        },
+        {
+          "name": "Risveglio Cosmico: Un Viaggio nel Sapore Quantistico",
+          "preparation_time_ms": 12776,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Liane di Plasmodio": 1,
+            "Biscotti della Galassia": 1,
+            "Amido di Stellarion": 1,
+            "Funghi dell’Etere": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 76
+        },
+        {
+          "name": "L'Ascensione Siderale",
+          "preparation_time_ms": 12818,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Foglie di Nebulosa": 1,
+            "Liane di Plasmodio": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Balena spaziale": 1,
+            "Fusilli del Vento": 1,
+            "Muffa Lunare": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 47
+        },
+        {
+          "name": "Portale di Sapori Arcani",
+          "preparation_time_ms": 12860,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Foglie di Mandragora": 1,
+            "Carne di Balena spaziale": 1,
+            "Carne di Kraken": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 50
+        },
+        {
+          "name": "Fenice sull'Orizzonte degli Eventi",
+          "preparation_time_ms": 12902,
+          "ingredients": {
+            "Baccacedro": 1,
+            "Radici di Singolarità": 1,
+            "Colonia di Mycoflora": 1,
+            "Carne di Xenodonte": 1,
+            "Carne di Drago": 1,
+            "Uova di Fenice": 1,
+            "Pane di Luce": 1,
+            "Lacrime di Andromeda": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 63
+        },
+        {
+          "name": "Portale Cosmico del Kraken",
+          "preparation_time_ms": 12944,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Lattuga Namecciana": 1,
+            "Carne di Drago": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Kraken": 1,
+            "Amido di Stellarion": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Farina di Nettuno": 1,
+            "Funghi Orbitali": 1,
+            "Erba Pipa": 1
+          },
+          "prestige": 79
+        },
+        {
+          "name": "Una Mucca e una Balena nella Singolarità",
+          "preparation_time_ms": 12986,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Colonia di Mycoflora": 1,
+            "Radici di Singolarità": 1,
+            "Carne di Mucca": 1,
+            "Carne di Balena spaziale": 1,
+            "Fibra di Sintetex": 1,
+            "Farina di Nettuno": 1,
+            "Pane degli Abissi": 1,
+            "Spore Quantiche": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 63
+        },
+        {
+          "name": "Risotto Cosmico alla Draconia",
+          "preparation_time_ms": 13028,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Drago": 1,
+            "Carne di Mucca": 1,
+            "Fusilli del Vento": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Biscotti della Galassia": 1,
+            "Muffa Lunare": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 68
+        },
+        {
+          "name": "Galassia di Fusilli Sferici alla Risonanza Crononica",
+          "preparation_time_ms": 13070,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Carne di Kraken": 1,
+            "Carne di Balena spaziale": 1,
+            "Fibra di Sintetex": 1,
+            "Fusilli del Vento": 1,
+            "Farina di Nettuno": 1,
+            "Nettare di Sirena": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 59
+        },
+        {
+          "name": "Galassia Rinascente",
+          "preparation_time_ms": 13112,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Lattuga Namecciana": 1,
+            "Uova di Fenice": 1,
+            "Carne di Drago": 1,
+            "Teste di Idra": 1,
+            "Biscotti della Galassia": 1,
+            "Muffa Lunare": 1
+          },
+          "prestige": 50
+        },
+        {
+          "name": "Mandragola e Radici",
+          "preparation_time_ms": 13154,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Radici di Gravità": 1,
+            "Foglie di Mandragora": 1,
+            "Lacrime di Unicorno": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 58
+        },
+        {
+          "name": "Galaxia Rinasciata",
+          "preparation_time_ms": 13196,
+          "ingredients": {
+            "Baccacedro": 1,
+            "Uova di Fenice": 1,
+            "Biscotti della Galassia": 1,
+            "Lacrime di Unicorno": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 44
+        },
+        {
+          "name": "Cosmic Harmony",
+          "preparation_time_ms": 13238,
+          "ingredients": {
+            "Foglie di Mandragora": 1,
+            "Radici di Gravità": 1,
+            "Lattuga Namecciana": 1,
+            "Lacrime di Unicorno": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 57
+        },
+        {
+          "name": "Nebulosa di Sapori Quantici",
+          "preparation_time_ms": 13280,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Radici di Singolarità": 1,
+            "Riso di Cassandra": 1,
+            "Funghi Orbitali": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 34
+        },
+        {
+          "name": "Galassia in Tavola: Sinfonia dei Sensi",
+          "preparation_time_ms": 13322,
+          "ingredients": {
+            "Baccacedro": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Spaghi del Sole": 1,
+            "Muffa Lunare": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 65
+        },
+        {
+          "name": "Galassie alla Spirale di Vento con Sfera di Ghiaccio Eterno",
+          "preparation_time_ms": 13364,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Radici di Gravità": 1,
+            "Teste di Idra": 1,
+            "Carne di Xenodonte": 1,
+            "Farina di Nettuno": 1,
+            "Fusilli del Vento": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Lacrime di Andromeda": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 64
+        },
+        {
+          "name": "La Mucca Che Stordisce l'Universo",
+          "preparation_time_ms": 13406,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Lattuga Namecciana": 1,
+            "Colonia di Mycoflora": 1,
+            "Carne di Mucca": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Lacrime di Andromeda": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 66
+        },
+        {
+          "name": "Piccola Odissea Cosmica",
+          "preparation_time_ms": 13448,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Carne di Balena spaziale": 1,
+            "Uova di Fenice": 1,
+            "Teste di Idra": 1,
+            "Spaghi del Sole": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 52
+        },
+        {
+          "name": "L'Unicorno piange il Kraken",
+          "preparation_time_ms": 13490,
+          "ingredients": {
+            "Foglie di Nebulosa": 1,
+            "Lattuga Namecciana": 1,
+            "Carne di Xenodonte": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Kraken": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Lacrime di Unicorno": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 52
+        },
+        {
+          "name": "L'Eternità al Crepuscolo",
+          "preparation_time_ms": 13531,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Foglie di Nebulosa": 1,
+            "Carne di Kraken": 1,
+            "Fibra di Sintetex": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Biscotti della Galassia": 1,
+            "Funghi dell’Etere": 1
+          },
+          "prestige": 36
+        },
+        {
+          "name": "La Balena Sputafuoco",
+          "preparation_time_ms": 13573,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Carne di Balena spaziale": 1,
+            "Pane degli Abissi": 1,
+            "Funghi dell’Etere": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 45
+        },
+        {
+          "name": "Sassi e Sassolini",
+          "preparation_time_ms": 13615,
+          "ingredients": {
+            "Foglie di Mandragora": 1,
+            "Radici di Singolarità": 1,
+            "Biscotti della Galassia": 1,
+            "Farina di Nettuno": 1,
+            "Funghi dell’Etere": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 36
+        },
+        {
+          "name": "Galassia Ardente",
+          "preparation_time_ms": 13657,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Radici di Singolarità": 1,
+            "Foglie di Mandragora": 1,
+            "Carne di Kraken": 1,
+            "Spaghi del Sole": 1,
+            "Amido di Stellarion": 1,
+            "Pane di Luce": 1,
+            "Muffa Lunare": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 62
+        },
+        {
+          "name": "Galassia di Cosmo-Delizie",
+          "preparation_time_ms": 13699,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Lattuga Namecciana": 1,
+            "Carne di Drago": 1,
+            "Amido di Stellarion": 1,
+            "Lacrime di Unicorno": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 61
+        },
+        {
+          "name": "Nebulosa di Confini Sfondati",
+          "preparation_time_ms": 13741,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Radici di Singolarità": 1,
+            "Alghe Bioluminescenti": 1,
+            "Foglie di Mandragora": 1,
+            "Amido di Stellarion": 1,
+            "Farina di Nettuno": 1,
+            "Plasma Vitale": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 50
+        },
+        {
+          "name": "Galassia Sensoriale",
+          "preparation_time_ms": 13783,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Pane di Luce": 1,
+            "Spaghi del Sole": 1,
+            "Riso di Cassandra": 1,
+            "Nettare di Sirena": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 55
+        },
+        {
+          "name": "Cosmopastico di Meraviglie Celesti",
+          "preparation_time_ms": 13825,
+          "ingredients": {
+            "Carne di Kraken": 1,
+            "Uova di Fenice": 1,
+            "Carne di Drago": 1,
+            "Pane di Luce": 1,
+            "Spaghi del Sole": 1,
+            "Riso di Cassandra": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 42
+        },
+        {
+          "name": "Sinfonia Cosmica all'Alba di Fenice",
+          "preparation_time_ms": 13867,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Uova di Fenice": 1,
+            "Carne di Mucca": 1,
+            "Carne di Kraken": 1,
+            "Funghi dell’Etere": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 85
+        },
+        {
+          "name": "Sinfonia Cosmica alla Szechuan",
+          "preparation_time_ms": 13909,
+          "ingredients": {
+            "Lattuga Namecciana": 1,
+            "Colonia di Mycoflora": 1,
+            "Teste di Idra": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Plasma Vitale": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 63
+        },
+        {
+          "name": "Sinfonia Cosmica: Il Crescendo delle Stelle",
+          "preparation_time_ms": 13951,
+          "ingredients": {
+            "Radici di Gravità": 1,
+            "Radici di Singolarità": 1,
+            "Liane di Plasmodio": 1,
+            "Carne di Balena spaziale": 1,
+            "Uova di Fenice": 1,
+            "Carne di Kraken": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Pane di Luce": 1,
+            "Funghi Orbitali": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 84
+        },
+        {
+          "name": "Cosmofantasia di Terra e Mare nel Vortice delle Stelle",
+          "preparation_time_ms": 13993,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Lattuga Namecciana": 1,
+            "Radici di Gravità": 1,
+            "Carne di Kraken": 1,
+            "Carne di Mucca": 1,
+            "Carne di Balena spaziale": 1,
+            "Amido di Stellarion": 1,
+            "Nettare di Sirena": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 60
+        },
+        {
+          "name": "Cosmic Symphony di Ghiaccio e Fuoco",
+          "preparation_time_ms": 14035,
+          "ingredients": {
+            "Vero Ghiaccio": 1,
+            "Colonia di Mycoflora": 1,
+            "Radici di Gravità": 1,
+            "Pane di Luce": 1,
+            "Lacrime di Andromeda": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 66
+        },
+        {
+          "name": "Odissea Celestiale",
+          "preparation_time_ms": 14077,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Drago": 1,
+            "Biscotti della Galassia": 1,
+            "Pane degli Abissi": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Muffa Lunare": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 69
+        },
+        {
+          "name": "Il Banchetto delle Galassie",
+          "preparation_time_ms": 14119,
+          "ingredients": {
+            "Lattuga Namecciana": 1,
+            "Liane di Plasmodio": 1,
+            "Carne di Kraken": 1,
+            "Carne di Mucca": 1,
+            "Pane di Luce": 1,
+            "Pane degli Abissi": 1,
+            "Funghi dell’Etere": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 32
+        },
+        {
+          "name": "Cosmologia Terrestre: Viaggio in Otto Dimensioni",
+          "preparation_time_ms": 14161,
+          "ingredients": {
+            "Baccacedro": 1,
+            "Radici di Gravità": 1,
+            "Foglie di Mandragora": 1,
+            "Carne di Mucca": 1,
+            "Salsa Szechuan": 1
+          },
+          "prestige": 32
+        },
+        {
+          "name": "Rinascita Cosmica",
+          "preparation_time_ms": 14203,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Alghe Bioluminescenti": 1,
+            "Radici di Singolarità": 1,
+            "Teste di Idra": 1,
+            "Uova di Fenice": 1,
+            "Amido di Stellarion": 1,
+            "Nettare di Sirena": 1,
+            "Sashimi di Magikarp": 1
+          },
+          "prestige": 59
+        },
+        {
+          "name": "Il Rapsodo Celestiale",
+          "preparation_time_ms": 14245,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Colonia di Mycoflora": 1,
+            "Uova di Fenice": 1,
+            "Pane di Luce": 1,
+            "Gnocchi del Crepuscolo": 1,
+            "Biscotti della Galassia": 1,
+            "Funghi Orbitali": 1,
+            "Essenza di Vuoto": 1,
+            "Pickle Rick Croccante": 1
+          },
+          "prestige": 70
+        },
+        {
+          "name": "Bistecca Cacofonica dell'Infinito",
+          "preparation_time_ms": 14287,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Alghe Bioluminescenti": 1,
+            "Carne di Kraken": 1,
+            "Pane degli Abissi": 1,
+            "Farina di Nettuno": 1,
+            "Spaghi del Sole": 1,
+            "Sale Temporale": 1,
+            "Chocobo Wings": 1
+          },
+          "prestige": 59
+        },
+        {
+          "name": "Galassia di Sapori: Il Viaggio Senza Tempo",
+          "preparation_time_ms": 14329,
+          "ingredients": {
+            "Shard di Materia Oscura": 1,
+            "Foglie di Mandragora": 1,
+            "Foglie di Nebulosa": 1,
+            "Fibra di Sintetex": 1,
+            "Spaghi del Sole": 1,
+            "Pane di Luce": 1,
+            "Fusilli del Vento": 1,
+            "Muffa Lunare": 1,
+            "Latte+": 1
+          },
+          "prestige": 55
+        },
+        {
+          "name": "Pizza Cosmica all'Essenza di Drago con Nebbia Arcobaleno e Funghi Orbitali",
+          "preparation_time_ms": 14371,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Teste di Idra": 1,
+            "Carne di Drago": 1,
+            "Carne di Balena spaziale": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Biscotti della Galassia": 1,
+            "Amido di Stellarion": 1,
+            "Funghi Orbitali": 1,
+            "Essenza di Tachioni": 1,
+            "Ravioli al Vaporeon": 1
+          },
+          "prestige": 83
+        },
+        {
+          "name": "Mycoflora con Polvere di Stelle Sbagliato",
+          "preparation_time_ms": 14413,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Colonia di Mycoflora": 1,
+            "Teste di Idra": 1,
+            "Lacrime di Andromeda": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 62
+        },
+        {
+          "name": "Nebulosa di Sapori dell'Infinito",
+          "preparation_time_ms": 14455,
+          "ingredients": {
+            "Lattuga Namecciana": 1,
+            "Foglie di Nebulosa": 1,
+            "Carne di Xenodonte": 1,
+            "Plasma Vitale": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 49
+        },
+        {
+          "name": "Sinfonia dell'Infinito: Un Viaggio Gnodale tra Terra e Universi",
+          "preparation_time_ms": 14497,
+          "ingredients": {
+            "Radici di Gravità": 1,
+            "Uova di Fenice": 1,
+            "Carne di Mucca": 1,
+            "Carne di Kraken": 1,
+            "Lacrime di Andromeda": 1,
+            "Essenza di Speziaria": 1
+          },
+          "prestige": 80
+        },
+        {
+          "name": "Tris di Verdure con Xenodonte",
+          "preparation_time_ms": 14538,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Radici di Gravità": 1,
+            "Foglie di Mandragora": 1,
+            "Foglie di Nebulosa": 1,
+            "Carne di Xenodonte": 1,
+            "Fibra di Sintetex": 1,
+            "Pane degli Abissi": 1,
+            "Essenza di Tachioni": 1
+          },
+          "prestige": 58
+        },
+        {
+          "name": "Falso Risotto dell'Infinito Multiverso",
+          "preparation_time_ms": 14580,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Uova di Fenice": 1,
+            "Carne di Balena spaziale": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Farina di Nettuno": 1,
+            "Funghi Orbitali": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 71
+        },
+        {
+          "name": "Sinfonia Quantistica delle Stelle",
+          "preparation_time_ms": 14622,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Lattuga Namecciana": 1,
+            "Radici di Singolarità": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Balena spaziale": 1,
+            "Teste di Idra": 1,
+            "Nettare di Sirena": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 75
+        },
+        {
+          "name": "Sinfonia Quantistica dell'Universo",
+          "preparation_time_ms": 14664,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Foglie di Nebulosa": 1,
+            "Lattuga Namecciana": 1,
+            "Teste di Idra": 1,
+            "Carne di Mucca": 1,
+            "Farina di Nettuno": 1,
+            "Riso di Cassandra": 1,
+            "Fusilli del Vento": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 87
+        },
+        {
+          "name": "Evanescenza Quantica",
+          "preparation_time_ms": 14706,
+          "ingredients": {
+            "Petali di Eco": 1,
+            "Radici di Singolarità": 1,
+            "Lattuga Namecciana": 1,
+            "Baccacedro": 1,
+            "Granuli di Nebbia Arcobaleno": 1,
+            "Plasma Vitale": 1,
+            "Frutti del Diavolo": 1
+          },
+          "prestige": 50
+        },
+        {
+          "name": "Galassia di Sapori Sublimi",
+          "preparation_time_ms": 14748,
+          "ingredients": {
+            "Frammenti di Supernova": 1,
+            "Baccacedro": 1,
+            "Foglie di Nebulosa": 1,
+            "Radici di Singolarità": 1,
+            "Amido di Stellarion": 1,
+            "Fusilli del Vento": 1
+          },
+          "prestige": 52
+        },
+        {
+          "name": "Galassia di Sapore Quantico",
+          "preparation_time_ms": 14790,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Alghe Bioluminescenti": 1,
+            "Colonia di Mycoflora": 1,
+            "Carne di Drago": 1,
+            "Teste di Idra": 1,
+            "Plasma Vitale": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 62
+        },
+        {
+          "name": "Interstellare Risveglio di Kraken",
+          "preparation_time_ms": 14832,
+          "ingredients": {
+            "Polvere di Pulsar": 1,
+            "Liane di Plasmodio": 1,
+            "Radici di Singolarità": 1,
+            "Carne di Kraken": 1,
+            "Amido di Stellarion": 1,
+            "Riso di Cassandra": 1,
+            "Plasma Vitale": 1,
+            "Nduja Fritta Tanto": 1
+          },
+          "prestige": 90
+        },
+        {
+          "name": "Sinfonia Temporale delle Profondità Infrasoniche",
+          "preparation_time_ms": 14874,
+          "ingredients": {
+            "Polvere di Crononite": 1,
+            "Carne di Kraken": 1,
+            "Carne di Balena spaziale": 1,
+            "Funghi Orbitali": 1,
+            "Sale Temporale": 1
+          },
+          "prestige": 83
+        },
+        {
+          "name": "Pioggia di Dimensioni Galattiche",
+          "preparation_time_ms": 14916,
+          "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Lattuga Namecciana": 1,
+            "Biscotti della Galassia": 1,
+            "Pane degli Abissi": 1,
+            "Nettare di Sirena": 1,
+            "Essenza di Vuoto": 1
+          },
+          "prestige": 55
+        },
+        {
+          "name": "Ode Cosmica di Terra e Stelle",
+          "preparation_time_ms": 14958,
+          "ingredients": {
+            "Cristalli di Memoria": 1,
+            "Alghe Bioluminescenti": 1,
+            "Teste di Idra": 1,
+            "Fibra di Sintetex": 1,
+            "Carne di Balena spaziale": 1,
+            "Spaghi del Sole": 1,
+            "Nettare di Sirena": 1,
+            "Polvere di Stelle": 1
+          },
+          "prestige": 60
+        },
+        {
+          "name": "Sinfonia Galattica",
+          "preparation_time_ms": 15000,
+          "ingredients": {
+            "Cristalli di Nebulite": 1,
+            "Colonia di Mycoflora": 1,
+            "Teste di Idra": 1,
+            "Carne di Xenodonte": 1,
+            "Carne di Drago": 1,
+            "Pane degli Abissi": 1,
+            "Funghi dell’Etere": 1
+          },
+          "prestige": 52
+        }
+      ],
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "endpoint": "get_my_menu",
+      "status": "ok",
+      "duration_ms": 70.48979200044414,
+      "args": {},
+      "result": {
+        "items": [
+          {
+            "name": "Portale Cosmico: Sinfonia di Gnocchi del Crepuscolo con Essenza di Tachioni e Sfumature di Fenice",
+            "price": 900.0
+          }
+        ]
+      },
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "endpoint": "get_market_entries",
+      "status": "ok",
+      "duration_ms": 48.56341699633049,
+      "args": {},
+      "result": [
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {}
+      ],
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "endpoint": "get_meals",
+      "status": "error",
+      "duration_ms": 29.762375001155306,
+      "args": {
+        "turn_id": "current"
+      },
+      "result": null,
+      "error_type": "ClientResponseError",
+      "error_message": "400, message='Bad Request', url='https://hackapizza.datapizza.tech/meals?turn_id=current&restaurant_id=6'"
+    },
+    {
+      "endpoint": "get_bid_history",
+      "status": "error",
+      "duration_ms": 27.74700000009034,
+      "args": {
+        "turn_id": "current"
+      },
+      "result": null,
+      "error_type": "ClientResponseError",
+      "error_message": "429, message='Too Many Requests', url='https://hackapizza.datapizza.tech/bid_history?turn_id=current'"
+    },
+    {
+      "endpoint": "submit_closed_bids",
+      "status": "error",
+      "duration_ms": 45.578583994938526,
+      "args": {
+        "bids": [
+          {
+            "ingredient": "tomato",
+            "bid": 1.0,
+            "quantity": 1
+          }
+        ]
+      },
+      "result": null,
+      "error_type": "RuntimeError",
+      "error_message": "MCP Error on 'closed_bid': Cannot place bid in this phase"
+    },
+    {
+      "endpoint": "save_menu",
+      "status": "error",
+      "duration_ms": 48.74054199899547,
+      "args": {
+        "items": [
+          {
+            "name": "Nebulosa Galattica",
+            "price": 9.99
+          }
+        ]
+      },
+      "result": null,
+      "error_type": "RuntimeError",
+      "error_message": "MCP Error on 'save_menu': MCP error -32602: Input validation error: Invalid arguments for tool save_menu: [\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"integer\",\n    \"received\": \"float\",\n    \"message\": \"Expected integer, received float\",\n    \"path\": [\n      \"items\",\n      0,\n      \"price\"\n    ]\n  }\n]"
+    },
+    {
+      "endpoint": "create_market_entry",
+      "status": "error",
+      "duration_ms": 39.94783300004201,
+      "args": {
+        "side": "BUY",
+        "ingredient_name": "tomato",
+        "quantity": 1,
+        "price": 1.0
+      },
+      "result": null,
+      "error_type": "RuntimeError",
+      "error_message": "MCP Error on 'create_market_entry': ingredient not found"
+    },
+    {
+      "endpoint": "execute_transaction",
+      "status": "error",
+      "duration_ms": 39.183708002383355,
+      "args": {
+        "market_entry_id": -1
+      },
+      "result": null,
+      "error_type": "RuntimeError",
+      "error_message": "MCP Error on 'execute_transaction': Entry not found"
+    },
+    {
+      "endpoint": "delete_market_entry",
+      "status": "error",
+      "duration_ms": 45.32879200269235,
+      "args": {
+        "market_entry_id": -1
+      },
+      "result": null,
+      "error_type": "RuntimeError",
+      "error_message": "MCP Error on 'delete_market_entry': Entry not found"
+    },
+    {
+      "endpoint": "prepare_dish",
+      "status": "error",
+      "duration_ms": 37.5841670029331,
+      "args": {
+        "dish_name": "Nebulosa Galattica"
+      },
+      "result": null,
+      "error_type": "RuntimeError",
+      "error_message": "MCP Error on 'prepare_dish': Cannot prepare dishes outside of serving phase"
+    },
+    {
+      "endpoint": "serve_dish",
+      "status": "error",
+      "duration_ms": 127.30720900435699,
+      "args": {
+        "dish_name": "Nebulosa Galattica",
+        "client_id": "unknown-client"
+      },
+      "result": null,
+      "error_type": "RuntimeError",
+      "error_message": "MCP Error on 'serve_dish': Cannot serve dishes outside of serving phase"
+    },
+    {
+      "endpoint": "set_restaurant_open_status",
+      "status": "ok",
+      "duration_ms": 154.65608399972552,
+      "args": {
+        "is_open": true
+      },
+      "result": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Restaurant opened"
+          }
+        ]
+      },
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "endpoint": "send_direct_message",
+      "status": "ok",
+      "duration_ms": 135.28395899629686,
+      "args": {
+        "recipient_id": 5,
+        "text": "Automated endpoint discovery ping."
+      },
+      "result": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Message sent"
+          }
+        ]
+      },
+      "error_type": null,
+      "error_message": null
+    }
+  ],
+  "summary": {
+    "total": 16,
+    "ok": 7,
+    "error": 9
+  }
+}
