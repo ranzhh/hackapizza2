@@ -212,6 +212,10 @@ class HackapizzaClient(SqlLoggingMixin):
         """Overview of all active restaurants in the game."""
         return "/restaurants"
 
+    async def get_meals_raw(self, turn_id: str) -> Any:
+        """Fetch meals as raw JSON (untyped) to inspect all fields."""
+        return await self._http_get(f"/meals?turn_id={turn_id}&restaurant_id={self.team_id}")
+
     async def get_restaurants(self) -> RestaurantsResponseSchema:
         return await self._get_restaurants_typed()
 
@@ -543,7 +547,6 @@ class HackapizzaClient(SqlLoggingMixin):
                 await self._on_phase_changed(phase)
 
             elif event_type == "client_spawned" and self._on_client_spawned:
-                self.logger.info(f"client_spawned raw data: {data}")
                 order = ClientOrder(
                     client_id=str(data.get("clientId", data.get("client_id", data.get("id", "unknown")))),
                     client_name=data.get("clientName", data.get("name", "unknown")),
@@ -566,9 +569,6 @@ class HackapizzaClient(SqlLoggingMixin):
 
             elif event_type == "heartbeat":
                 pass
-
-            else:
-                self.logger.info(f"Unhandled SSE event: type={event_type} data={data}")
 
         except Exception as e:
             self.logger.error(f"Error in handler for {event_type}: {e}", exc_info=True)

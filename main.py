@@ -359,6 +359,39 @@ CRITICAL: Never serve a dish that conflicts with a customer's intolerances!
     # Real-time event handlers (called from SSE callbacks)
     # ──────────────────────────────────────────────────────────────────────────
 
+    async def _fetch_all_context(self) -> str:
+        """Fetch every available endpoint and return a combined context string."""
+        sections = []
+
+        # 1. Restaurant state
+        await self.refresh_state()
+        sections.append(f"== My Restaurant ==\n{self.state.summary()}")
+
+        # 2. Meals (RAW — this is where client IDs live)
+        meals_raw = None
+        if self.state.turn_id:
+            try:
+                meals_raw = await self.client.get_meals_raw(self.state.turn_id)
+                sections.append(f"== Meals (raw from /meals) ==\n{json.dumps(meals_raw, indent=2, default=str)}")
+            except Exception as e:
+                logger.warning(f"get_meals_raw failed: {e}")
+
+        # 3. All recipes
+        sections.append(f"== All recipes ==\n{json.dumps(self.state.recipes, indent=2, default=str)}")
+
+        # 4. Market entries
+        sections.append(f"== Market entries ==\n{json.dumps(self.state.market_entries, indent=2, default=str)}")
+
+        # 5. My restaurant detail (kitchen / inventory)
+        try:
+            my_rest = await self.client.get_my_restaurant()
+            rest_dump = my_rest.model_dump(by_alias=True)
+            sections.append(f"== My restaurant detail ==\n{json.dumps(rest_dump, indent=2, default=str)}")
+        except Exception as e:
+            logger.warning(f"[CONTEXT] get_my_restaurant detail failed: {e}")
+
+        return "\n\n".join(sections), meals_raw
+
     async def handle_customer(self, order: ClientOrder):
         """A new customer appeared during the serving phase."""
         self.state.pending_customers.append(order)
@@ -368,19 +401,31 @@ CRITICAL: Never serve a dish that conflicts with a customer's intolerances!
             logger.info("[CUSTOMER] Not in SERVING phase — queued for later.")
             return
 
-        await self.refresh_state()
+        context, meals_raw = await self._fetch_all_context()
+
+        # Try to resolve the real client ID from meals data
+        resolved_id = order.client_id
+        if meals_raw and isinstance(meals_raw, list):
+            for meal in meals_raw:
+                if isinstance(meal, dict):
+                    meal_name = meal.get("clientName", meal.get("client_name", meal.get("name", "")))
+                    if meal_name == order.client_name:
+                        # Try multiple possible ID field names
+                        for key in ["clientId", "client_id", "id", "mealId", "meal_id"]:
+                            if key in meal and meal[key]:
+                                resolved_id = str(meal[key])
+                                logger.info(f"[CUSTOMER] Resolved ID for {order.client_name}: {resolved_id} (from field '{key}')")
+                                order.client_id = resolved_id
+                                break
+
         prompt = f"""\
 🚨 NEW CUSTOMER ARRIVED during SERVING phase!
 
-Customer ID   : {order.client_id}
+Customer ID   : {resolved_id}
 Customer name : {order.client_name}
 Request       : {order.order_text}
 
-== Current restaurant state ==
-{self.state.summary()}
-
-== All recipes ==
-{json.dumps(self.state.recipes, indent=2, default=str)}
+{context}
 
 TASK:
 1. Match the request to a dish on your menu that you have ingredients for.
@@ -404,22 +449,28 @@ TASK:
             logger.info("[PREP DONE] No pending customers to serve.")
             return
 
-        await self.refresh_state()
+        context, meals_raw = await self._fetch_all_context()
+
+        # Build a mapping of customer names → IDs from meals for the agent
+        meals_note = ""
+        if meals_raw and isinstance(meals_raw, list):
+            meals_note = f"\n== Meals from server (use these IDs for serve_dish!) ==\n{json.dumps(meals_raw, indent=2, default=str)}\n"
+
         prompt = f"""\
 A dish just finished cooking: "{dish_name}"
 It is NOW ready to be served.
 
 Pending customers still waiting:
 {self.state.customer_list_json()}
-
-== Current restaurant state ==
-{self.state.summary()}
+{meals_note}
+{context}
 
 TASK: Serve the dish to the correct customer.
 Call serve_dish(dish_name="{dish_name}", client_id=<matching customer ID>).
 
-IMPORTANT: client_id must be the customer's ID (a string like "abc123"),
-NOT their name. Check the pending customers list for the right ID.
+IMPORTANT: The client_id MUST come from the meals data above (look for a field like
+"id", "clientId", "client_id", or "mealId"). Do NOT use the customer's name as client_id.
+If no ID is available in meals, use the customer's name as a last resort.
 """
         response = await self._run_agent(prompt)
         logger.info(f"[SERVE] {dish_name} — {_short(response)}")
