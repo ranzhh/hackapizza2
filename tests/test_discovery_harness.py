@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from api.client import BidRequest, MenuItem
+from core.client import BidRequest, MenuItem
 from discovery_harness import DISCOVERY_ENDPOINTS, run_discovery
 
 

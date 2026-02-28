@@ -19,14 +19,14 @@ from typing import Any, Awaitable, Callable
 
 import aiohttp
 
-from api.client import BidRequest, HackapizzaClient, MarketSide, MenuItem
+from core.client import BidRequest, HackapizzaClient, MarketSide, MenuItem
 
 LOGGER = logging.getLogger("api.discovery_harness")
 
 
 @dataclass
 class DiscoveryContext:
-    turn_id: str = "current"
+    turn_id: str | None = None
     ingredient_name: str = "tomato"
     dish_name: str = "margherita"
     client_id: str = "unknown-client"
@@ -68,6 +68,13 @@ def _first_present(payload: dict[str, Any], candidates: list[str], default: Any)
     return default
 
 
+def _is_usable_turn_id(turn_id: str | None) -> bool:
+    if turn_id is None:
+        return False
+    normalized = str(turn_id).strip().lower()
+    return bool(normalized) and normalized != "current"
+
+
 def _build_context_from_snapshots(
     team_id: int,
     my_restaurant: dict[str, Any] | None,
@@ -79,13 +86,13 @@ def _build_context_from_snapshots(
     context = DiscoveryContext(recipient_id=team_id)
 
     if my_restaurant:
-        context.turn_id = str(
-            _first_present(
-                my_restaurant,
-                ["currentTurnId", "turn_id", "turnId", "activeTurnId"],
-                context.turn_id,
-            )
+        raw_turn = _first_present(
+            my_restaurant,
+            ["currentTurnId", "turn_id", "turnId", "activeTurnId"],
+            context.turn_id,
         )
+        if raw_turn is not None:
+            context.turn_id = str(raw_turn)
 
     if recipes:
         first_recipe = recipes[0]
@@ -175,30 +182,48 @@ async def _invoke_endpoint(
     call: Callable[[], Awaitable[Any]],
     args: dict[str, Any],
     logger: logging.Logger,
+    retries: int = 0,
+    retry_delay_sec: float = 0.75,
 ) -> EndpointCallResult:
-    started = perf_counter()
-    try:
-        value = await call()
-        duration_ms = (perf_counter() - started) * 1000
-        logger.info("[OK] %s (%0.1f ms)", endpoint, duration_ms)
-        return EndpointCallResult(
-            endpoint=endpoint,
-            status="ok",
-            duration_ms=duration_ms,
-            args=_safe_json(args),
-            result=_safe_json(value),
-        )
-    except Exception as exc:  # noqa: BLE001 - we intentionally collect every failure
-        duration_ms = (perf_counter() - started) * 1000
-        logger.exception("[ERROR] %s (%0.1f ms): %s", endpoint, duration_ms, exc)
-        return EndpointCallResult(
-            endpoint=endpoint,
-            status="error",
-            duration_ms=duration_ms,
-            args=_safe_json(args),
-            error_type=type(exc).__name__,
-            error_message=str(exc),
-        )
+    attempt = 0
+    while True:
+        started = perf_counter()
+        try:
+            value = await call()
+            duration_ms = (perf_counter() - started) * 1000
+            logger.info("[OK] %s (%0.1f ms)", endpoint, duration_ms)
+            return EndpointCallResult(
+                endpoint=endpoint,
+                status="ok",
+                duration_ms=duration_ms,
+                args=_safe_json(args),
+                result=_safe_json(value),
+            )
+        except Exception as exc:  # noqa: BLE001 - we intentionally collect every failure
+            duration_ms = (perf_counter() - started) * 1000
+            is_429 = "429" in str(exc)
+            if is_429 and attempt < retries:
+                sleep_s = retry_delay_sec * (2**attempt)
+                logger.warning(
+                    "[RETRY] %s hit 429 (attempt %s/%s), sleeping %0.2fs",
+                    endpoint,
+                    attempt + 1,
+                    retries,
+                    sleep_s,
+                )
+                await asyncio.sleep(sleep_s)
+                attempt += 1
+                continue
+
+            logger.exception("[ERROR] %s (%0.1f ms): %s", endpoint, duration_ms, exc)
+            return EndpointCallResult(
+                endpoint=endpoint,
+                status="error",
+                duration_ms=duration_ms,
+                args=_safe_json(args),
+                error_type=type(exc).__name__,
+                error_message=str(exc),
+            )
 
 
 async def run_discovery(
@@ -206,6 +231,7 @@ async def run_discovery(
     output_dir: str | Path = "artifacts/api_discovery",
     include_actions: bool = True,
     manage_session: bool = True,
+    turn_id_override: str | None = None,
     logger: logging.Logger | None = None,
 ) -> Path:
     """Call each endpoint, collect result/error, and persist the report to disk."""
@@ -253,12 +279,27 @@ async def run_discovery(
             ),
         )
 
-        meals_res = await _invoke_endpoint(
-            "get_meals",
-            lambda: client.get_meals(context.turn_id),
-            {"turn_id": context.turn_id},
-            logger,
-        )
+        if turn_id_override:
+            context.turn_id = str(turn_id_override)
+
+        if _is_usable_turn_id(context.turn_id):
+            meals_res = await _invoke_endpoint(
+                "get_meals",
+                lambda: client.get_meals(context.turn_id),
+                {"turn_id": context.turn_id},
+                logger,
+            )
+        else:
+            meals_res = EndpointCallResult(
+                endpoint="get_meals",
+                status="error",
+                duration_ms=0.0,
+                args={"turn_id": context.turn_id},
+                error_type="ValueError",
+                error_message=(
+                    "No usable turn_id discovered. Provide --turn-id to discovery_harness.py"
+                ),
+            )
         results.append(meals_res)
         if isinstance(meals_res.result, list):
             context = _build_context_from_snapshots(
@@ -276,12 +317,26 @@ async def run_discovery(
                 else None,
             )
 
-        bid_history_res = await _invoke_endpoint(
-            "get_bid_history",
-            lambda: client.get_bid_history(context.turn_id),
-            {"turn_id": context.turn_id},
-            logger,
-        )
+        if _is_usable_turn_id(context.turn_id):
+            bid_history_res = await _invoke_endpoint(
+                "get_bid_history",
+                lambda: client.get_bid_history(context.turn_id),
+                {"turn_id": context.turn_id},
+                logger,
+                retries=2,
+                retry_delay_sec=0.75,
+            )
+        else:
+            bid_history_res = EndpointCallResult(
+                endpoint="get_bid_history",
+                status="error",
+                duration_ms=0.0,
+                args={"turn_id": context.turn_id},
+                error_type="ValueError",
+                error_message=(
+                    "No usable turn_id discovered. Provide --turn-id to discovery_harness.py"
+                ),
+            )
         results.append(bid_history_res)
 
         if include_actions:
@@ -414,6 +469,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--team-id", type=int, default=None)
     parser.add_argument("--api-key", type=str, default=None)
     parser.add_argument("--base-url", type=str, default="https://hackapizza.datapizza.tech")
+    parser.add_argument(
+        "--turn-id",
+        type=str,
+        default=None,
+        help="Turn id to use for get_meals/get_bid_history when it cannot be inferred.",
+    )
     parser.add_argument("--output-dir", type=str, default="artifacts/api_discovery")
     parser.add_argument(
         "--skip-actions",
@@ -441,6 +502,7 @@ async def _main() -> int:
         output_dir=args.output_dir,
         include_actions=not args.skip_actions,
         manage_session=True,
+        turn_id_override=args.turn_id,
         logger=LOGGER,
     )
     print(f"Discovery completed. Report: {report}")

@@ -10,8 +10,26 @@ from enum import Enum
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 import aiohttp
+from pydantic import TypeAdapter
 
 from _settings import get_settings
+from core.schema import (
+    BidHistoryResponseSchema,
+    MarketEntriesResponseSchema,
+    MealsResponseSchema,
+    MyMenuResponseSchema,
+    MyRestaurantResponseSchema,
+    RecipesResponseSchema,
+    RestaurantsResponseSchema,
+)
+
+_RECIPES_ADAPTER = TypeAdapter(RecipesResponseSchema)
+_RESTAURANTS_ADAPTER = TypeAdapter(RestaurantsResponseSchema)
+_MY_RESTAURANT_ADAPTER = TypeAdapter(MyRestaurantResponseSchema)
+_MY_MENU_ADAPTER = TypeAdapter(MyMenuResponseSchema)
+_MARKET_ENTRIES_ADAPTER = TypeAdapter(MarketEntriesResponseSchema)
+_MEALS_ADAPTER = TypeAdapter(MealsResponseSchema)
+_BID_HISTORY_ADAPTER = TypeAdapter(BidHistoryResponseSchema)
 
 # ---------------------------------------------------------------------------
 # Enums
@@ -100,7 +118,12 @@ class HackapizzaClient:
         self.base_url = base_url.rstrip("/")
         self.logger = logging.getLogger(f"HackapizzaClient[{self.team_id}]")
 
-        self._headers = {"x-api-key": self.api_key, "Content-Type": "application/json"}
+        self._headers = {
+            "x-api-key": self.api_key,
+            "Content-Type": "application/json",
+            # MCP endpoint requires client to accept both payload and event-stream.
+            "Accept": "application/json, text/event-stream",
+        }
         self._session: Optional[aiohttp.ClientSession] = None
 
         # Event Callbacks
@@ -135,33 +158,36 @@ class HackapizzaClient:
 
     # --- HTTP Data Endpoints ---
 
-    async def get_meals(self, turn_id: str) -> List[Dict[str, Any]]:
+    async def get_meals(self, turn_id: str) -> MealsResponseSchema:
         """Fetch meals/customer requests for the current turn."""
-        return await self._http_get(f"/meals?turn_id={turn_id}&restaurant_id={self.team_id}")
+        return await self._http_get_typed(
+            f"/meals?turn_id={turn_id}&restaurant_id={self.team_id}",
+            _MEALS_ADAPTER,
+        )
 
-    async def get_restaurants(self) -> List[Dict[str, Any]]:
+    async def get_restaurants(self) -> RestaurantsResponseSchema:
         """Overview of all active restaurants in the game."""
-        return await self._http_get("/restaurants")
+        return await self._http_get_typed("/restaurants", _RESTAURANTS_ADAPTER)
 
-    async def get_recipes(self) -> List[Dict[str, Any]]:
+    async def get_recipes(self) -> RecipesResponseSchema:
         """List of all available recipes, their ingredients, and prep times."""
-        return await self._http_get("/recipes")
+        return await self._http_get_typed("/recipes", _RECIPES_ADAPTER)
 
-    async def get_bid_history(self, turn_id: str) -> List[Dict[str, Any]]:
+    async def get_bid_history(self, turn_id: str) -> BidHistoryResponseSchema:
         """Historical blind auction bids for a given turn."""
-        return await self._http_get(f"/bid_history?turn_id={turn_id}")
+        return await self._http_get_typed(f"/bid_history?turn_id={turn_id}", _BID_HISTORY_ADAPTER)
 
-    async def get_my_restaurant(self) -> Dict[str, Any]:
+    async def get_my_restaurant(self) -> MyRestaurantResponseSchema:
         """Fetch balance, reputation, and inventory for your restaurant."""
-        return await self._http_get(f"/restaurant/{self.team_id}")
+        return await self._http_get_typed(f"/restaurant/{self.team_id}", _MY_RESTAURANT_ADAPTER)
 
-    async def get_my_menu(self) -> List[Dict[str, Any]]:
+    async def get_my_menu(self) -> MyMenuResponseSchema:
         """Fetch the current menu active for your restaurant."""
-        return await self._http_get(f"/restaurant/{self.team_id}/menu")
+        return await self._http_get_typed(f"/restaurant/{self.team_id}/menu", _MY_MENU_ADAPTER)
 
-    async def get_market_entries(self) -> List[Dict[str, Any]]:
+    async def get_market_entries(self) -> MarketEntriesResponseSchema:
         """Fetch active and closed P2P market entries."""
-        return await self._http_get("/market/entries")
+        return await self._http_get_typed("/market/entries", _MARKET_ENTRIES_ADAPTER)
 
     # --- MCP Tools (Action Endpoints) ---
 
@@ -220,6 +246,11 @@ class HackapizzaClient:
         async with self._session.get(f"{self.base_url}{endpoint}") as resp:
             resp.raise_for_status()
             return await resp.json()
+
+    async def _http_get_typed(self, endpoint: str, adapter: TypeAdapter) -> Any:
+        """GET + pydantic validation to guarantee typed endpoint responses."""
+        payload = await self._http_get(endpoint)
+        return adapter.validate_python(payload)
 
     async def _mcp_call(self, tool_name: str, **kwargs) -> Any:
         """Helper to execute JSON-RPC calls against the MCP endpoint."""
