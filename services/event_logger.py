@@ -162,6 +162,7 @@ def persist_to_db(event_type: str, data: Dict[str, Any]):
         "client_spawned",
         "preparation_complete",
         "new_message",
+        "message",
     )
 
     try:
@@ -216,6 +217,17 @@ def persist_to_db(event_type: str, data: Dict[str, Any]):
                         sender_name=data.get("senderName", ""),
                         text=data.get("text", ""),
                         message_datetime=data.get("datetime"),
+                    )
+                )
+            elif event_type == "message":
+                session.add(
+                    NewMessageEvent(
+                        event_id=event_id,
+                        message_id="",
+                        sender_id="-1",
+                        sender_name=data.get("sender", "unknown"),
+                        text=data.get("payload", ""),
+                        message_datetime=None,
                     )
                 )
 
