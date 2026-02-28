@@ -77,8 +77,9 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
+from hp2.agents.base import BaseAgent
 from hp2.core.api import (
     ClientOrder,
     GamePhase,
@@ -100,209 +101,6 @@ logger = logging.getLogger("WaitingAgent")
 #   hp2/agents/waiting_agent.py  →  ../../.env
 # ---------------------------------------------------------------------------
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-_DOTENV_PATH = _REPO_ROOT / ".env"
-
-
-def _load_dotenv() -> None:
-    """Load the ``.env`` file from the repository root into ``os.environ``.
-
-    This ensures that ``pydantic-settings`` (used by ``get_settings()`` and
-    ``get_sql_logging_settings()``) can pick up the variables regardless of
-    the current working directory.
-
-    Uses ``python-dotenv`` which is already an indirect dependency of
-    ``pydantic-settings``.  Existing env vars are **not** overwritten.
-    """
-    try:
-        from dotenv import load_dotenv
-    except ImportError:
-        logger.debug(
-            "python-dotenv not installed; relying on pydantic-settings "
-            "env_file handling.  Make sure CWD is the repo root."
-        )
-        return
-
-    if _DOTENV_PATH.is_file():
-        load_dotenv(_DOTENV_PATH, override=False)
-        logger.info("Loaded .env from %s", _DOTENV_PATH)
-    else:
-        logger.warning(
-            ".env file not found at %s — environment variables must "
-            "already be set in the shell.",
-            _DOTENV_PATH,
-        )
-
-
-# ---------------------------------------------------------------------------
-# Mock data — used exclusively in test / dry-run mode
-# ---------------------------------------------------------------------------
-
-# Mock recipes: three server-side recipes.  The first two are feasible
-# (inventory covers all ingredients), the third is not.
-MOCK_RECIPES_PAYLOAD: List[Dict[str, Any]] = [
-    {
-        "name": "Luce e Ombra di Nomea Spaziale",
-        "preparationTimeMs": 3000,
-        "ingredients": {
-            "Lattuga Namecciana": 1,
-            "Carne di Balena spaziale": 1,
-            "Fusilli del Vento": 1,
-            "Pane di Luce": 1,
-            "Lacrime di Unicorno": 1,
-            "Essenza di Speziaria": 1,
-        },
-        "prestige": 20,
-    },
-    {
-        "name": "Sinfonia Cosmica di Proteine Interstellari",
-        "preparationTimeMs": 4000,
-        "ingredients": {
-            "Carne di Balena spaziale": 1,
-            "Carne di Mucca": 1,
-            "Carne di Xenodonte": 1,
-            "Pane degli Abissi": 1,
-            "Funghi dell'Etere": 1,
-        },
-        "prestige": 45,
-    },
-    {
-        "name": "Sinfonia di Multiverso: La Danza degli Elementi",
-        "preparationTimeMs": 5000,
-        "ingredients": {
-            "Shard di Prisma Stellare": 1,
-            "Carne di Balena spaziale": 1,
-            "Carne di Drago": 1,
-            "Teste di Idra": 1,
-            "Essenza di Vuoto": 1,
-        },
-        "prestige": 80,
-    },
-]
-
-# Mock inventory: covers recipe 1 and 2, but NOT recipe 3
-# (missing "Carne di Drago").
-MOCK_RESTAURANT_PAYLOAD: Dict[str, Any] = {
-    "id": "6",
-    "name": "RAGù",
-    "balance": 1000.0,
-    "inventory": {
-        "Lattuga Namecciana": 2,
-        "Carne di Balena spaziale": 3,
-        "Fusilli del Vento": 1,
-        "Pane di Luce": 1,
-        "Lacrime di Unicorno": 1,
-        "Essenza di Speziaria": 1,
-        "Carne di Mucca": 2,
-        "Carne di Xenodonte": 2,
-        "Pane degli Abissi": 2,
-        "Funghi dell'Etere": 1,
-        # "Carne di Drago" deliberately absent
-        "Shard di Prisma Stellare": 1,
-        "Teste di Idra": 1,
-        "Essenza di Vuoto": 1,
-    },
-    "reputation": 100.0,
-    "isOpen": True,
-    "kitchen": [],
-    "menu": {"items": []},
-    "receivedMessages": [],
-}
-
-# Mock configuration matching the real config.json structure.
-# Recipe 1 appears under "Esploratore Galattico" (multiplier 1.0).
-# Recipe 2 appears under "Famiglie Orbitali" (1.2) AND "Astrobarone" (2.0).
-# Recipe 3 appears under "Saggi del Cosmo" (1.5) — but is infeasible.
-MOCK_CONFIGURATION: Dict[str, Any] = {
-    "recipes": {
-        "Esploratore Galattico": [
-            {"name": "Luce e Ombra di Nomea Spaziale", "multiplier": 1.0},
-        ],
-        "Famiglie Orbitali": [
-            {"name": "Sinfonia Cosmica di Proteine Interstellari", "multiplier": 1.2},
-        ],
-        "Saggi del Cosmo": [
-            {"name": "Sinfonia di Multiverso: La Danza degli Elementi", "multiplier": 1.5},
-        ],
-        "Astrobarone": [
-            {"name": "Sinfonia Cosmica di Proteine Interstellari", "multiplier": 2.0},
-        ],
-    },
-    "ingredients": {
-        "Esploratore Galattico": {
-            "Luce e Ombra di Nomea Spaziale": [
-                {"name": "Lattuga Namecciana", "price": 5.0},
-                {"name": "Carne di Balena spaziale", "price": 5.0},
-                {"name": "Fusilli del Vento", "price": 5.0},
-                {"name": "Pane di Luce", "price": 5.0},
-                {"name": "Lacrime di Unicorno", "price": 5.0},
-                {"name": "Essenza di Speziaria", "price": 5.0},
-            ],
-        },
-        "Famiglie Orbitali": {
-            "Sinfonia Cosmica di Proteine Interstellari": [
-                {"name": "Carne di Balena spaziale", "price": 6.0},
-                {"name": "Carne di Mucca", "price": 6.0},
-                {"name": "Carne di Xenodonte", "price": 6.0},
-                {"name": "Pane degli Abissi", "price": 6.0},
-                {"name": "Funghi dell'Etere", "price": 6.0},
-            ],
-        },
-        "Saggi del Cosmo": {
-            "Sinfonia di Multiverso: La Danza degli Elementi": [
-                {"name": "Shard di Prisma Stellare", "price": 7.5},
-                {"name": "Carne di Balena spaziale", "price": 7.5},
-                {"name": "Carne di Drago", "price": 7.5},
-                {"name": "Teste di Idra", "price": 7.5},
-                {"name": "Essenza di Vuoto", "price": 7.5},
-            ],
-        },
-        "Astrobarone": {
-            "Sinfonia Cosmica di Proteine Interstellari": [
-                {"name": "Carne di Balena spaziale", "price": 10.0},
-                {"name": "Carne di Mucca", "price": 10.0},
-                {"name": "Carne di Xenodonte", "price": 10.0},
-                {"name": "Pane degli Abissi", "price": 10.0},
-                {"name": "Funghi dell'Etere", "price": 10.0},
-            ],
-        },
-    },
-}
-
-
-# ---------------------------------------------------------------------------
-# Mock client — stands in for HackapizzaClient during test mode
-# ---------------------------------------------------------------------------
-
-class _MockHackapizzaClient:
-    """Minimal stand-in for ``HackapizzaClient`` that returns mock data.
-
-    Only the methods required by ``phase_waiting`` are implemented.
-    ``save_menu`` records what it receives so tests can assert on it.
-    """
-
-    def __init__(self) -> None:
-        self.logger = logging.getLogger("MockHackapizzaClient")
-        self.save_menu_calls: List[List[MenuItem]] = []
-
-    async def get_my_restaurant(self):
-        from hp2.core.schema.models import RestaurantSchema
-        return RestaurantSchema.model_validate(MOCK_RESTAURANT_PAYLOAD)
-
-    async def get_recipes(self) -> List[RecipeSchema]:
-        return [RecipeSchema.model_validate(r) for r in MOCK_RECIPES_PAYLOAD]
-
-    async def save_menu(self, items: List[MenuItem]) -> Dict[str, Any]:
-        self.save_menu_calls.append(items)
-        self.logger.info(
-            "[MOCK] save_menu called with %d item(s): %s",
-            len(items),
-            [(i.name, i.price) for i in items],
-        )
-        return {"content": [{"text": "Menu saved successfully"}], "isError": False}
-
-    async def start(self):
-        self.logger.info("[MOCK] start() called — no-op in test mode.")
-
 
 # ---------------------------------------------------------------------------
 # Configuration loader
@@ -508,7 +306,7 @@ def _compute_feasible_menu(
 # The agent
 # ---------------------------------------------------------------------------
 
-class WaitingAgent:
+class WaitingAgent(BaseAgent):
     """Deterministic agent that handles only the **waiting** phase.
 
     When the game phase transitions to ``waiting``, this agent:
@@ -539,78 +337,15 @@ class WaitingAgent:
         self.test_mode = test_mode
         self.logger = logging.getLogger("WaitingAgent")
 
-        if test_mode:
-            # ── TEST MODE: mock client, mock config, no .env needed ────
-            self.client: Any = _MockHackapizzaClient()
-            self._config = MOCK_CONFIGURATION
-            self._config_path: Optional[Path] = None
-            self.logger.info(
-                "[TEST MODE] Initialised with mock client and %d archetype(s).",
-                len(self._config["recipes"]),
-            )
-        else:
-            # ── LIVE MODE ──────────────────────────────────────────────
-            # Step 1: Load .env from repo root.
-            _load_dotenv()
+        self._config_path = config_path
+        super().__init__(client)
 
-            # Step 2: Read settings via pydantic-settings (backed by .env).
-            from hp2.core.settings import get_settings, get_sql_logging_settings
-
-            settings = get_settings()
-            sql_settings = get_sql_logging_settings()
-
-            self.logger.info(
-                "Settings loaded — team_id=%d, api_key set=%s, sql_connstr set=%s",
-                settings.hackapizza_team_id,
-                bool(settings.hackapizza_team_api_key),
-                bool(sql_settings.hackapizza_sql_connstr),
-            )
-
-            # Step 3: Build or re-use the HackapizzaClient.
-            self.client = client or HackapizzaClient(
-                team_id=settings.hackapizza_team_id,
-                api_key=settings.hackapizza_team_api_key,
-                enable_sql_logging=True,
-                sql_connstr=sql_settings.hackapizza_sql_connstr,
-            )
-
-            # Step 4: Pre-load the configuration.
-            self._config_path = config_path
-            self._config = _load_configuration(config_path)
-            self.logger.info(
-                "Loaded configuration with %d archetype(s).",
-                len(self._config["recipes"]),
-            )
-
-            # Step 5: Register SSE event handlers.
-            self._register_event_handlers()
-
-    # ------------------------------------------------------------------
-    # SSE event handler registration (live mode only)
-    # ------------------------------------------------------------------
-
-    def _register_event_handlers(self) -> None:
-        """Wire SSE callbacks to our handler methods."""
-
-        @self.client.on_game_started
-        async def _on_game_started(event: GameStartedEvent) -> None:
-            await self.on_game_started(event)
-
-        @self.client.on_phase_changed
-        async def _on_phase_changed(phase: GamePhase) -> None:
-            await self.on_phase_changed(phase)
-
-        @self.client.on_client_spawned
-        async def _on_client_spawned(order: ClientOrder) -> None:
-            await self.on_client_spawned(order)
-
-        @self.client.on_preparation_complete
-        async def _on_preparation_complete(dish_name: str) -> None:
-            await self.on_preparation_complete(dish_name)
-
-        @self.client.on_new_message
-        async def _on_new_message(message: IncomingMessage) -> None:
-            await self.on_new_message(message)
+        # Step 4: Pre-load the configuration.
+        self._config = _load_configuration(config_path)
+        self.logger.info(
+            "Loaded configuration with %d archetype(s).",
+            len(self._config["recipes"]),
+        )
 
     # ------------------------------------------------------------------
     # SSE event handlers
@@ -768,8 +503,7 @@ class WaitingAgent:
                 [(m.name, m.price) for m in menu],
             )
         else:
-            self.logger.info("Starting agent %s…", self.__class__.__name__)
-            await self.client.start()
+            await super().run()
 
 
 # ---------------------------------------------------------------------------
@@ -801,9 +535,6 @@ if __name__ == "__main__":
         help="Path to config.json (live mode only).",
     )
     args = parser.parse_args()
-
-    if not args.test:
-        _load_dotenv()
 
     agent = WaitingAgent(config_path=args.config, test_mode=args.test)
     asyncio.run(agent.run())

@@ -49,9 +49,10 @@ Configuration format
         }
     }
 
-For each unique dish across all archetypes, we bid for 2 portions of every
-ingredient, using the **maximum** price seen across archetypes as the bid
-price.  A budget cap of 60 % of the current balance is enforced.
+We compute the cost of 1 portion of every unique dish ("cost per round"),
+then determine how many rounds the budget affords, capped at
+``MAX_PORTIONS_PER_DISH``.  This fully utilises the budget while keeping
+ingredient proportions correct across all recipes.
 
 Environment variables
 ---------------------
@@ -85,11 +86,11 @@ from __future__ import annotations
 
 import json
 import logging
-import math
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
+from hp2.agents.base import BaseAgent
 from hp2.core.api import (
     BidRequest,
     ClientOrder,
@@ -110,37 +111,6 @@ logger = logging.getLogger("BiddingAgent")
 #   hp2/agents/bidding_agent.py  →  ../../.env
 # ---------------------------------------------------------------------------
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-_DOTENV_PATH = _REPO_ROOT / ".env"
-
-
-def _load_dotenv() -> None:
-    """Load the ``.env`` file from the repository root into ``os.environ``.
-
-    This ensures that ``pydantic-settings`` (used by ``get_settings()`` and
-    ``get_sql_logging_settings()``) can pick up the variables regardless of
-    the current working directory.
-
-    Uses ``python-dotenv`` which is already an indirect dependency of
-    ``pydantic-settings``.  Existing env vars are **not** overwritten.
-    """
-    try:
-        from dotenv import load_dotenv
-    except ImportError:
-        logger.debug(
-            "python-dotenv not installed; relying on pydantic-settings "
-            "env_file handling.  Make sure CWD is the repo root."
-        )
-        return
-
-    if _DOTENV_PATH.is_file():
-        load_dotenv(_DOTENV_PATH, override=False)
-        logger.info("Loaded .env from %s", _DOTENV_PATH)
-    else:
-        logger.warning(
-            ".env file not found at %s — environment variables must "
-            "already be set in the shell.",
-            _DOTENV_PATH,
-        )
 
 
 # ---------------------------------------------------------------------------
@@ -148,157 +118,12 @@ def _load_dotenv() -> None:
 # ---------------------------------------------------------------------------
 
 # Budget fraction — we spend at most this share of our balance on bids.
-# Matches the 60 % cap that the old LLM prompt enforced.
-BUDGET_FRACTION = 0.10
+BUDGET_FRACTION = 0.2
 
-# How many portions of each target dish we want to be able to cook.
-# The old prompt asked the LLM to "bid for enough ingredients to cook
-# 2 portions of each target dish".
-PORTIONS_PER_DISH = 1
-
-
-# ---------------------------------------------------------------------------
-# Mock data — used exclusively in test / dry-run mode
-# ---------------------------------------------------------------------------
-
-# Mock restaurant state: balance of 1000, some existing inventory.
-# The bidding agent only needs the balance; inventory is informational.
-MOCK_RESTAURANT_PAYLOAD: Dict[str, Any] = {
-    "id": "6",
-    "name": "RAGù",
-    "balance": 1000.0,
-    "inventory": {
-        "Lattuga Namecciana": 2,
-        "Carne di Balena spaziale": 3,
-        "Fusilli del Vento": 1,
-        "Pane di Luce": 1,
-        "Lacrime di Unicorno": 1,
-        "Essenza di Speziaria": 1,
-        "Carne di Mucca": 2,
-        "Carne di Xenodonte": 2,
-        "Pane degli Abissi": 2,
-        "Funghi dell'Etere": 1,
-        "Shard di Prisma Stellare": 1,
-        "Teste di Idra": 1,
-        "Essenza di Vuoto": 1,
-    },
-    "reputation": 100.0,
-    "isOpen": True,
-    "kitchen": [],
-    "menu": {"items": []},
-    "receivedMessages": [],
-}
-
-# Mock configuration matching the real config.json structure.
-# Three unique dishes across four archetypes.
-#
-# Expected bid computation (PORTIONS_PER_DISH = 2):
-#   Dish 1 — "Luce e Ombra di Nomea Spaziale" (Esploratore Galattico):
-#     6 ingredients × price 5 each → bids at 5, qty 2 each
-#   Dish 2 — "Sinfonia Cosmica di Proteine Interstellari"
-#     (Famiglie Orbitali @ 6 AND Astrobarone @ 10):
-#     5 ingredients → max price = 10, qty 2 each
-#   Dish 3 — "Sinfonia di Multiverso: La Danza degli Elementi"
-#     (Saggi del Cosmo @ 8):
-#     5 ingredients → bids at 8, qty 2 each
-#
-# Overlapping ingredient: "Carne di Balena spaziale" appears in all 3 dishes:
-#   prices: 5 (dish 1), 10 (dish 2 via Astrobarone), 8 (dish 3)
-#   → max bid = 10, quantity = 2 + 2 + 2 = 6
-#
-# Total projected spend should be well within 60 % of 1000 = 600.
-MOCK_CONFIGURATION: Dict[str, Any] = {
-    "recipes": {
-        "Esploratore Galattico": [
-            {"name": "Luce e Ombra di Nomea Spaziale", "multiplier": 1.0},
-        ],
-        "Famiglie Orbitali": [
-            {"name": "Sinfonia Cosmica di Proteine Interstellari", "multiplier": 1.2},
-        ],
-        "Saggi del Cosmo": [
-            {"name": "Sinfonia di Multiverso: La Danza degli Elementi", "multiplier": 1.5},
-        ],
-        "Astrobarone": [
-            {"name": "Sinfonia Cosmica di Proteine Interstellari", "multiplier": 2.0},
-        ],
-    },
-    "ingredients": {
-        "Esploratore Galattico": {
-            "Luce e Ombra di Nomea Spaziale": [
-                {"name": "Lattuga Namecciana", "price": 5.0},
-                {"name": "Carne di Balena spaziale", "price": 5.0},
-                {"name": "Fusilli del Vento", "price": 5.0},
-                {"name": "Pane di Luce", "price": 5.0},
-                {"name": "Lacrime di Unicorno", "price": 5.0},
-                {"name": "Essenza di Speziaria", "price": 5.0},
-            ],
-        },
-        "Famiglie Orbitali": {
-            "Sinfonia Cosmica di Proteine Interstellari": [
-                {"name": "Carne di Balena spaziale", "price": 6.0},
-                {"name": "Carne di Mucca", "price": 6.0},
-                {"name": "Carne di Xenodonte", "price": 6.0},
-                {"name": "Pane degli Abissi", "price": 6.0},
-                {"name": "Funghi dell'Etere", "price": 6.0},
-            ],
-        },
-        "Saggi del Cosmo": {
-            "Sinfonia di Multiverso: La Danza degli Elementi": [
-                {"name": "Shard di Prisma Stellare", "price": 8.0},
-                {"name": "Carne di Balena spaziale", "price": 8.0},
-                {"name": "Carne di Drago", "price": 8.0},
-                {"name": "Teste di Idra", "price": 8.0},
-                {"name": "Essenza di Vuoto", "price": 8.0},
-            ],
-        },
-        "Astrobarone": {
-            "Sinfonia Cosmica di Proteine Interstellari": [
-                {"name": "Carne di Balena spaziale", "price": 10.0},
-                {"name": "Carne di Mucca", "price": 10.0},
-                {"name": "Carne di Xenodonte", "price": 10.0},
-                {"name": "Pane degli Abissi", "price": 10.0},
-                {"name": "Funghi dell'Etere", "price": 10.0},
-            ],
-        },
-    },
-}
-
-
-# ---------------------------------------------------------------------------
-# Mock client — stands in for HackapizzaClient during test mode
-# ---------------------------------------------------------------------------
-
-class _MockHackapizzaClient:
-    """Minimal stand-in for ``HackapizzaClient`` that returns mock data.
-
-    Only the methods required by ``phase_closed_bid`` are implemented.
-    ``submit_closed_bids`` records what it receives so tests can assert on it.
-    """
-
-    def __init__(self) -> None:
-        self.logger = logging.getLogger("MockHackapizzaClient")
-        # Every call to submit_closed_bids appends its argument here,
-        # making it easy for tests to inspect what was submitted.
-        self.submit_closed_bids_calls: List[List[BidRequest]] = []
-
-    async def get_my_restaurant(self):
-        """Return a mock RestaurantSchema with a known balance."""
-        from hp2.core.schema.models import RestaurantSchema
-        return RestaurantSchema.model_validate(MOCK_RESTAURANT_PAYLOAD)
-
-    async def submit_closed_bids(self, bids: List[BidRequest]) -> Dict[str, Any]:
-        """Record the bids and return a mock success response."""
-        self.submit_closed_bids_calls.append(bids)
-        self.logger.info(
-            "[MOCK] submit_closed_bids called with %d bid(s): %s",
-            len(bids),
-            [(b.ingredient, b.bid, b.quantity) for b in bids],
-        )
-        return {"content": [{"text": "Bids placed successfully"}], "isError": False}
-
-    async def start(self):
-        """No-op in test mode."""
-        self.logger.info("[MOCK] start() called — no-op in test mode.")
+# Maximum portions per dish we ever want to stock.  The budget is spent
+# proportionally across all ingredients; this cap prevents over-stocking
+# when the balance is very large.
+MAX_PORTIONS_PER_DISH = 5
 
 
 # ---------------------------------------------------------------------------
@@ -349,27 +174,28 @@ def _compile_bids(
     config: Dict[str, Any],
     balance: float,
     budget_fraction: float = BUDGET_FRACTION,
-    portions: int = PORTIONS_PER_DISH,
+    max_portions_per_dish: int = MAX_PORTIONS_PER_DISH,
 ) -> List[BidRequest]:
     """Build a deterministic list of ``BidRequest`` objects from configuration.
 
-    Algorithm (mirrors the instructions that were previously given to the LLM):
-
+    Algorithm
+    ---------
     1. **Collect target dishes** — iterate every archetype in
        ``config["recipes"]`` and collect unique dish names.
     2. **Collect ingredient prices** — for each dish, look up its ingredient
        list in ``config["ingredients"][archetype][dish]``.  Each ingredient
        entry has a ``"price"`` field which we use as the bid price.  When
-       the same ingredient appears under multiple archetypes (because the
-       same dish is listed in several archetypes, or different dishes share
-       an ingredient), we keep the **maximum** price — this maximises our
-       chance of winning the blind auction.
-    3. **Aggregate quantities** — each dish needs ``portions`` copies of
-       every ingredient.  If two dishes share an ingredient, quantities are
-       summed.
-    4. **Budget cap** — if the total projected spend exceeds
-       ``balance × budget_fraction``, we scale all quantities down
-       proportionally (rounding up to keep at least 1 of each).
+       the same ingredient appears under multiple archetypes we keep the
+       **maximum** price — this maximises our chance of winning the blind
+       auction.
+    3. **Base quantities (1 portion each)** — record how many units of each
+       ingredient are needed to cook exactly 1 portion of every unique dish.
+       Shared ingredients are summed across dishes.
+    4. **Budget-aware scaling** — compute the cost of one full "round"
+       (1 portion of every dish).  The number of rounds we can afford is
+       ``budget / cost_per_round``, capped at ``max_portions_per_dish``.
+       This fully utilises the budget while keeping ingredient proportions
+       correct.
 
     Parameters
     ----------
@@ -378,9 +204,10 @@ def _compile_bids(
     balance :
         Current restaurant balance.
     budget_fraction :
-        Maximum share of balance to spend (default 0.60).
-    portions :
-        Number of portions per dish to bid for (default 2).
+        Share of balance to allocate for bids (default ``BUDGET_FRACTION``).
+    max_portions_per_dish :
+        Hard cap on portions per dish — prevents over-stocking when the
+        balance is large (default ``MAX_PORTIONS_PER_DISH``).
 
     Returns
     -------
@@ -391,17 +218,14 @@ def _compile_bids(
     recipes_section: Dict[str, List[Dict[str, Any]]] = config["recipes"]
     ingredients_section: Dict[str, Dict[str, List[Dict[str, Any]]]] = config["ingredients"]
 
-    # ── Step 1+2: Collect per-ingredient max bid price and total quantity ──
+    # ── Step 1+2: Collect per-ingredient max bid price and base quantity ──
     #
-    # ingredient_info maps ingredient_name → {"bid": max_price, "quantity": total_qty}
+    # ingredient_info maps ingredient_name → {"bid": max_price, "base_qty": int}
+    # base_qty = units needed for exactly 1 portion of every unique dish.
     ingredient_info: Dict[str, Dict[str, float]] = {}
 
-    # Track which unique dish names we've already counted quantities for.
-    # When the same dish appears under multiple archetypes (e.g.
-    # "Sinfonia Cosmica…" under both Famiglie Orbitali and Astrobarone),
-    # we only count its portions once — we want 2 portions total, not 2
-    # per archetype.  However we still scan every archetype to find the
-    # maximum bid price.
+    # Track unique dish names so we only count base quantities once even
+    # when the same dish appears under multiple archetypes.
     dish_qty_counted: set = set()
 
     for archetype, dish_list in recipes_section.items():
@@ -416,59 +240,85 @@ def _compile_bids(
                 ing_price = float(ing.get("price", 1.0))
 
                 if ing_name not in ingredient_info:
-                    # First time seeing this ingredient — initialise.
-                    ingredient_info[ing_name] = {"bid": ing_price, "quantity": 0.0}
+                    ingredient_info[ing_name] = {"bid": ing_price, "base_qty": 0.0}
 
                 # Always keep the highest bid price across archetypes.
                 if ing_price > ingredient_info[ing_name]["bid"]:
                     ingredient_info[ing_name]["bid"] = ing_price
 
-            # Add quantities only the first time we encounter this dish.
+            # Count base quantities only the first time we see this dish.
             if dish_name not in dish_qty_counted:
                 dish_qty_counted.add(dish_name)
                 for ing in ingredient_list:
                     ing_name = ing["name"]
-                    # Each ingredient is needed once per portion per dish.
-                    ingredient_info[ing_name]["quantity"] += portions
+                    ingredient_info[ing_name]["base_qty"] += 1
 
     if not ingredient_info:
         return []
 
-    # ── Step 3: Convert to integer bids and quantities ────────────────────
+    # ── Step 3: Determine how many rounds the budget affords ─────────────
     #
-    # The closed_bid MCP tool requires bid and quantity to be integers > 0.
+    # cost_per_round = total cost to buy 1 portion of every unique dish.
+    # rounds = how many full rounds we can fit in the budget, capped at
+    # max_portions_per_dish.  Using a float here keeps proportions exact
+    # before we round to integers below.
+    budget = balance * budget_fraction
+    cost_per_round = sum(
+        info["base_qty"] * info["bid"] for info in ingredient_info.values()
+    )
+
+    if cost_per_round <= 0:
+        return []
+
+    rounds = min(max_portions_per_dish, budget / cost_per_round)
+    logger.info(
+        "Budget: %.0f  |  cost/round: %.0f  |  rounds: %.2f  (cap: %d)",
+        budget,
+        cost_per_round,
+        rounds,
+        max_portions_per_dish,
+    )
+
+    # ── Step 4: Round quantities — no forced floor of 1 ───────────────────
+    #
+    # Forcing qty = max(1, ...) would distort proportions and silently blow
+    # the budget (many cheap ingredients, each bumped to 1, add up fast).
+    # Instead we let rounding produce 0 and filter those out below.
     bids_raw: List[Dict[str, Any]] = []
     for ing_name, info in ingredient_info.items():
-        bid = max(1, round(info["bid"]))       # integer bid, minimum 1
-        qty = max(1, round(info["quantity"]))   # integer quantity, minimum 1
-        bids_raw.append({"ingredient": ing_name, "bid": bid, "quantity": qty})
+        bid = max(1, round(info["bid"]))
+        qty = round(info["base_qty"] * rounds)
+        if qty > 0:
+            bids_raw.append({"ingredient": ing_name, "bid": bid, "quantity": qty})
 
-    # ── Step 4: Budget cap — scale down if projected spend exceeds budget ─
-    budget = balance * budget_fraction
-    projected_spend = sum(b["bid"] * b["quantity"] for b in bids_raw)
+    if not bids_raw:
+        return []
 
-    if projected_spend > budget and projected_spend > 0:
-        # Scale factor < 1.0 — reduce quantities proportionally.
-        scale = budget / projected_spend
+    # ── Step 5: Post-rounding budget check ────────────────────────────────
+    #
+    # Integer rounding can push projected spend slightly above budget.
+    # If that happens, scale quantities down proportionally and re-round.
+    # We do this at most once — a second pass is never needed because the
+    # scale factor is < 1 and rounding can only reduce quantities further.
+    actual_spend = sum(b["bid"] * b["quantity"] for b in bids_raw)
+    if actual_spend > budget:
+        scale = budget / actual_spend
         logger.info(
-            "Projected spend %.0f exceeds budget %.0f — scaling quantities by %.2f",
-            projected_spend,
+            "Post-rounding spend %.0f > budget %.0f — trimming by %.3f",
+            actual_spend,
             budget,
             scale,
         )
+        trimmed = []
         for b in bids_raw:
-            # math.ceil ensures we don't round to 0; max(1, ...) is a safety net.
-            b["quantity"] = max(1, math.ceil(b["quantity"] * scale))
+            qty = round(b["quantity"] * scale)
+            if qty > 0:
+                trimmed.append({**b, "quantity": qty})
+        bids_raw = trimmed
 
-    # ── Step 5: Build typed BidRequest objects ────────────────────────────
     return [
-        BidRequest(
-            ingredient=b["ingredient"],
-            bid=b["bid"],
-            quantity=b["quantity"],
-        )
+        BidRequest(ingredient=b["ingredient"], bid=b["bid"], quantity=b["quantity"])
         for b in bids_raw
-        if b["quantity"] > 0
     ]
 
 
@@ -476,7 +326,7 @@ def _compile_bids(
 # The agent
 # ---------------------------------------------------------------------------
 
-class BiddingAgent:
+class BiddingAgent(BaseAgent):
     """Deterministic agent that handles only the **closed_bid** phase.
 
     When the game phase transitions to ``closed_bid``, this agent:
@@ -495,8 +345,6 @@ class BiddingAgent:
         Live client.  Ignored when ``test_mode=True``.
     config_path : Path or None
         Override for ``config.json`` location.
-    test_mode : bool
-        When True, uses ``_MockHackapizzaClient`` and ``MOCK_CONFIGURATION``.
     """
 
     def __init__(
@@ -509,83 +357,20 @@ class BiddingAgent:
         self.test_mode = test_mode
         self.logger = logging.getLogger("BiddingAgent")
 
-        if test_mode:
-            # ── TEST MODE: mock client, mock config, no .env needed ────
-            self.client: Any = _MockHackapizzaClient()
-            self._config = MOCK_CONFIGURATION
-            self._config_path: Optional[Path] = None
-            self.logger.info(
-                "[TEST MODE] Initialised with mock client and %d archetype(s).",
-                len(self._config["recipes"]),
-            )
-        else:
-            # ── LIVE MODE ──────────────────────────────────────────────
-            # Step 1: Load .env from repo root.
-            _load_dotenv()
+        self._config_path = config_path
+        super().__init__(client)
 
-            # Step 2: Read settings via pydantic-settings (backed by .env).
-            from hp2.core.settings import get_settings, get_sql_logging_settings
-
-            settings = get_settings()
-            sql_settings = get_sql_logging_settings()
-
-            self.logger.info(
-                "Settings loaded — team_id=%d, api_key set=%s, sql_connstr set=%s",
-                settings.hackapizza_team_id,
-                bool(settings.hackapizza_team_api_key),
-                bool(sql_settings.hackapizza_sql_connstr),
-            )
-
-            # Step 3: Build or re-use the HackapizzaClient.
-            self.client = client or HackapizzaClient(
-                team_id=settings.hackapizza_team_id,
-                api_key=settings.hackapizza_team_api_key,
-                enable_sql_logging=True,
-                sql_connstr=sql_settings.hackapizza_sql_connstr,
-            )
-
-            # Step 4: Pre-load the configuration.
-            self._config_path = config_path
-            self._config = _load_config(config_path)
-            self.logger.info(
-                "Loaded config with %d archetype(s) and %d total dish entries.",
-                len(self._config["recipes"]),
-                sum(len(v) for v in self._config["recipes"].values()),
-            )
-
-            # Step 5: Register SSE event handlers.
-            self._register_event_handlers()
+        # Step 4: Pre-load the configuration.
+        self._config = _load_config(config_path)
+        self.logger.info(
+            "Loaded config with %d archetype(s) and %d total dish entries.",
+            len(self._config["recipes"]),
+            sum(len(v) for v in self._config["recipes"].values()),
+        )
 
         # NOTE: No LLM agent, MCP client, or OpenAI client is created here.
         # All bidding logic is deterministic — computed from configuration
         # and game state using pure functions.
-
-    # ------------------------------------------------------------------
-    # SSE event handler registration (live mode only)
-    # ------------------------------------------------------------------
-
-    def _register_event_handlers(self) -> None:
-        """Wire SSE callbacks to our handler methods."""
-
-        @self.client.on_game_started
-        async def _on_game_started(event: GameStartedEvent) -> None:
-            await self.on_game_started(event)
-
-        @self.client.on_phase_changed
-        async def _on_phase_changed(phase: GamePhase) -> None:
-            await self.on_phase_changed(phase)
-
-        @self.client.on_client_spawned
-        async def _on_client_spawned(order: ClientOrder) -> None:
-            await self.on_client_spawned(order)
-
-        @self.client.on_preparation_complete
-        async def _on_preparation_complete(dish_name: str) -> None:
-            await self.on_preparation_complete(dish_name)
-
-        @self.client.on_new_message
-        async def _on_new_message(message: IncomingMessage) -> None:
-            await self.on_new_message(message)
 
     # ------------------------------------------------------------------
     # SSE event handlers
@@ -731,8 +516,7 @@ class BiddingAgent:
                 [(b.ingredient, b.bid, b.quantity) for b in bids],
             )
         else:
-            self.logger.info("Starting agent %s…", self.__class__.__name__)
-            await self.client.start()
+            await super().run()
 
 
 # ---------------------------------------------------------------------------
@@ -764,9 +548,6 @@ if __name__ == "__main__":
         help="Path to config.json (live mode only).",
     )
     args = parser.parse_args()
-
-    if not args.test:
-        _load_dotenv()
 
     agent = BiddingAgent(config_path=args.config, test_mode=args.test)
     asyncio.run(agent.run())
