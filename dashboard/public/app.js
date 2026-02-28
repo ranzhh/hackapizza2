@@ -442,6 +442,10 @@ let _historyChart = null;    // Chart.js history line chart instance
 // Per-turn bid data cache: turn_id (string) → API response object
 const _bidsCache = {};
 
+// Last rendered data — used by CSV exporters
+let _lastBidsData   = null;  // { turn_id, restaurants, ingredients, bids }
+let _lastHistoryData = null; // { ingredient, points }
+
 // Ordered list of all known turn_ids (ascending numbers, for history fetching)
 let _knownTurns = [];
 
@@ -509,6 +513,9 @@ async function loadBids() {
     }
 
     const { restaurants, ingredients, bids, error } = data;
+
+    // Persist for CSV export
+    _lastBidsData = { turn_id: data.turn_id ?? turnId, restaurants, ingredients, bids };
 
     if (error) {
       status.textContent = '⚠ ' + error;
@@ -701,6 +708,7 @@ async function loadIngredientHistory() {
 
   statusEl.textContent = `${points.length} turn${points.length !== 1 ? 's' : ''} with data`;
   statusEl.style.color = 'var(--text-2)';
+  _lastHistoryData = { ingredient, points };
   _renderHistoryChart(ingredient, points);
 }
 
@@ -929,6 +937,85 @@ function _renderBidsChart(restaurants, ingredients, bids) {
       },
     },
   });
+}
+
+// ---------------------------------------------------------------------------
+// CSV Export helpers
+// ---------------------------------------------------------------------------
+
+function _downloadCSV(filename, csvContent) {
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function _csvRow(fields) {
+  return fields.map(f => {
+    const s = f == null ? '' : String(f);
+    // Quote fields that contain commas, quotes, or newlines
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(',');
+}
+
+// 1. Bubble chart — flat bid rows for current turn
+function exportBubbleCSV() {
+  if (!_lastBidsData || !_lastBidsData.ingredients) {
+    alert('No bid data to export. Load a turn first.');
+    return;
+  }
+  const { turn_id, restaurants, ingredients, bids } = _lastBidsData;
+  const rows = [_csvRow(['turn_id', 'ingredient', 'restaurant', 'unit_price', 'quantity'])];
+  for (const ing of ingredients) {
+    for (const rest of restaurants) {
+      const bid = bids[ing] && bids[ing][rest];
+      if (!bid) continue;
+      rows.push(_csvRow([turn_id, ing, rest, bid.unit_price, bid.quantity]));
+    }
+  }
+  _downloadCSV(`bids_turn_${turn_id}.csv`, rows.join('\n'));
+}
+
+// 2. History chart — weighted avg price per turn for selected ingredient
+function exportHistoryCSV() {
+  if (!_lastHistoryData || !_lastHistoryData.points || !_lastHistoryData.points.length) {
+    alert('No history data to export. Select an ingredient first.');
+    return;
+  }
+  const { ingredient, points } = _lastHistoryData;
+  const rows = [_csvRow(['turn_id', 'ingredient', 'weighted_avg_price', 'total_quantity'])];
+  for (const p of points) {
+    rows.push(_csvRow([p.turn, ingredient, p.wavg, p.totalQty]));
+  }
+  const safeName = ingredient.replace(/[^a-z0-9_\-]/gi, '_');
+  _downloadCSV(`history_${safeName}.csv`, rows.join('\n'));
+}
+
+// 3. Matrix table — ingredients × restaurants (wide format)
+function exportMatrixCSV() {
+  if (!_lastBidsData || !_lastBidsData.ingredients) {
+    alert('No bid data to export. Load a turn first.');
+    return;
+  }
+  const { turn_id, restaurants, ingredients, bids } = _lastBidsData;
+  // Wide format: ingredient, then one col per restaurant with "price × qty"
+  const headerFields = ['ingredient', ...restaurants.map(r => r + '_price'), ...restaurants.map(r => r + '_qty')];
+  const rows = [_csvRow(headerFields)];
+  for (const ing of ingredients) {
+    const prices = restaurants.map(rest => {
+      const bid = bids[ing] && bids[ing][rest];
+      return bid ? bid.unit_price : '';
+    });
+    const qtys = restaurants.map(rest => {
+      const bid = bids[ing] && bids[ing][rest];
+      return bid ? bid.quantity : '';
+    });
+    rows.push(_csvRow([ing, ...prices, ...qtys]));
+  }
+  _downloadCSV(`matrix_turn_${turn_id}.csv`, rows.join('\n'));
 }
 
 // ---------------------------------------------------------------------------

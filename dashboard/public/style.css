@@ -446,6 +446,17 @@ select {
 @keyframes slideIn { from { opacity:0; background: var(--purple-bg); } to { opacity:1; background: transparent; } }
 .new-row { animation: slideIn .4s ease; }
 
+/* Export button — subtle green accent */
+.export-btn {
+  border-color: var(--green);
+  color: var(--green);
+}
+.export-btn:hover {
+  background: var(--green-bg);
+  border-color: var(--green);
+  color: var(--green);
+}
+
 /* Scrollbars */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
