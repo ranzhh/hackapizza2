@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from urllib.parse import parse_qs, urlparse
 
-from sqlalchemy import DateTime, Float, Index, Integer, String, create_engine, event
+from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String, create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 
@@ -30,6 +30,29 @@ class CallLog(Base):
     duration_ms: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     error_type: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     error_message: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+
+class RecipeLog(Base):
+    __tablename__ = "recipes"
+    __table_args__ = (Index("idx_recipes_call_id", "call_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    call_id: Mapped[int] = mapped_column(ForeignKey("calls.id", ondelete="CASCADE"), nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    preparation_time_ms: Mapped[int] = mapped_column(Integer, nullable=False)
+    prestige: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class RecipeIngredientLog(Base):
+    __tablename__ = "recipe_ingredients"
+    __table_args__ = (Index("idx_recipe_ingredients_recipe_id", "recipe_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    recipe_id: Mapped[int] = mapped_column(
+        ForeignKey("recipes.id", ondelete="CASCADE"), nullable=False
+    )
+    ingredient_name: Mapped[str] = mapped_column(String, nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
 class SqlLoggingMixin:
@@ -84,22 +107,51 @@ class SqlLoggingMixin:
         turn_id: str | None = None,
         error_type: str | None = None,
         error_message: str | None = None,
-    ) -> None:
+    ) -> Optional[int]:
+        session_factory = getattr(self, "_log_session_factory", None)
+        if session_factory is None:
+            return None
+
+        with session_factory() as session:
+            row = CallLog(
+                timestamp_utc=datetime.now(UTC),
+                turn_id=turn_id,
+                source=source,
+                name=name,
+                status=status,
+                duration_ms=duration_ms,
+                error_type=error_type,
+                error_message=error_message,
+            )
+            session.add(row)
+            session.flush()
+            call_id = row.id
+            session.commit()
+            return call_id
+
+    def _persist_recipes(self, *, call_id: int, recipes: list[Any]) -> None:
         session_factory = getattr(self, "_log_session_factory", None)
         if session_factory is None:
             return
 
         with session_factory() as session:
-            session.add(
-                CallLog(
-                    timestamp_utc=datetime.now(UTC),
-                    turn_id=turn_id,
-                    source=source,
-                    name=name,
-                    status=status,
-                    duration_ms=duration_ms,
-                    error_type=error_type,
-                    error_message=error_message,
+            for recipe in recipes:
+                recipe_row = RecipeLog(
+                    call_id=call_id,
+                    name=recipe.name,
+                    preparation_time_ms=recipe.preparation_time_ms,
+                    prestige=recipe.prestige,
                 )
-            )
+                session.add(recipe_row)
+                session.flush()
+
+                for ingredient_name, quantity in recipe.ingredients.items():
+                    session.add(
+                        RecipeIngredientLog(
+                            recipe_id=recipe_row.id,
+                            ingredient_name=ingredient_name,
+                            quantity=quantity,
+                        )
+                    )
+
             session.commit()

@@ -121,7 +121,7 @@ class HackapizzaClient(SqlLoggingMixin):
         self.team_id = team_id or settings.hackapizza_team_id  # type: ignore
         self.api_key = api_key or settings.hackapizza_team_api_key  # type: ignore
         self.base_url = base_url.rstrip("/")
-        self.logger = logging.getLogger("HackapizzaClient[RAGù]")
+        self.logger = logging.getLogger(f"HackapizzaClient[{self.team_id}]")
         self._sql_logging_enabled = enable_sql_logging
 
         if self._sql_logging_enabled:
@@ -246,7 +246,7 @@ class HackapizzaClient(SqlLoggingMixin):
 
     # --- Internal HTTP / Connection Management ---
 
-    async def _http_get(self, endpoint: str) -> Any:
+    async def _http_get(self, endpoint: str, *, _include_call_id: bool = False) -> Any:
         """Helper for GET requests."""
         if not self._session:
             raise RuntimeError(
@@ -272,19 +272,29 @@ class HackapizzaClient(SqlLoggingMixin):
             )
             raise
 
-        self._safe_log_call(
+        call_id = self._safe_log_call(
             source="http_get",
             name=endpoint,
             status="ok",
             duration_ms=(perf_counter() - started) * 1000,
             turn_id=turn_id,
         )
+        if _include_call_id:
+            return payload, call_id
         return payload
 
     async def _http_get_typed(self, endpoint: str, adapter: TypeAdapter) -> Any:
         """GET + pydantic validation to guarantee typed endpoint responses."""
-        payload = await self._http_get(endpoint)
-        return adapter.validate_python(payload)
+        payload, call_id = await self._http_get(endpoint, _include_call_id=True)
+        typed_payload = adapter.validate_python(payload)
+
+        if self._sql_logging_enabled and call_id and endpoint.startswith("/recipes"):
+            try:
+                self._persist_recipes(call_id=call_id, recipes=typed_payload)
+            except Exception as log_exc:
+                self.logger.debug("Typed recipe persistence failed: %s", log_exc, exc_info=True)
+
+        return typed_payload
 
     async def _mcp_call(self, tool_name: str, **kwargs) -> Any:
         """Helper to execute JSON-RPC calls against the MCP endpoint."""
@@ -347,11 +357,11 @@ class HackapizzaClient(SqlLoggingMixin):
         turn_id: str | None,
         error_type: str | None = None,
         error_message: str | None = None,
-    ) -> None:
+    ) -> int | None:
         if not self._sql_logging_enabled:
-            return
+            return None
         try:
-            self._log_call_metadata(
+            return self._log_call_metadata(
                 source=source,
                 name=name,
                 status=status,
@@ -362,6 +372,7 @@ class HackapizzaClient(SqlLoggingMixin):
             )
         except Exception as log_exc:
             self.logger.debug("SQL logging failed: %s", log_exc, exc_info=True)
+            return None
 
     # --- Event Loop / SSE Parsing ---
 

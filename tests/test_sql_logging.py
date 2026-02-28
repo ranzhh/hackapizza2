@@ -56,6 +56,13 @@ def _read_calls(db_path: Path):
     return rows
 
 
+def _count_rows(db_path: Path, table: str) -> int:
+    conn = sqlite3.connect(db_path)
+    count = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+    conn.close()
+    return int(count)
+
+
 def test_sql_logging_mixin_creates_db_and_inserts_metadata(tmp_path: Path):
     db_path = tmp_path / "calls.db"
     harness = _MixinHarness()
@@ -122,3 +129,43 @@ def test_http_get_error_is_logged_and_reraised(tmp_path: Path):
     assert len(rows) == 1
     assert rows[0][:4] == ("http_get", "/bid_history?turn_id=7", "error", "7")
     assert rows[0][4] == "RuntimeError"
+
+
+def test_get_recipes_persists_typed_rows(tmp_path: Path):
+    db_path = tmp_path / "calls.db"
+    client = HackapizzaClient(
+        team_id=6,
+        api_key="test-key",
+        enable_sql_logging=True,
+        log_db_path=str(db_path),
+    )
+
+    recipes_payload = [
+        {
+            "name": "Nebulosa Galattica",
+            "preparationTimeMs": 3000,
+            "ingredients": {
+                "Radici di Gravità": 1,
+                "Alghe Bioluminescenti": 2,
+            },
+            "prestige": 31,
+        },
+        {
+            "name": "Cosmic Harmony",
+            "preparationTimeMs": 3200,
+            "ingredients": {
+                "Pane di Luce": 1,
+            },
+            "prestige": 40,
+        },
+    ]
+
+    client._session = _FakeSession(get_response=_FakeResponse(payload=recipes_payload))
+    typed = asyncio.run(client.get_recipes())
+
+    assert len(typed) == 2
+    client._close_sql_logging()
+
+    assert _count_rows(db_path, "calls") == 1
+    assert _count_rows(db_path, "recipes") == 2
+    assert _count_rows(db_path, "recipe_ingredients") == 3
