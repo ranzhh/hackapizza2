@@ -1,28 +1,3 @@
 {
-  "python.analysis.extraPaths": [
-    ".",
-    "datapizza-ai/datapizza-ai-core",
-    "datapizza-ai/datapizza-ai-clients/datapizza-ai-clients-openai",
-    "datapizza-ai/datapizza-ai-clients/datapizza-ai-clients-openai-like",
-    "datapizza-ai/datapizza-ai-clients/datapizza-ai-clients-anthropic",
-    "datapizza-ai/datapizza-ai-clients/datapizza-ai-clients-google",
-    "datapizza-ai/datapizza-ai-clients/datapizza-ai-clients-mistral",
-    "datapizza-ai/datapizza-ai-clients/datapizza-ai-clients-bedrock",
-    "datapizza-ai/datapizza-ai-clients/datapizza-ai-clients-watsonx",
-    "datapizza-ai/datapizza-ai-embedders/openai",
-    "datapizza-ai/datapizza-ai-embedders/cohere",
-    "datapizza-ai/datapizza-ai-embedders/google",
-    "datapizza-ai/datapizza-ai-embedders/mistral",
-    "datapizza-ai/datapizza-ai-embedders/fastembedder",
-    "datapizza-ai/datapizza-ai-vectorstores/datapizza-ai-vectorstores-qdrant",
-    "datapizza-ai/datapizza-ai-vectorstores/datapizza-ai-vectorstores-milvus",
-    "datapizza-ai/datapizza-ai-cache/redis",
-    "datapizza-ai/datapizza-ai-tools/duckduckgo",
-    "datapizza-ai/datapizza-ai-tools/filesystem",
-    "datapizza-ai/datapizza-ai-tools/web_fetch",
-    "datapizza-ai/datapizza-ai-tools/SQLDatabase",
-    "datapizza-ai/datapizza-ai-modules/parsers/azure",
-    "datapizza-ai/datapizza-ai-modules/rerankers/cohere",
-    "datapizza-ai/datapizza-ai-modules/rerankers/together"
-  ]
+  "python.defaultInterpreterPath": ".venv/bin/python"
 }
