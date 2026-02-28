@@ -5,7 +5,7 @@
 | **Server** | `hackapizza` v1.0.0 |
 | **Protocol** | `2025-06-18` |
 | **Endpoint** | `https://hackapizza.datapizza.tech/mcp` |
-| **Generated** | `20260228T120846Z` |
+| **Generated** | `20260228T145434Z` |
 
 ## Tools
 
