@@ -5,14 +5,15 @@ Strictly typed, event-driven client for the Hackapizza Gastronomic Multiverse.
 
 import json
 import logging
+from functools import wraps
 from dataclasses import asdict, dataclass
 from enum import Enum
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from time import perf_counter
+from typing import Any, Awaitable, Callable, Concatenate, Dict, List, Optional, ParamSpec, TypeVar, cast
 
 import aiohttp
 from pydantic import TypeAdapter
 
-from .settings import get_settings
 from .schema import (
     BidHistoryResponseSchema,
     MarketEntriesResponseSchema,
@@ -22,6 +23,8 @@ from .schema import (
     RecipesResponseSchema,
     RestaurantsResponseSchema,
 )
+from .settings import get_settings, get_sql_logging_settings
+from .sql_logging_mixin import SqlLoggingMixin
 
 _RECIPES_ADAPTER = TypeAdapter(RecipesResponseSchema)
 _RESTAURANTS_ADAPTER = TypeAdapter(RestaurantsResponseSchema)
@@ -30,6 +33,33 @@ _MY_MENU_ADAPTER = TypeAdapter(MyMenuResponseSchema)
 _MARKET_ENTRIES_ADAPTER = TypeAdapter(MarketEntriesResponseSchema)
 _MEALS_ADAPTER = TypeAdapter(MealsResponseSchema)
 _BID_HISTORY_ADAPTER = TypeAdapter(BidHistoryResponseSchema)
+
+P = ParamSpec("P")
+T = TypeVar("T")
+
+
+def typed_endpoint(
+    adapter: TypeAdapter[T], *, persist_method_name: str | None = None
+) -> Callable[
+    [Callable[Concatenate["HackapizzaClient", P], Awaitable[str]]],
+    Callable[Concatenate["HackapizzaClient", P], Awaitable[T]],
+]:
+    """Decorator for typed HTTP GET endpoints with optional typed persistence hook."""
+
+    def decorator(
+        func: Callable[Concatenate["HackapizzaClient", P], Awaitable[str]]
+    ) -> Callable[Concatenate["HackapizzaClient", P], Awaitable[T]]:
+        @wraps(func)
+        async def wrapper(self: "HackapizzaClient", *args: P.args, **kwargs: P.kwargs) -> T:
+            endpoint = await func(self, *args, **kwargs)
+            result = await self._http_get_typed(
+                endpoint, adapter, persist_method_name=persist_method_name
+            )
+            return cast(T, result)
+
+        return wrapper
+
+    return decorator
 
 # ---------------------------------------------------------------------------
 # Enums
@@ -100,7 +130,7 @@ class IncomingMessage:
 # ---------------------------------------------------------------------------
 
 
-class HackapizzaClient:
+class HackapizzaClient(SqlLoggingMixin):
     """
     The main SDK client for interacting with the Hackapizza server.
     Manages API calls, MCP tool execution, and the SSE event loop.
@@ -111,12 +141,22 @@ class HackapizzaClient:
         team_id: int | None,
         api_key: str | None,
         base_url: str = "https://hackapizza.datapizza.tech",
+        *,
+        enable_sql_logging: bool = False,
+        sql_connstr: str | None = None,
     ):
         settings = get_settings() if team_id is None or api_key is None else None
         self.team_id = team_id or settings.hackapizza_team_id  # type: ignore
         self.api_key = api_key or settings.hackapizza_team_api_key  # type: ignore
         self.base_url = base_url.rstrip("/")
         self.logger = logging.getLogger(f"HackapizzaClient[{self.team_id}]")
+        self._sql_logging_enabled = enable_sql_logging
+
+        if self._sql_logging_enabled:
+            resolved_sql_connstr = sql_connstr
+            if resolved_sql_connstr is None:
+                resolved_sql_connstr = get_sql_logging_settings().hackapizza_sql_connstr
+            self._init_sql_logging(resolved_sql_connstr)
 
         self._headers = {
             "x-api-key": self.api_key,
@@ -158,36 +198,61 @@ class HackapizzaClient:
 
     # --- HTTP Data Endpoints ---
 
-    async def get_meals(self, turn_id: str) -> MealsResponseSchema:
+    @typed_endpoint(_MEALS_ADAPTER, persist_method_name="_persist_typed_meals")
+    async def _get_meals_typed(self, turn_id: str) -> str:
         """Fetch meals/customer requests for the current turn."""
-        return await self._http_get_typed(
-            f"/meals?turn_id={turn_id}&restaurant_id={self.team_id}",
-            _MEALS_ADAPTER,
-        )
+        return f"/meals?turn_id={turn_id}&restaurant_id={self.team_id}"
+
+    async def get_meals(self, turn_id: str) -> MealsResponseSchema:
+        return await self._get_meals_typed(turn_id)
+
+    @typed_endpoint(_RESTAURANTS_ADAPTER, persist_method_name="_persist_typed_restaurants")
+    async def _get_restaurants_typed(self) -> str:
+        """Overview of all active restaurants in the game."""
+        return "/restaurants"
 
     async def get_restaurants(self) -> RestaurantsResponseSchema:
-        """Overview of all active restaurants in the game."""
-        return await self._http_get_typed("/restaurants", _RESTAURANTS_ADAPTER)
+        return await self._get_restaurants_typed()
+
+    @typed_endpoint(_RECIPES_ADAPTER, persist_method_name="_persist_typed_recipes")
+    async def _get_recipes_typed(self) -> str:
+        """List of all available recipes, their ingredients, and prep times."""
+        return "/recipes"
 
     async def get_recipes(self) -> RecipesResponseSchema:
-        """List of all available recipes, their ingredients, and prep times."""
-        return await self._http_get_typed("/recipes", _RECIPES_ADAPTER)
+        return await self._get_recipes_typed()
+
+    @typed_endpoint(_BID_HISTORY_ADAPTER, persist_method_name="_persist_typed_bid_history")
+    async def _get_bid_history_typed(self, turn_id: str) -> str:
+        """Historical blind auction bids for a given turn."""
+        return f"/bid_history?turn_id={turn_id}"
 
     async def get_bid_history(self, turn_id: str) -> BidHistoryResponseSchema:
-        """Historical blind auction bids for a given turn."""
-        return await self._http_get_typed(f"/bid_history?turn_id={turn_id}", _BID_HISTORY_ADAPTER)
+        return await self._get_bid_history_typed(turn_id)
+
+    @typed_endpoint(_MY_RESTAURANT_ADAPTER, persist_method_name="_persist_typed_my_restaurant")
+    async def _get_my_restaurant_typed(self) -> str:
+        """Fetch balance, reputation, and inventory for your restaurant."""
+        return f"/restaurant/{self.team_id}"
 
     async def get_my_restaurant(self) -> MyRestaurantResponseSchema:
-        """Fetch balance, reputation, and inventory for your restaurant."""
-        return await self._http_get_typed(f"/restaurant/{self.team_id}", _MY_RESTAURANT_ADAPTER)
+        return await self._get_my_restaurant_typed()
+
+    @typed_endpoint(_MY_MENU_ADAPTER)
+    async def _get_my_menu_typed(self) -> str:
+        """Fetch the current menu active for your restaurant."""
+        return f"/restaurant/{self.team_id}/menu"
 
     async def get_my_menu(self) -> MyMenuResponseSchema:
-        """Fetch the current menu active for your restaurant."""
-        return await self._http_get_typed(f"/restaurant/{self.team_id}/menu", _MY_MENU_ADAPTER)
+        return await self._get_my_menu_typed()
+
+    @typed_endpoint(_MARKET_ENTRIES_ADAPTER, persist_method_name="_persist_typed_market_entries")
+    async def _get_market_entries_typed(self) -> str:
+        """Fetch active and closed P2P market entries."""
+        return "/market/entries"
 
     async def get_market_entries(self) -> MarketEntriesResponseSchema:
-        """Fetch active and closed P2P market entries."""
-        return await self._http_get_typed("/market/entries", _MARKET_ENTRIES_ADAPTER)
+        return await self._get_market_entries_typed()
 
     # --- MCP Tools (Action Endpoints) ---
 
@@ -237,25 +302,97 @@ class HackapizzaClient:
 
     # --- Internal HTTP / Connection Management ---
 
-    async def _http_get(self, endpoint: str) -> Any:
+    async def _http_get(self, endpoint: str, *, _include_call_id: bool = False) -> Any:
         """Helper for GET requests."""
         if not self._session:
             raise RuntimeError(
                 "Client session not initialized. Run within context manager or start()."
             )
-        async with self._session.get(f"{self.base_url}{endpoint}") as resp:
-            resp.raise_for_status()
-            return await resp.json()
 
-    async def _http_get_typed(self, endpoint: str, adapter: TypeAdapter) -> Any:
+        started = perf_counter()
+        turn_id = self._extract_turn_id_from_endpoint(endpoint)
+
+        try:
+            async with self._session.get(f"{self.base_url}{endpoint}") as resp:
+                resp.raise_for_status()
+                payload = await resp.json()
+        except Exception as e:
+            self._safe_log_call(
+                source="http_get",
+                name=endpoint,
+                status="error",
+                duration_ms=(perf_counter() - started) * 1000,
+                turn_id=turn_id,
+                error_type=type(e).__name__,
+                error_message=str(e),
+            )
+            raise
+
+        call_id = self._safe_log_call(
+            source="http_get",
+            name=endpoint,
+            status="ok",
+            duration_ms=(perf_counter() - started) * 1000,
+            turn_id=turn_id,
+        )
+        if _include_call_id:
+            return payload, call_id
+        return payload
+
+    async def _http_get_typed(
+        self,
+        endpoint: str,
+        adapter: TypeAdapter[T],
+        *,
+        persist_method_name: str | None = None,
+    ) -> T:
         """GET + pydantic validation to guarantee typed endpoint responses."""
-        payload = await self._http_get(endpoint)
-        return adapter.validate_python(payload)
+        payload, call_id = await self._http_get(endpoint, _include_call_id=True)
+        typed_payload = adapter.validate_python(payload)
+
+        if self._sql_logging_enabled and call_id and persist_method_name:
+            try:
+                persist_method = getattr(self, persist_method_name, None)
+                if callable(persist_method):
+                    persist_method(call_id=call_id, typed_payload=typed_payload)
+            except Exception as log_exc:
+                self.logger.debug("Typed persistence failed: %s", log_exc, exc_info=True)
+
+        return cast(T, typed_payload)
+
+    def _persist_typed_recipes(self, *, call_id: int, typed_payload: RecipesResponseSchema) -> None:
+        self._persist_recipes(call_id=call_id, recipes=typed_payload)
+
+    def _persist_typed_restaurants(
+        self, *, call_id: int, typed_payload: RestaurantsResponseSchema
+    ) -> None:
+        self._persist_restaurants(call_id=call_id, restaurants=typed_payload)
+
+    def _persist_typed_my_restaurant(
+        self, *, call_id: int, typed_payload: MyRestaurantResponseSchema
+    ) -> None:
+        self._persist_restaurants(call_id=call_id, restaurants=[typed_payload])
+
+    def _persist_typed_meals(self, *, call_id: int, typed_payload: MealsResponseSchema) -> None:
+        self._persist_meals(call_id=call_id, meals=typed_payload)
+
+    def _persist_typed_market_entries(
+        self, *, call_id: int, typed_payload: MarketEntriesResponseSchema
+    ) -> None:
+        self._persist_market_entries(call_id=call_id, entries=typed_payload)
+
+    def _persist_typed_bid_history(
+        self, *, call_id: int, typed_payload: BidHistoryResponseSchema
+    ) -> None:
+        self._persist_bid_history(call_id=call_id, bids=typed_payload)
 
     async def _mcp_call(self, tool_name: str, **kwargs) -> Any:
         """Helper to execute JSON-RPC calls against the MCP endpoint."""
         if not self._session:
             raise RuntimeError("Client session not initialized.")
+
+        started = perf_counter()
+        turn_id = kwargs.get("turn_id")
 
         payload = {
             "jsonrpc": "2.0",
@@ -265,19 +402,67 @@ class HackapizzaClient:
         }
 
         self.logger.debug(f"MCP Call -> {tool_name} with args {kwargs}")
-        async with self._session.post(f"{self.base_url}/mcp", json=payload) as resp:
-            if resp.status == 401:
-                raise PermissionError("401 Unauthorized: Invalid API Key")
+        try:
+            async with self._session.post(f"{self.base_url}/mcp", json=payload) as resp:
+                if resp.status == 401:
+                    raise PermissionError("401 Unauthorized: Invalid API Key")
 
-            resp.raise_for_status()
-            data = await resp.json()
+                resp.raise_for_status()
+                data = await resp.json()
 
-            result = data.get("result", {})
-            if result.get("isError"):
-                error_msg = result.get("content", [{}])[0].get("text", "Unknown MCP Tool Error")
-                raise RuntimeError(f"MCP Error on '{tool_name}': {error_msg}")
+                result = data.get("result", {})
+                if result.get("isError"):
+                    error_msg = result.get("content", [{}])[0].get(
+                        "text", "Unknown MCP Tool Error"
+                    )
+                    raise RuntimeError(f"MCP Error on '{tool_name}': {error_msg}")
+        except Exception as e:
+            self._safe_log_call(
+                source="mcp_call",
+                name=tool_name,
+                status="error",
+                duration_ms=(perf_counter() - started) * 1000,
+                turn_id=turn_id,
+                error_type=type(e).__name__,
+                error_message=str(e),
+            )
+            raise
 
-            return result
+        self._safe_log_call(
+            source="mcp_call",
+            name=tool_name,
+            status="ok",
+            duration_ms=(perf_counter() - started) * 1000,
+            turn_id=turn_id,
+        )
+        return result
+
+    def _safe_log_call(
+        self,
+        *,
+        source: str,
+        name: str,
+        status: str,
+        duration_ms: float | None,
+        turn_id: str | None,
+        error_type: str | None = None,
+        error_message: str | None = None,
+    ) -> int | None:
+        if not self._sql_logging_enabled:
+            return None
+        try:
+            return self._log_call_metadata(
+                source=source,
+                name=name,
+                status=status,
+                duration_ms=duration_ms,
+                turn_id=turn_id,
+                error_type=error_type,
+                error_message=error_message,
+            )
+        except Exception as log_exc:
+            self.logger.debug("SQL logging failed: %s", log_exc, exc_info=True)
+            return None
 
     # --- Event Loop / SSE Parsing ---
 
