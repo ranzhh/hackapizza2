@@ -7,7 +7,13 @@ from typing import Any, Dict
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-from hp2.core.api import ClientOrder, GamePhase, HackapizzaClient, IncomingMessage
+from hp2.core.api import (
+    ClientOrder,
+    GamePhase,
+    GameStartedEvent,
+    HackapizzaClient,
+    IncomingMessage,
+)
 from hp2.core.settings import get_settings, get_sql_logging_settings
 
 logging.basicConfig(level=logging.INFO)
@@ -38,8 +44,8 @@ class BaseAgent:
 
     def _register_event_handlers(self) -> None:
         @self.client.on_game_started
-        async def _on_game_started(data: Dict[str, Any]) -> None:
-            await self.on_game_started(data)
+        async def _on_game_started(event: GameStartedEvent) -> None:
+            await self.on_game_started(event)
 
         @self.client.on_phase_changed
         async def _on_phase_changed(phase: GamePhase) -> None:
@@ -57,7 +63,7 @@ class BaseAgent:
         async def _on_new_message(message: IncomingMessage) -> None:
             await self.on_new_message(message)
 
-    async def on_game_started(self, data: Dict[str, Any]) -> None:
+    async def on_game_started(self, event: GameStartedEvent) -> None:
         raise NotImplementedError("Override on_game_started() in your agent.")
 
     async def on_phase_changed(self, phase: GamePhase) -> None:

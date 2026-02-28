@@ -173,6 +173,13 @@ class IncomingMessage:
     datetime: str
 
 
+@dataclass
+class GameStartedEvent:
+    """Payload emitted when a new game turn starts."""
+
+    turn_id: str
+
+
 # ---------------------------------------------------------------------------
 # The SDK Client
 # ---------------------------------------------------------------------------
@@ -216,7 +223,7 @@ class HackapizzaClient(SqlLoggingMixin):
         self._current_turn_id: Optional[str] = None
 
         # Event Callbacks
-        self._on_game_started: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None
+        self._on_game_started: Optional[Callable[[GameStartedEvent], Awaitable[None]]] = None
         self._on_phase_changed: Optional[Callable[[GamePhase], Awaitable[None]]] = None
         self._on_client_spawned: Optional[Callable[[ClientOrder], Awaitable[None]]] = None
         self._on_preparation_complete: Optional[Callable[[str], Awaitable[None]]] = None
@@ -224,7 +231,7 @@ class HackapizzaClient(SqlLoggingMixin):
 
     # --- Decorators for Event Registration ---
 
-    def on_game_started(self, func: Callable[[Dict[str, Any]], Awaitable[None]]):
+    def on_game_started(self, func: Callable[[GameStartedEvent], Awaitable[None]]):
         self._on_game_started = func
         return func
 
@@ -659,11 +666,10 @@ class HackapizzaClient(SqlLoggingMixin):
     async def _dispatch_event(self, event_type: str, data: Dict[str, Any]):
         try:
             if event_type == "game_started":
-                self._current_turn_id = str(
-                    data.get("turnId") or data.get("turn_id") or data.get("value") or ""
-                )
+                turn_id = str(data.get("turnId") or data.get("turn_id") or data.get("value") or "")
+                self._current_turn_id = turn_id
             if event_type == "game_started" and self._on_game_started:
-                await self._on_game_started(data)
+                await self._on_game_started(GameStartedEvent(turn_id=turn_id))
 
             elif event_type == "game_phase_changed" and self._on_phase_changed:
                 try:

@@ -94,6 +94,7 @@ from hp2.core.api import (
     BidRequest,
     ClientOrder,
     GamePhase,
+    GameStartedEvent,
     HackapizzaClient,
     IncomingMessage,
 )
@@ -567,8 +568,8 @@ class BiddingAgent:
         """Wire SSE callbacks to our handler methods."""
 
         @self.client.on_game_started
-        async def _on_game_started(data: Dict[str, Any]) -> None:
-            await self.on_game_started(data)
+        async def _on_game_started(event: GameStartedEvent) -> None:
+            await self.on_game_started(event)
 
         @self.client.on_phase_changed
         async def _on_phase_changed(phase: GamePhase) -> None:
@@ -590,8 +591,8 @@ class BiddingAgent:
     # SSE event handlers
     # ------------------------------------------------------------------
 
-    async def on_game_started(self, data: Dict[str, Any]) -> None:
-        self.logger.info("Game started — data: %s", data)
+    async def on_game_started(self, event: GameStartedEvent) -> None:
+        self.logger.info("Game started — turn_id: %s", event.turn_id)
 
     async def on_phase_changed(self, phase: GamePhase) -> None:
         self.logger.info("Phase changed to: %s", phase.value)

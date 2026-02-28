@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
 
 from hp2.agents.base import BaseAgent
-from hp2.core.api import ClientOrder, GamePhase, HackapizzaClient, IncomingMessage
+from hp2.core.api import (
+    ClientOrder,
+    GamePhase,
+    GameStartedEvent,
+    HackapizzaClient,
+    IncomingMessage,
+)
 
 
 class ExampleAgent(BaseAgent):
@@ -14,8 +19,8 @@ class ExampleAgent(BaseAgent):
         self.logger = logging.getLogger("ExampleAgent")
         super().__init__(client)
 
-    async def on_game_started(self, data: Dict[str, Any]) -> None:
-        self.logger.info("Example agent started with data: %s", data)
+    async def on_game_started(self, event: GameStartedEvent) -> None:
+        self.logger.info("Example agent started with turn_id: %s", event.turn_id)
 
     async def on_phase_changed(self, phase: GamePhase) -> None:
         self.logger.info("Phase changed to: %s", phase)

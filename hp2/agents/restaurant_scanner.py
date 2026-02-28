@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
 
 from hp2.agents.base import BaseAgent
-from hp2.core.api import ClientOrder, GamePhase, HackapizzaClient, IncomingMessage
+from hp2.core.api import (
+    ClientOrder,
+    GamePhase,
+    GameStartedEvent,
+    HackapizzaClient,
+    IncomingMessage,
+)
 
 
 class RestaurantScanner(BaseAgent):
@@ -14,7 +19,7 @@ class RestaurantScanner(BaseAgent):
         super().__init__(client)
         self.logger = logging.getLogger("RestaurantScanner")
 
-    async def on_game_started(self, data: Dict[str, Any]) -> None:
+    async def on_game_started(self, event: GameStartedEvent) -> None:
         # First snapshot as soon as the turn starts.
         await self._log_open_restaurants(trigger="game_started")
 

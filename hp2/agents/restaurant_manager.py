@@ -4,10 +4,15 @@ import asyncio
 import logging
 import time
 from collections import deque
-from typing import Any, Dict
 
 from hp2.agents.base import BaseAgent
-from hp2.core.api import ClientOrder, GamePhase, HackapizzaClient, IncomingMessage
+from hp2.core.api import (
+    ClientOrder,
+    GamePhase,
+    GameStartedEvent,
+    HackapizzaClient,
+    IncomingMessage,
+)
 
 
 class RestaurantManager(BaseAgent):
@@ -28,9 +33,8 @@ class RestaurantManager(BaseAgent):
         self._last_open_toggle_at = 0.0
         self._open_toggle_cooldown_s = 10.0
 
-    async def on_game_started(self, data: Dict[str, Any]) -> None:
-        turn = data.get("turnId") or data.get("turn_id") or data.get("value")
-        self.turn_id = str(turn) if turn is not None else None
+    async def on_game_started(self, event: GameStartedEvent) -> None:
+        self.turn_id = event.turn_id
         self.logger.info("GAME STARTED - turn_id=%s", self.turn_id)
 
     async def on_phase_changed(self, phase: GamePhase) -> None:
