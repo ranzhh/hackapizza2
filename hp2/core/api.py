@@ -3,6 +3,7 @@ Hackapizza 2.0 Agent SDK
 Strictly typed, event-driven client for the Hackapizza Gastronomic Multiverse.
 """
 
+import asyncio
 import json
 import logging
 from functools import wraps
@@ -498,36 +499,60 @@ class HackapizzaClient(SqlLoggingMixin):
             finally:
                 self._session = None
 
-    async def start_ws(self, ws_url: str = "ws://localhost:8765"):
+    async def start_ws(
+        self,
+        ws_url: str = "ws://localhost:8765",
+        *,
+        retry_initial: float = 2.0,
+        retry_max: float = 8.0,
+        retry_factor: float = 2.0,
+    ):
         """Connect to the event_logger WebSocket server instead of SSE directly.
 
         The WS server relays the same JSON payloads the SSE stream produces,
         so dispatching is identical.  An aiohttp session is still opened for
         HTTP GET / MCP POST calls against the Hackapizza API.
+
+        Resilient: if the WS server is down or the connection drops, the
+        client retries with exponential back-off (capped at *retry_max* s).
         """
         timeout = aiohttp.ClientTimeout(total=None, sock_connect=15, sock_read=None)
+        backoff = retry_initial
 
         async with aiohttp.ClientSession(timeout=timeout, headers=self._headers) as session:
             self._session = session
-            self.logger.info(f"Connecting to event_logger WS: {ws_url}")
 
-            try:
-                async with websockets.connect(ws_url) as ws:
-                    self.logger.info("WS Connection Established.")
-                    async for raw_msg in ws:
-                        try:
-                            event_json = json.loads(raw_msg)
-                            event_type = event_json.get("type")
-                            data = event_json.get("data", {})
-                            if not isinstance(data, dict):
-                                data = {"value": data}
-                            await self._dispatch_event(event_type, data)
-                        except json.JSONDecodeError:
-                            self.logger.warning(f"Unparseable WS message: {str(raw_msg)[:200]}")
-            except Exception as e:
-                self.logger.error(f"WS Connection dropped: {e}")
-            finally:
-                self._session = None
+            while True:
+                try:
+                    self.logger.info(f"Connecting to event_logger WS: {ws_url}")
+                    async with websockets.connect(ws_url) as ws:
+                        self.logger.info("WS Connection Established.")
+                        backoff = retry_initial  # reset on successful connect
+                        async for raw_msg in ws:
+                            try:
+                                event_json = json.loads(raw_msg)
+                                event_type = event_json.get("type")
+                                data = event_json.get("data", {})
+                                if not isinstance(data, dict):
+                                    data = {"value": data}
+                                await self._dispatch_event(event_type, data)
+                            except json.JSONDecodeError:
+                                self.logger.warning(
+                                    f"Unparseable WS message: {str(raw_msg)[:200]}"
+                                )
+                except asyncio.CancelledError:
+                    self.logger.info("WS listener cancelled, shutting down.")
+                    break
+                except Exception as e:
+                    self.logger.warning(
+                        f"WS connection lost ({type(e).__name__}: {e}). "
+                        f"Retrying in {backoff:.0f}s…"
+                    )
+
+                await asyncio.sleep(backoff)
+                backoff = min(backoff * retry_factor, retry_max)
+
+            self._session = None
 
     async def _parse_sse_line(self, raw_line: bytes):
         if not raw_line:
