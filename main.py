@@ -466,6 +466,32 @@ async def main():
     game_state = GameState()
     phase_mgr = PhaseManager(hackapizza_client, agent, game_state)
 
+    # ── 5b. Open the restaurant immediately on startup ────────────────────────
+    logger.info("Opening restaurant on startup…")
+    import aiohttp
+    async with aiohttp.ClientSession(headers={
+        "x-api-key": settings.hackapizza_team_api_key,
+        "Content-Type": "application/json",
+        "Accept": "application/json, text/event-stream",
+    }) as tmp_session:
+        payload = {
+            "jsonrpc": "2.0",
+            "method": "tools/call",
+            "params": {"name": "update_restaurant_is_open", "arguments": {"is_open": True}},
+            "id": 1,
+        }
+        try:
+            async with tmp_session.post(f"{HACKAPIZZA_BASE_URL}/mcp", json=payload) as resp:
+                resp.raise_for_status()
+                data = await resp.json()
+                result = data.get("result", {})
+                if result.get("isError"):
+                    logger.warning(f"MCP open error: {result}")
+                else:
+                    logger.info("✅ Restaurant is now OPEN")
+        except Exception as e:
+            logger.warning(f"Could not open restaurant on startup: {e}")
+
     # ── 6. Register SSE event callbacks ───────────────────────────────────────
 
     @hackapizza_client.on_game_started
@@ -473,6 +499,15 @@ async def main():
         turn_id = data.get("turnId") or data.get("turn_id") or data.get("value")
         game_state.turn_id = str(turn_id) if turn_id else None
         logger.info(f"🎮 GAME STARTED — turn_id={game_state.turn_id}")
+        # Also try to detect the current phase from the data payload
+        phase_str = data.get("phase") or data.get("currentPhase")
+        if phase_str:
+            try:
+                phase = GamePhase(phase_str)
+                logger.info(f"🎮 Game already in phase: {phase.value} — catching up")
+                await phase_mgr.handle_phase(phase)
+            except ValueError:
+                pass
 
     @hackapizza_client.on_phase_changed
     async def _on_phase_changed(phase: GamePhase):
@@ -492,7 +527,7 @@ async def main():
         await phase_mgr.handle_message(msg)
 
     # ── 7. Start the blocking SSE event loop ──────────────────────────────────
-    logger.info("Connecting to SSE event stream…")
+    logger.info("Connecting to SSE event stream… waiting for game to start.")
     while True:
         try:
             await hackapizza_client.start()

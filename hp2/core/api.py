@@ -482,7 +482,11 @@ class HackapizzaClient(SqlLoggingMixin):
                     response.raise_for_status()
                     self.logger.info("SSE Connection Established.")
 
-                    async for raw_line in response.content:
+                    # Read line-by-line (SSE is a line-oriented protocol)
+                    while True:
+                        raw_line = await response.content.readline()
+                        if not raw_line:  # EOF
+                            break
                         await self._parse_sse_line(raw_line)
             except Exception as e:
                 self.logger.error(f"SSE Connection dropped: {e}")
@@ -494,16 +498,25 @@ class HackapizzaClient(SqlLoggingMixin):
             return
 
         line = raw_line.decode("utf-8", errors="ignore").strip()
-        if not line or not line.startswith("data:"):
+        if not line:
             return
 
-        payload = line[5:].strip()
-        if payload == "connected":
-            self.logger.info("Server handshake: Connected")
+        # Handle SSE "data:" prefix format (used for handshake)
+        if line.startswith("data:"):
+            payload = line[5:].strip()
+            if payload == "connected":
+                self.logger.info("Server handshake: Connected")
+                return
+            json_str = payload
+        elif line.startswith("{"):
+            # Raw JSON line (used for heartbeats and game events)
+            json_str = line
+        else:
+            # Ignore non-data lines (e.g. SSE comments, event: lines)
             return
 
         try:
-            event_json = json.loads(payload)
+            event_json = json.loads(json_str)
             event_type = event_json.get("type")
             data = event_json.get("data", {})
 
@@ -514,7 +527,7 @@ class HackapizzaClient(SqlLoggingMixin):
             await self._dispatch_event(event_type, data)
 
         except json.JSONDecodeError:
-            self.logger.warning(f"Failed to parse SSE line: {payload}")
+            self.logger.warning(f"Failed to parse SSE line: {json_str}")
 
     async def _dispatch_event(self, event_type: str, data: Dict[str, Any]):
         try:
@@ -548,7 +561,6 @@ class HackapizzaClient(SqlLoggingMixin):
                 )
                 await self._on_new_message(msg)
 
-            # Log heartbeats silently, don't dispatch unless needed
             elif event_type == "heartbeat":
                 pass
 
