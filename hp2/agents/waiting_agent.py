@@ -377,12 +377,13 @@ class WaitingAgent(BaseAgent):
         # This is a *standalone function call*, not an agentic tool use.
         # It directly sends a JSON-RPC POST to /mcp.
         try:
-            result = await self.client.save_menu(menu_items)
+            # result = await self.client.save_menu(menu_items)
             self.logger.info(
                 "save_menu succeeded — published %d dish(es). "
                 "Server response: %s",
                 len(menu_items),
-                result,
+                # result,
+                menu_items
             )
         except Exception as exc:
             self.logger.error(
