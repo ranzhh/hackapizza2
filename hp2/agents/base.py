@@ -4,6 +4,9 @@ import asyncio
 import logging
 from typing import Any, Dict
 
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
+
 from hp2.core.api import ClientOrder, GamePhase, HackapizzaClient, IncomingMessage
 from hp2.core.settings import get_settings, get_sql_logging_settings
 
@@ -22,6 +25,14 @@ class BaseAgent:
             api_key=settings.hackapizza_team_api_key,
             enable_sql_logging=True,
             sql_connstr=sql_settings.hackapizza_sql_connstr,
+        )
+        self._log_connstr = (
+            getattr(self.client, "_log_connstr", None)
+            or get_sql_logging_settings().hackapizza_sql_connstr
+        )
+        self._log_engine = create_engine(self._log_connstr, future=True)
+        self._log_session_factory = sessionmaker(
+            bind=self._log_engine, autoflush=False, autocommit=False, future=True
         )
         self._register_event_handlers()
 
@@ -64,7 +75,22 @@ class BaseAgent:
     async def run(self) -> None:
         """Start consuming events from the Hackapizza event stream."""
         self.client.logger.info("Starting agent %s...", self.__class__.__name__)
-        await self.client.start()
+        try:
+            await self.client.start()
+        finally:
+            self._log_engine.dispose()
+
+    def query_logging_db(
+        self, query: str, params: Dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
+        with self._log_session_factory() as session:
+            result = session.execute(text(query), params or {})
+            return [dict(row._mapping) for row in result]
+
+    async def aquery_logging_db(
+        self, query: str, params: Dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
+        return await asyncio.to_thread(self.query_logging_db, query, params)
 
 
 if __name__ == "__main__":
