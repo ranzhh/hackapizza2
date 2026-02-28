@@ -43,7 +43,7 @@ class RestaurantManager(BaseAgent):
         self.logger.info("Opened restaurant at game start")
 
     async def on_phase_changed(self, phase: GamePhase) -> None:
-        if phase is not GamePhase.SERVING:
+        if phase not in [GamePhase.SERVING, GamePhase.STOPPED]:
             await self.client.set_restaurant_open_status(is_open=True)
         self._is_open = True
         self.logger.info("Opened restaurant at phase change: %s", phase.value)
@@ -124,8 +124,9 @@ class RestaurantManager(BaseAgent):
                     served_ratio,
                 )
                 await self._evaluate_open_policy(trigger="loop_tick")
-                await asyncio.sleep(5)
+                await asyncio.sleep(10)
         except asyncio.CancelledError:
+            await self._close_restaurant_best_effort()
             self.logger.info("[SERVING LOOP] stopped")
             raise
 
