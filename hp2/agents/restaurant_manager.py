@@ -43,7 +43,8 @@ class RestaurantManager(BaseAgent):
         self.logger.info("Opened restaurant at game start")
 
     async def on_phase_changed(self, phase: GamePhase) -> None:
-        await self.client.set_restaurant_open_status(is_open=True)
+        if phase is not GamePhase.SERVING:
+            await self.client.set_restaurant_open_status(is_open=True)
         self._is_open = True
         self.logger.info("Opened restaurant at phase change: %s", phase.value)
         if phase == GamePhase.SERVING:
