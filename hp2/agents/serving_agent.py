@@ -306,8 +306,10 @@ class ServingAgent(BaseAgent):
     async def _resolve_client_id(self, order: PendingOrder) -> str | None:
         """Resolve canonical client ID from get_meals (typed MealSchema)."""
 
+        if not self.turn_id:
+            raise ValueError("Turn ID is not set — cannot resolve client ID")
         try:
-            meals = await self.client.get_meals(self.turn_id or "0")
+            meals = await self.client.get_meals(self.turn_id)
         except Exception:
             return None
 
