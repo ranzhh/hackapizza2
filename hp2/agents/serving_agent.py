@@ -149,12 +149,12 @@ class ServingAgent(BaseAgent):
 
     async def _enter_serving(self) -> None:
         """Phase start: open restaurant + refresh context"""
-        # 1. Open the restaurant
-        try:
-            await self.client.set_restaurant_open_status(is_open=True)
-            logger.info("[SERVING] Restaurant opened (update_restaurant_is_open).")
-        except Exception as exc:
-            logger.error("[SERVING] Failed to open restaurant: %s", exc)
+        # # 1. Open the restaurant
+        # try:
+        #     await self.client.set_restaurant_open_status(is_open=True)
+        #     logger.info("[SERVING] Restaurant opened (update_restaurant_is_open).")
+        # except Exception as exc:
+        #     logger.error("[SERVING] Failed to open restaurant: %s", exc)
 
         # 2. Refresh recipes, menu, inventory
         await self._refresh_context()
