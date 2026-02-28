@@ -112,13 +112,14 @@ logger = logging.getLogger("BiddingAgent")
 # ---------------------------------------------------------------------------
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 
+GLOBAL_MULTIPLIER = 0.7
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
 # Budget fraction — we spend at most this share of our balance on bids.
-BUDGET_FRACTION = 0.05
+BUDGET_FRACTION = 0.4
 
 # Maximum portions per dish we ever want to stock.  The budget is spent
 # proportionally across all ingredients; this cap prevents over-stocking
@@ -233,7 +234,7 @@ def _compile_bids(
 
         for entry in dish_list:
             dish_name = entry["name"]
-            multiplier = float(entry.get("multiplier", 1.0))
+            multiplier = float(entry.get("multiplier", 1.0)) * GLOBAL_MULTIPLIER
             ingredient_list = arch_ingredients.get(dish_name, [])
 
             for ing in ingredient_list:
