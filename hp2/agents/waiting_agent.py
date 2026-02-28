@@ -108,6 +108,8 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 
 _DEFAULT_CONFIG_PATH = _REPO_ROOT / "config.json"
 
+GLOBAL_MULTIPLIER = 0.7
+
 
 def _load_configuration(config_path: Path | None = None) -> Dict[str, Any]:
     """Load and validate the configuration file.
@@ -122,9 +124,7 @@ def _load_configuration(config_path: Path | None = None) -> Dict[str, Any]:
 
     Raises ``FileNotFoundError`` or ``ValueError`` on problems.
     """
-    path = config_path or Path(
-        os.environ.get("WAITING_AGENT_CONFIG", str(_DEFAULT_CONFIG_PATH))
-    )
+    path = config_path or Path(os.environ.get("WAITING_AGENT_CONFIG", str(_DEFAULT_CONFIG_PATH)))
     if not path.exists():
         raise FileNotFoundError(
             f"Configuration file not found at {path}.  "
@@ -137,13 +137,11 @@ def _load_configuration(config_path: Path | None = None) -> Dict[str, Any]:
     # Validate the two required top-level keys
     if "recipes" not in data or not isinstance(data["recipes"], dict):
         raise ValueError(
-            "config.json must contain a top-level 'recipes' dict "
-            "keyed by archetype name."
+            "config.json must contain a top-level 'recipes' dict keyed by archetype name."
         )
     if "ingredients" not in data or not isinstance(data["ingredients"], dict):
         raise ValueError(
-            "config.json must contain a top-level 'ingredients' dict "
-            "keyed by archetype name."
+            "config.json must contain a top-level 'ingredients' dict keyed by archetype name."
         )
 
     return data
@@ -152,6 +150,7 @@ def _load_configuration(config_path: Path | None = None) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Price computation from configuration
 # ---------------------------------------------------------------------------
+
 
 def _compute_recipe_price(
     recipe_name: str,
@@ -182,12 +181,13 @@ def _compute_recipe_price(
     total_cost = sum(ing.get("price", 0.0) for ing in ingredient_list)
     # Apply archetype multiplier and round to integer (server requires int > 0)
     price = max(1, round(total_cost * multiplier))
-    return price
+    return price * GLOBAL_MULTIPLIER
 
 
 # ---------------------------------------------------------------------------
 # Pure helper: build the candidate dish list from configuration
 # ---------------------------------------------------------------------------
+
 
 def _build_desired_dishes(
     config: Dict[str, Any],
@@ -238,6 +238,7 @@ def _build_desired_dishes(
 # Pure helper: filter feasible recipes
 # ---------------------------------------------------------------------------
 
+
 def _compute_feasible_menu(
     desired_dishes: Dict[str, int],
     all_recipes: List[RecipeSchema],
@@ -279,9 +280,7 @@ def _compute_feasible_menu(
 
         # ── Step 2: Do we have every ingredient? ───────────────────────
         #     All recipe ingredient quantities are 1 (per the API docs).
-        missing = [
-            ing for ing in recipe.ingredients if inventory.get(ing, 0) < 1
-        ]
+        missing = [ing for ing in recipe.ingredients if inventory.get(ing, 0) < 1]
 
         if missing:
             logger.info(
@@ -305,6 +304,7 @@ def _compute_feasible_menu(
 # ---------------------------------------------------------------------------
 # The agent
 # ---------------------------------------------------------------------------
+
 
 class WaitingAgent(BaseAgent):
     """Deterministic agent that handles only the **waiting** phase.
@@ -407,8 +407,7 @@ class WaitingAgent(BaseAgent):
 
         inventory = my_restaurant.inventory
         self.logger.info(
-            "Restaurant '%s' | Balance: %.2f | Reputation: %.2f | "
-            "Inventory items: %d",
+            "Restaurant '%s' | Balance: %.2f | Reputation: %.2f | Inventory items: %d",
             my_restaurant.name,
             my_restaurant.balance,
             my_restaurant.reputation,
