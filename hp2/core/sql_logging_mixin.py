@@ -10,6 +10,8 @@ from urllib.parse import parse_qs, urlparse
 from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String, create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
+from hp2.core.schema.models import MarketEntrySchema, MealSchema, RecipeSchema, RestaurantSchema
+
 
 class Base(DeclarativeBase):
     pass
@@ -39,7 +41,9 @@ class RecipeLog(Base):
     __table_args__ = (Index("idx_recipes_call_id", "call_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    call_id: Mapped[int] = mapped_column(ForeignKey("calls.id", ondelete="CASCADE"), nullable=False)
+    call_id: Mapped[int] = mapped_column(
+        ForeignKey("calls.id", ondelete="CASCADE"), nullable=False
+    )
     name: Mapped[str] = mapped_column(String, nullable=False)
     preparation_time_ms: Mapped[int] = mapped_column(Integer, nullable=False)
     prestige: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -62,7 +66,9 @@ class RestaurantLog(Base):
     __table_args__ = (Index("idx_restaurants_call_id", "call_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    call_id: Mapped[int] = mapped_column(ForeignKey("calls.id", ondelete="CASCADE"), nullable=False)
+    call_id: Mapped[int] = mapped_column(
+        ForeignKey("calls.id", ondelete="CASCADE"), nullable=False
+    )
     restaurant_id: Mapped[str] = mapped_column(String, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
     balance: Mapped[float] = mapped_column(Float, nullable=False)
@@ -99,7 +105,9 @@ class MealLog(Base):
     __table_args__ = (Index("idx_meals_call_id", "call_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    call_id: Mapped[int] = mapped_column(ForeignKey("calls.id", ondelete="CASCADE"), nullable=False)
+    call_id: Mapped[int] = mapped_column(
+        ForeignKey("calls.id", ondelete="CASCADE"), nullable=False
+    )
     payload_json: Mapped[str] = mapped_column(String, nullable=False)
 
 
@@ -108,7 +116,9 @@ class MarketEntryLog(Base):
     __table_args__ = (Index("idx_market_entries_call_id", "call_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    call_id: Mapped[int] = mapped_column(ForeignKey("calls.id", ondelete="CASCADE"), nullable=False)
+    call_id: Mapped[int] = mapped_column(
+        ForeignKey("calls.id", ondelete="CASCADE"), nullable=False
+    )
     payload_json: Mapped[str] = mapped_column(String, nullable=False)
 
 
@@ -117,7 +127,9 @@ class BidHistoryLog(Base):
     __table_args__ = (Index("idx_bid_history_call_id", "call_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    call_id: Mapped[int] = mapped_column(ForeignKey("calls.id", ondelete="CASCADE"), nullable=False)
+    call_id: Mapped[int] = mapped_column(
+        ForeignKey("calls.id", ondelete="CASCADE"), nullable=False
+    )
     payload_json: Mapped[str] = mapped_column(String, nullable=False)
 
 
@@ -125,8 +137,10 @@ class BidHistoryLog(Base):
 # Shared event log table (mirrors the event_logger service's `events` table)
 # ---------------------------------------------------------------------------
 
+
 class MixinEventLog(Base):
     """ORM mapping to the shared `events` table owned by the event_logger service."""
+
     __tablename__ = "events"
     __table_args__ = {"extend_existing": True}
 
@@ -141,12 +155,15 @@ class MixinEventLog(Base):
 # Typed MCP action event tables
 # ---------------------------------------------------------------------------
 
+
 class McpClosedBidEvent(Base):
     __tablename__ = "event_mcp_closed_bid"
     __table_args__ = (Index("idx_mcp_closed_bid_event_id", "event_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id", ondelete="CASCADE"), nullable=False
+    )
     bids_json: Mapped[str] = mapped_column(String, nullable=False)
 
 
@@ -155,7 +172,9 @@ class McpSaveMenuEvent(Base):
     __table_args__ = (Index("idx_mcp_save_menu_event_id", "event_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id", ondelete="CASCADE"), nullable=False
+    )
     items_json: Mapped[str] = mapped_column(String, nullable=False)
 
 
@@ -164,7 +183,9 @@ class McpCreateMarketEntryEvent(Base):
     __table_args__ = (Index("idx_mcp_create_market_entry_event_id", "event_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id", ondelete="CASCADE"), nullable=False
+    )
     side: Mapped[str] = mapped_column(String, nullable=False)
     ingredient_name: Mapped[str] = mapped_column(String, nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -176,7 +197,9 @@ class McpExecuteTransactionEvent(Base):
     __table_args__ = (Index("idx_mcp_execute_transaction_event_id", "event_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id", ondelete="CASCADE"), nullable=False
+    )
     market_entry_id: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
@@ -185,7 +208,9 @@ class McpDeleteMarketEntryEvent(Base):
     __table_args__ = (Index("idx_mcp_delete_market_entry_event_id", "event_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id", ondelete="CASCADE"), nullable=False
+    )
     market_entry_id: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
@@ -194,7 +219,9 @@ class McpPrepareDishEvent(Base):
     __table_args__ = (Index("idx_mcp_prepare_dish_event_id", "event_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id", ondelete="CASCADE"), nullable=False
+    )
     dish_name: Mapped[str] = mapped_column(String, nullable=False)
 
 
@@ -203,7 +230,9 @@ class McpServeDishEvent(Base):
     __table_args__ = (Index("idx_mcp_serve_dish_event_id", "event_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id", ondelete="CASCADE"), nullable=False
+    )
     dish_name: Mapped[str] = mapped_column(String, nullable=False)
     client_id: Mapped[str] = mapped_column(String, nullable=False)
 
@@ -213,7 +242,9 @@ class McpSetOpenStatusEvent(Base):
     __table_args__ = (Index("idx_mcp_set_open_status_event_id", "event_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id", ondelete="CASCADE"), nullable=False
+    )
     is_open: Mapped[int] = mapped_column(Integer, nullable=False)  # 1=open, 0=closed
 
 
@@ -222,7 +253,9 @@ class McpSendMessageEvent(Base):
     __table_args__ = (Index("idx_mcp_send_message_event_id", "event_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id", ondelete="CASCADE"), nullable=False
+    )
     recipient_id: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(String, nullable=False)
 
@@ -300,7 +333,7 @@ class SqlLoggingMixin:
             session.commit()
             return call_id
 
-    def _persist_recipes(self, *, call_id: int, recipes: list[Any]) -> None:
+    def _persist_recipes(self, *, call_id: int, recipes: list[RecipeSchema]) -> None:
         session_factory = getattr(self, "_log_session_factory", None)
         if session_factory is None:
             return
@@ -327,7 +360,7 @@ class SqlLoggingMixin:
 
             session.commit()
 
-    def _persist_restaurants(self, *, call_id: int, restaurants: list[Any]) -> None:
+    def _persist_restaurants(self, *, call_id: int, restaurants: list[RestaurantSchema]) -> None:
         session_factory = getattr(self, "_log_session_factory", None)
         if session_factory is None:
             return
@@ -365,7 +398,7 @@ class SqlLoggingMixin:
 
             session.commit()
 
-    def _persist_meals(self, *, call_id: int, meals: list[Any]) -> None:
+    def _persist_meals(self, *, call_id: int, meals: list[MealSchema]) -> None:
         session_factory = getattr(self, "_log_session_factory", None)
         if session_factory is None:
             return
@@ -375,12 +408,14 @@ class SqlLoggingMixin:
                 session.add(
                     MealLog(
                         call_id=call_id,
-                        payload_json=json.dumps(meal.model_dump(by_alias=True), ensure_ascii=False),
+                        payload_json=json.dumps(
+                            meal.model_dump(by_alias=True), ensure_ascii=False
+                        ),
                     )
                 )
             session.commit()
 
-    def _persist_market_entries(self, *, call_id: int, entries: list[Any]) -> None:
+    def _persist_market_entries(self, *, call_id: int, entries: list[MarketEntrySchema]) -> None:
         session_factory = getattr(self, "_log_session_factory", None)
         if session_factory is None:
             return
@@ -390,7 +425,9 @@ class SqlLoggingMixin:
                 session.add(
                     MarketEntryLog(
                         call_id=call_id,
-                        payload_json=json.dumps(entry.model_dump(by_alias=True), ensure_ascii=False),
+                        payload_json=json.dumps(
+                            entry.model_dump(by_alias=True), ensure_ascii=False
+                        ),
                     )
                 )
             session.commit()
@@ -448,61 +485,79 @@ class SqlLoggingMixin:
             _logger.debug("MCP event logging failed: %s", e, exc_info=True)
 
     def _persist_mcp_closed_bid(self, *, session, event_id: int, data: dict) -> None:
-        session.add(McpClosedBidEvent(
-            event_id=event_id,
-            bids_json=json.dumps([asdict(b) for b in data.get("bids", [])], default=str),
-        ))
+        session.add(
+            McpClosedBidEvent(
+                event_id=event_id,
+                bids_json=json.dumps([asdict(b) for b in data.get("bids", [])], default=str),
+            )
+        )
 
     def _persist_mcp_save_menu(self, *, session, event_id: int, data: dict) -> None:
-        session.add(McpSaveMenuEvent(
-            event_id=event_id,
-            items_json=json.dumps([asdict(i) for i in data.get("items", [])], default=str),
-        ))
+        session.add(
+            McpSaveMenuEvent(
+                event_id=event_id,
+                items_json=json.dumps([asdict(i) for i in data.get("items", [])], default=str),
+            )
+        )
 
     def _persist_mcp_create_market_entry(self, *, session, event_id: int, data: dict) -> None:
         side = data.get("side", "")
-        session.add(McpCreateMarketEntryEvent(
-            event_id=event_id,
-            side=side.value if hasattr(side, "value") else str(side),
-            ingredient_name=data.get("ingredient_name", ""),
-            quantity=data.get("quantity", 0),
-            price=data.get("price", 0.0),
-        ))
+        session.add(
+            McpCreateMarketEntryEvent(
+                event_id=event_id,
+                side=side.value if hasattr(side, "value") else str(side),
+                ingredient_name=data.get("ingredient_name", ""),
+                quantity=data.get("quantity", 0),
+                price=data.get("price", 0.0),
+            )
+        )
 
     def _persist_mcp_execute_transaction(self, *, session, event_id: int, data: dict) -> None:
-        session.add(McpExecuteTransactionEvent(
-            event_id=event_id,
-            market_entry_id=data.get("market_entry_id", 0),
-        ))
+        session.add(
+            McpExecuteTransactionEvent(
+                event_id=event_id,
+                market_entry_id=data.get("market_entry_id", 0),
+            )
+        )
 
     def _persist_mcp_delete_market_entry(self, *, session, event_id: int, data: dict) -> None:
-        session.add(McpDeleteMarketEntryEvent(
-            event_id=event_id,
-            market_entry_id=data.get("market_entry_id", 0),
-        ))
+        session.add(
+            McpDeleteMarketEntryEvent(
+                event_id=event_id,
+                market_entry_id=data.get("market_entry_id", 0),
+            )
+        )
 
     def _persist_mcp_prepare_dish(self, *, session, event_id: int, data: dict) -> None:
-        session.add(McpPrepareDishEvent(
-            event_id=event_id,
-            dish_name=data.get("dish_name", ""),
-        ))
+        session.add(
+            McpPrepareDishEvent(
+                event_id=event_id,
+                dish_name=data.get("dish_name", ""),
+            )
+        )
 
     def _persist_mcp_serve_dish(self, *, session, event_id: int, data: dict) -> None:
-        session.add(McpServeDishEvent(
-            event_id=event_id,
-            dish_name=data.get("dish_name", ""),
-            client_id=data.get("client_id", ""),
-        ))
+        session.add(
+            McpServeDishEvent(
+                event_id=event_id,
+                dish_name=data.get("dish_name", ""),
+                client_id=data.get("client_id", ""),
+            )
+        )
 
     def _persist_mcp_set_open_status(self, *, session, event_id: int, data: dict) -> None:
-        session.add(McpSetOpenStatusEvent(
-            event_id=event_id,
-            is_open=1 if data.get("is_open") else 0,
-        ))
+        session.add(
+            McpSetOpenStatusEvent(
+                event_id=event_id,
+                is_open=1 if data.get("is_open") else 0,
+            )
+        )
 
     def _persist_mcp_send_message(self, *, session, event_id: int, data: dict) -> None:
-        session.add(McpSendMessageEvent(
-            event_id=event_id,
-            recipient_id=data.get("recipient_id", 0),
-            text=data.get("text", ""),
-        ))
+        session.add(
+            McpSendMessageEvent(
+                event_id=event_id,
+                recipient_id=data.get("recipient_id", 0),
+                text=data.get("text", ""),
+            )
+        )
