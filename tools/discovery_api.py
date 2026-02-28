@@ -26,7 +26,7 @@ LOGGER = logging.getLogger("api.discovery_harness")
 
 @dataclass
 class DiscoveryContext:
-    turn_id: str = "8"
+    turn_id: int
     ingredient_name: str = "tomato"
     dish_name: str = "margherita"
     client_id: str = "unknown-client"
@@ -69,6 +69,7 @@ def _first_present(payload: dict[str, Any], candidates: list[str], default: Any)
 
 
 def _build_context_from_snapshots(
+    turn_id: int,
     team_id: int,
     my_restaurant: dict[str, Any] | None,
     restaurants: list[dict[str, Any]] | None,
@@ -76,10 +77,10 @@ def _build_context_from_snapshots(
     meals: list[dict[str, Any]] | None,
     market_entries: list[dict[str, Any]] | None,
 ) -> DiscoveryContext:
-    context = DiscoveryContext(recipient_id=team_id)
+    context = DiscoveryContext(turn_id=turn_id, recipient_id=team_id)
 
     if my_restaurant:
-        context.turn_id = str(
+        context.turn_id = int(
             _first_present(
                 my_restaurant,
                 ["currentTurnId", "turn_id", "turnId", "activeTurnId"],
@@ -204,9 +205,10 @@ async def _invoke_endpoint(
 async def run_discovery(
     client: HackapizzaClient,
     output_dir: str | Path = "artifacts/api_discovery",
-    include_actions: bool = True,
+    include_actions: bool = False,
     manage_session: bool = True,
     logger: logging.Logger | None = None,
+    turn_id: int = 7,
 ) -> Path:
     """Call each endpoint, collect result/error, and persist the report to disk."""
     logger = logger or LOGGER
@@ -216,174 +218,198 @@ async def run_discovery(
     async with _managed_session(client, enabled=manage_session):
         results: list[EndpointCallResult] = []
 
+        my_restaurant_res: EndpointCallResult | None = None
+        restaurants_res: EndpointCallResult | None = None
+        recipes_res: EndpointCallResult | None = None
+        my_menu_res: EndpointCallResult | None = None
+        market_entries_res: EndpointCallResult | None = None
+
         # Data endpoints first, so we can infer realistic payloads for action endpoints.
-        my_restaurant_res = await _invoke_endpoint(
-            "get_my_restaurant", client.get_my_restaurant, {}, logger
-        )
-        results.append(my_restaurant_res)
+        if "get_my_restaurant" in DISCOVERY_ENDPOINTS:
+            my_restaurant_res = await _invoke_endpoint(
+                "get_my_restaurant", client.get_my_restaurant, {}, logger
+            )
+            results.append(my_restaurant_res)
 
-        restaurants_res = await _invoke_endpoint(
-            "get_restaurants", client.get_restaurants, {}, logger
-        )
-        results.append(restaurants_res)
+        if "get_restaurants" in DISCOVERY_ENDPOINTS:
+            restaurants_res = await _invoke_endpoint(
+                "get_restaurants", client.get_restaurants, {}, logger
+            )
+            results.append(restaurants_res)
 
-        recipes_res = await _invoke_endpoint("get_recipes", client.get_recipes, {}, logger)
-        results.append(recipes_res)
+        if "get_recipes" in DISCOVERY_ENDPOINTS:
+            recipes_res = await _invoke_endpoint("get_recipes", client.get_recipes, {}, logger)
+            results.append(recipes_res)
 
-        my_menu_res = await _invoke_endpoint("get_my_menu", client.get_my_menu, {}, logger)
-        results.append(my_menu_res)
+        if "get_my_menu" in DISCOVERY_ENDPOINTS:
+            my_menu_res = await _invoke_endpoint("get_my_menu", client.get_my_menu, {}, logger)
+            results.append(my_menu_res)
 
-        market_entries_res = await _invoke_endpoint(
-            "get_market_entries", client.get_market_entries, {}, logger
-        )
-        results.append(market_entries_res)
+        if "get_market_entries" in DISCOVERY_ENDPOINTS:
+            market_entries_res = await _invoke_endpoint(
+                "get_market_entries", client.get_market_entries, {}, logger
+            )
+            results.append(market_entries_res)
 
         context = _build_context_from_snapshots(
+            turn_id=turn_id,
             team_id=client.team_id,
             my_restaurant=my_restaurant_res.result
-            if isinstance(my_restaurant_res.result, dict)
+            if my_restaurant_res and isinstance(my_restaurant_res.result, dict)
             else None,
             restaurants=restaurants_res.result
-            if isinstance(restaurants_res.result, list)
+            if restaurants_res and isinstance(restaurants_res.result, list)
             else None,
-            recipes=recipes_res.result if isinstance(recipes_res.result, list) else None,
+            recipes=recipes_res.result if recipes_res and isinstance(recipes_res.result, list) else None,
             meals=None,
             market_entries=(
-                market_entries_res.result if isinstance(market_entries_res.result, list) else None
+                market_entries_res.result if market_entries_res and isinstance(market_entries_res.result, list) else None
             ),
         )
 
-        meals_res = await _invoke_endpoint(
-            "get_meals",
-            lambda: client.get_meals(context.turn_id),
-            {"turn_id": context.turn_id},
-            logger,
-        )
-        results.append(meals_res)
-        if isinstance(meals_res.result, list):
-            context = _build_context_from_snapshots(
-                team_id=client.team_id,
-                my_restaurant=my_restaurant_res.result
-                if isinstance(my_restaurant_res.result, dict)
-                else None,
-                restaurants=restaurants_res.result
-                if isinstance(restaurants_res.result, list)
-                else None,
-                recipes=recipes_res.result if isinstance(recipes_res.result, list) else None,
-                meals=meals_res.result,
-                market_entries=market_entries_res.result
-                if isinstance(market_entries_res.result, list)
-                else None,
+        if "get_meals" in DISCOVERY_ENDPOINTS:
+            meals_res = await _invoke_endpoint(
+                "get_meals",
+                lambda: client.get_meals(context.turn_id),
+                {"turn_id": context.turn_id},
+                logger,
             )
+            results.append(meals_res)
+            if isinstance(meals_res.result, list):
+                context = _build_context_from_snapshots(
+                    turn_id=context.turn_id,
+                    team_id=client.team_id,
+                    my_restaurant=my_restaurant_res.result
+                    if my_restaurant_res and isinstance(my_restaurant_res.result, dict)
+                    else None,
+                    restaurants=restaurants_res.result
+                    if restaurants_res and isinstance(restaurants_res.result, list)
+                    else None,
+                    recipes=recipes_res.result if recipes_res and isinstance(recipes_res.result, list) else None,
+                    meals=meals_res.result,
+                    market_entries=market_entries_res.result
+                    if market_entries_res and isinstance(market_entries_res.result, list)
+                    else None,
+                )
 
-        bid_history_res = await _invoke_endpoint(
-            "get_bid_history",
-            lambda: client.get_bid_history(context.turn_id),
-            {"turn_id": context.turn_id},
-            logger,
-        )
-        results.append(bid_history_res)
+        if "get_bid_history" in DISCOVERY_ENDPOINTS:
+            bid_history_res = await _invoke_endpoint(
+                "get_bid_history",
+                lambda: client.get_bid_history(context.turn_id),
+                {"turn_id": context.turn_id},
+                logger,
+            )
+            results.append(bid_history_res)
 
         if include_actions:
             bids = [BidRequest(ingredient=context.ingredient_name, bid=1.0, quantity=1)]
             menu = [MenuItem(name=context.dish_name, price=9.99)]
 
-            results.append(
-                await _invoke_endpoint(
-                    "submit_closed_bids",
-                    lambda: client.submit_closed_bids(bids),
-                    {"bids": [asdict(b) for b in bids]},
-                    logger,
+            if "submit_closed_bids" in DISCOVERY_ENDPOINTS:
+                results.append(
+                    await _invoke_endpoint(
+                        "submit_closed_bids",
+                        lambda: client.submit_closed_bids(bids),
+                        {"bids": [asdict(b) for b in bids]},
+                        logger,
+                    )
                 )
-            )
 
-            results.append(
-                await _invoke_endpoint(
-                    "save_menu",
-                    lambda: client.save_menu(menu),
-                    {"items": [asdict(item) for item in menu]},
-                    logger,
+            if "save_menu" in DISCOVERY_ENDPOINTS:
+                results.append(
+                    await _invoke_endpoint(
+                        "save_menu",
+                        lambda: client.save_menu(menu),
+                        {"items": [asdict(item) for item in menu]},
+                        logger,
+                    )
                 )
-            )
 
-            results.append(
-                await _invoke_endpoint(
-                    "create_market_entry",
-                    lambda: client.create_market_entry(
-                        MarketSide.BUY,
-                        context.ingredient_name,
-                        1,
-                        1.0,
-                    ),
-                    {
-                        "side": MarketSide.BUY.value,
-                        "ingredient_name": context.ingredient_name,
-                        "quantity": 1,
-                        "price": 1.0,
-                    },
-                    logger,
+            if "create_market_entry" in DISCOVERY_ENDPOINTS:
+                results.append(
+                    await _invoke_endpoint(
+                        "create_market_entry",
+                        lambda: client.create_market_entry(
+                            MarketSide.BUY,
+                            context.ingredient_name,
+                            1,
+                            1.0,
+                        ),
+                        {
+                            "side": MarketSide.BUY.value,
+                            "ingredient_name": context.ingredient_name,
+                            "quantity": 1,
+                            "price": 1.0,
+                        },
+                        logger,
+                    )
                 )
-            )
 
-            results.append(
-                await _invoke_endpoint(
-                    "execute_transaction",
-                    lambda: client.execute_transaction(context.market_entry_id),
-                    {"market_entry_id": context.market_entry_id},
-                    logger,
+            if "execute_transaction" in DISCOVERY_ENDPOINTS:
+                results.append(
+                    await _invoke_endpoint(
+                        "execute_transaction",
+                        lambda: client.execute_transaction(context.market_entry_id),
+                        {"market_entry_id": context.market_entry_id},
+                        logger,
+                    )
                 )
-            )
 
-            results.append(
-                await _invoke_endpoint(
-                    "delete_market_entry",
-                    lambda: client.delete_market_entry(context.market_entry_id),
-                    {"market_entry_id": context.market_entry_id},
-                    logger,
+            if "delete_market_entry" in DISCOVERY_ENDPOINTS:
+                results.append(
+                    await _invoke_endpoint(
+                        "delete_market_entry",
+                        lambda: client.delete_market_entry(context.market_entry_id),
+                        {"market_entry_id": context.market_entry_id},
+                        logger,
+                    )
                 )
-            )
 
-            results.append(
-                await _invoke_endpoint(
-                    "prepare_dish",
-                    lambda: client.prepare_dish(context.dish_name),
-                    {"dish_name": context.dish_name},
-                    logger,
+            if "prepare_dish" in DISCOVERY_ENDPOINTS:
+                results.append(
+                    await _invoke_endpoint(
+                        "prepare_dish",
+                        lambda: client.prepare_dish(context.dish_name),
+                        {"dish_name": context.dish_name},
+                        logger,
+                    )
                 )
-            )
 
-            results.append(
-                await _invoke_endpoint(
-                    "serve_dish",
-                    lambda: client.serve_dish(context.dish_name, context.client_id),
-                    {"dish_name": context.dish_name, "client_id": context.client_id},
-                    logger,
+            if "serve_dish" in DISCOVERY_ENDPOINTS:
+                results.append(
+                    await _invoke_endpoint(
+                        "serve_dish",
+                        lambda: client.serve_dish(context.dish_name, context.client_id),
+                        {"dish_name": context.dish_name, "client_id": context.client_id},
+                        logger,
+                    )
                 )
-            )
 
-            results.append(
-                await _invoke_endpoint(
-                    "set_restaurant_open_status",
-                    lambda: client.set_restaurant_open_status(True),
-                    {"is_open": True},
-                    logger,
+            if "set_restaurant_open_status" in DISCOVERY_ENDPOINTS:
+                results.append(
+                    await _invoke_endpoint(
+                        "set_restaurant_open_status",
+                        lambda: client.set_restaurant_open_status(True),
+                        {"is_open": True},
+                        logger,
+                    )
                 )
-            )
 
-            results.append(
-                await _invoke_endpoint(
-                    "send_direct_message",
-                    lambda: client.send_direct_message(
-                        context.recipient_id,
-                        "Automated endpoint discovery ping.",
-                    ),
-                    {
-                        "recipient_id": context.recipient_id,
-                        "text": "Automated endpoint discovery ping.",
-                    },
-                    logger,
+            if "send_direct_message" in DISCOVERY_ENDPOINTS:
+                results.append(
+                    await _invoke_endpoint(
+                        "send_direct_message",
+                        lambda: client.send_direct_message(
+                            context.recipient_id,
+                            "Automated endpoint discovery ping.",
+                        ),
+                        {
+                            "recipient_id": context.recipient_id,
+                            "text": "Automated endpoint discovery ping.",
+                        },
+                        logger,
+                    )
                 )
-            )
 
     now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     report = {
@@ -416,11 +442,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--base-url", type=str, default="https://hackapizza.datapizza.tech")
     parser.add_argument("--output-dir", type=str, default="artifacts/api_discovery")
     parser.add_argument(
-        "--skip-actions",
+        "--include-actions",
         action="store_true",
-        help="Only call read/data endpoints and skip mutating action endpoints.",
+        help="Include mutating action endpoints in discovery.",
     )
     parser.add_argument("--log-level", type=str, default="INFO")
+    parser.add_argument("--turn-id", type=int, default=7, help="Turn ID to use for context when calling endpoints.")
     return parser.parse_args()
 
 
@@ -439,7 +466,7 @@ async def _main() -> int:
     report = await run_discovery(
         client,
         output_dir=args.output_dir,
-        include_actions=not args.skip_actions,
+        include_actions=args.include_actions,
         manage_session=True,
         logger=LOGGER,
     )
