@@ -251,7 +251,7 @@ def _compile_bids(
                     ingredient_info[ing_name]["bid"] = ing_price
 
                 # Accumulate demand weighted by the archetype multiplier.
-                ingredient_info[ing_name]["base_qty"] += multiplier
+                ingredient_info[ing_name]["base_qty"] += MAX_PORTIONS_PER_DISH
 
     if not ingredient_info:
         return []
