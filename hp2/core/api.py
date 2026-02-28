@@ -5,10 +5,11 @@ Strictly typed, event-driven client for the Hackapizza Gastronomic Multiverse.
 
 import json
 import logging
+from functools import wraps
 from dataclasses import asdict, dataclass
 from enum import Enum
 from time import perf_counter
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Concatenate, Dict, List, Optional, ParamSpec, TypeVar, cast
 
 import aiohttp
 from pydantic import TypeAdapter
@@ -32,6 +33,33 @@ _MY_MENU_ADAPTER = TypeAdapter(MyMenuResponseSchema)
 _MARKET_ENTRIES_ADAPTER = TypeAdapter(MarketEntriesResponseSchema)
 _MEALS_ADAPTER = TypeAdapter(MealsResponseSchema)
 _BID_HISTORY_ADAPTER = TypeAdapter(BidHistoryResponseSchema)
+
+P = ParamSpec("P")
+T = TypeVar("T")
+
+
+def typed_endpoint(
+    adapter: TypeAdapter[T], *, persist_method_name: str | None = None
+) -> Callable[
+    [Callable[Concatenate["HackapizzaClient", P], Awaitable[str]]],
+    Callable[Concatenate["HackapizzaClient", P], Awaitable[T]],
+]:
+    """Decorator for typed HTTP GET endpoints with optional typed persistence hook."""
+
+    def decorator(
+        func: Callable[Concatenate["HackapizzaClient", P], Awaitable[str]]
+    ) -> Callable[Concatenate["HackapizzaClient", P], Awaitable[T]]:
+        @wraps(func)
+        async def wrapper(self: "HackapizzaClient", *args: P.args, **kwargs: P.kwargs) -> T:
+            endpoint = await func(self, *args, **kwargs)
+            result = await self._http_get_typed(
+                endpoint, adapter, persist_method_name=persist_method_name
+            )
+            return cast(T, result)
+
+        return wrapper
+
+    return decorator
 
 # ---------------------------------------------------------------------------
 # Enums
@@ -167,36 +195,61 @@ class HackapizzaClient(SqlLoggingMixin):
 
     # --- HTTP Data Endpoints ---
 
-    async def get_meals(self, turn_id: str) -> MealsResponseSchema:
+    @typed_endpoint(_MEALS_ADAPTER, persist_method_name="_persist_typed_meals")
+    async def _get_meals_typed(self, turn_id: str) -> str:
         """Fetch meals/customer requests for the current turn."""
-        return await self._http_get_typed(
-            f"/meals?turn_id={turn_id}&restaurant_id={self.team_id}",
-            _MEALS_ADAPTER,
-        )
+        return f"/meals?turn_id={turn_id}&restaurant_id={self.team_id}"
+
+    async def get_meals(self, turn_id: str) -> MealsResponseSchema:
+        return await self._get_meals_typed(turn_id)
+
+    @typed_endpoint(_RESTAURANTS_ADAPTER, persist_method_name="_persist_typed_restaurants")
+    async def _get_restaurants_typed(self) -> str:
+        """Overview of all active restaurants in the game."""
+        return "/restaurants"
 
     async def get_restaurants(self) -> RestaurantsResponseSchema:
-        """Overview of all active restaurants in the game."""
-        return await self._http_get_typed("/restaurants", _RESTAURANTS_ADAPTER)
+        return await self._get_restaurants_typed()
+
+    @typed_endpoint(_RECIPES_ADAPTER, persist_method_name="_persist_typed_recipes")
+    async def _get_recipes_typed(self) -> str:
+        """List of all available recipes, their ingredients, and prep times."""
+        return "/recipes"
 
     async def get_recipes(self) -> RecipesResponseSchema:
-        """List of all available recipes, their ingredients, and prep times."""
-        return await self._http_get_typed("/recipes", _RECIPES_ADAPTER)
+        return await self._get_recipes_typed()
+
+    @typed_endpoint(_BID_HISTORY_ADAPTER, persist_method_name="_persist_typed_bid_history")
+    async def _get_bid_history_typed(self, turn_id: str) -> str:
+        """Historical blind auction bids for a given turn."""
+        return f"/bid_history?turn_id={turn_id}"
 
     async def get_bid_history(self, turn_id: str) -> BidHistoryResponseSchema:
-        """Historical blind auction bids for a given turn."""
-        return await self._http_get_typed(f"/bid_history?turn_id={turn_id}", _BID_HISTORY_ADAPTER)
+        return await self._get_bid_history_typed(turn_id)
+
+    @typed_endpoint(_MY_RESTAURANT_ADAPTER, persist_method_name="_persist_typed_my_restaurant")
+    async def _get_my_restaurant_typed(self) -> str:
+        """Fetch balance, reputation, and inventory for your restaurant."""
+        return f"/restaurant/{self.team_id}"
 
     async def get_my_restaurant(self) -> MyRestaurantResponseSchema:
-        """Fetch balance, reputation, and inventory for your restaurant."""
-        return await self._http_get_typed(f"/restaurant/{self.team_id}", _MY_RESTAURANT_ADAPTER)
+        return await self._get_my_restaurant_typed()
+
+    @typed_endpoint(_MY_MENU_ADAPTER)
+    async def _get_my_menu_typed(self) -> str:
+        """Fetch the current menu active for your restaurant."""
+        return f"/restaurant/{self.team_id}/menu"
 
     async def get_my_menu(self) -> MyMenuResponseSchema:
-        """Fetch the current menu active for your restaurant."""
-        return await self._http_get_typed(f"/restaurant/{self.team_id}/menu", _MY_MENU_ADAPTER)
+        return await self._get_my_menu_typed()
+
+    @typed_endpoint(_MARKET_ENTRIES_ADAPTER, persist_method_name="_persist_typed_market_entries")
+    async def _get_market_entries_typed(self) -> str:
+        """Fetch active and closed P2P market entries."""
+        return "/market/entries"
 
     async def get_market_entries(self) -> MarketEntriesResponseSchema:
-        """Fetch active and closed P2P market entries."""
-        return await self._http_get_typed("/market/entries", _MARKET_ENTRIES_ADAPTER)
+        return await self._get_market_entries_typed()
 
     # --- MCP Tools (Action Endpoints) ---
 
@@ -283,18 +336,52 @@ class HackapizzaClient(SqlLoggingMixin):
             return payload, call_id
         return payload
 
-    async def _http_get_typed(self, endpoint: str, adapter: TypeAdapter) -> Any:
+    async def _http_get_typed(
+        self,
+        endpoint: str,
+        adapter: TypeAdapter[T],
+        *,
+        persist_method_name: str | None = None,
+    ) -> T:
         """GET + pydantic validation to guarantee typed endpoint responses."""
         payload, call_id = await self._http_get(endpoint, _include_call_id=True)
         typed_payload = adapter.validate_python(payload)
 
-        if self._sql_logging_enabled and call_id and endpoint.startswith("/recipes"):
+        if self._sql_logging_enabled and call_id and persist_method_name:
             try:
-                self._persist_recipes(call_id=call_id, recipes=typed_payload)
+                persist_method = getattr(self, persist_method_name, None)
+                if callable(persist_method):
+                    persist_method(call_id=call_id, typed_payload=typed_payload)
             except Exception as log_exc:
-                self.logger.debug("Typed recipe persistence failed: %s", log_exc, exc_info=True)
+                self.logger.debug("Typed persistence failed: %s", log_exc, exc_info=True)
 
-        return typed_payload
+        return cast(T, typed_payload)
+
+    def _persist_typed_recipes(self, *, call_id: int, typed_payload: RecipesResponseSchema) -> None:
+        self._persist_recipes(call_id=call_id, recipes=typed_payload)
+
+    def _persist_typed_restaurants(
+        self, *, call_id: int, typed_payload: RestaurantsResponseSchema
+    ) -> None:
+        self._persist_restaurants(call_id=call_id, restaurants=typed_payload)
+
+    def _persist_typed_my_restaurant(
+        self, *, call_id: int, typed_payload: MyRestaurantResponseSchema
+    ) -> None:
+        self._persist_restaurants(call_id=call_id, restaurants=[typed_payload])
+
+    def _persist_typed_meals(self, *, call_id: int, typed_payload: MealsResponseSchema) -> None:
+        self._persist_meals(call_id=call_id, meals=typed_payload)
+
+    def _persist_typed_market_entries(
+        self, *, call_id: int, typed_payload: MarketEntriesResponseSchema
+    ) -> None:
+        self._persist_market_entries(call_id=call_id, entries=typed_payload)
+
+    def _persist_typed_bid_history(
+        self, *, call_id: int, typed_payload: BidHistoryResponseSchema
+    ) -> None:
+        self._persist_bid_history(call_id=call_id, bids=typed_payload)
 
     async def _mcp_call(self, tool_name: str, **kwargs) -> Any:
         """Helper to execute JSON-RPC calls against the MCP endpoint."""

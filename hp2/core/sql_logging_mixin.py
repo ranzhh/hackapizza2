@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Optional
@@ -53,6 +54,70 @@ class RecipeIngredientLog(Base):
     )
     ingredient_name: Mapped[str] = mapped_column(String, nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class RestaurantLog(Base):
+    __tablename__ = "restaurants"
+    __table_args__ = (Index("idx_restaurants_call_id", "call_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    call_id: Mapped[int] = mapped_column(ForeignKey("calls.id", ondelete="CASCADE"), nullable=False)
+    restaurant_id: Mapped[str] = mapped_column(String, nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    balance: Mapped[float] = mapped_column(Float, nullable=False)
+    reputation: Mapped[float] = mapped_column(Float, nullable=False)
+    is_open: Mapped[bool] = mapped_column(Integer, nullable=False)
+
+
+class RestaurantInventoryLog(Base):
+    __tablename__ = "restaurant_inventory"
+    __table_args__ = (Index("idx_restaurant_inventory_restaurant_row_id", "restaurant_row_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    restaurant_row_id: Mapped[int] = mapped_column(
+        ForeignKey("restaurants.id", ondelete="CASCADE"), nullable=False
+    )
+    ingredient_name: Mapped[str] = mapped_column(String, nullable=False)
+    quantity: Mapped[float] = mapped_column(Float, nullable=False)
+
+
+class RestaurantMenuItemLog(Base):
+    __tablename__ = "restaurant_menu_items"
+    __table_args__ = (Index("idx_restaurant_menu_items_restaurant_row_id", "restaurant_row_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    restaurant_row_id: Mapped[int] = mapped_column(
+        ForeignKey("restaurants.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+
+
+class MealLog(Base):
+    __tablename__ = "meals"
+    __table_args__ = (Index("idx_meals_call_id", "call_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    call_id: Mapped[int] = mapped_column(ForeignKey("calls.id", ondelete="CASCADE"), nullable=False)
+    payload_json: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class MarketEntryLog(Base):
+    __tablename__ = "market_entries"
+    __table_args__ = (Index("idx_market_entries_call_id", "call_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    call_id: Mapped[int] = mapped_column(ForeignKey("calls.id", ondelete="CASCADE"), nullable=False)
+    payload_json: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class BidHistoryLog(Base):
+    __tablename__ = "bid_history"
+    __table_args__ = (Index("idx_bid_history_call_id", "call_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    call_id: Mapped[int] = mapped_column(ForeignKey("calls.id", ondelete="CASCADE"), nullable=False)
+    payload_json: Mapped[str] = mapped_column(String, nullable=False)
 
 
 class SqlLoggingMixin:
@@ -154,4 +219,87 @@ class SqlLoggingMixin:
                         )
                     )
 
+            session.commit()
+
+    def _persist_restaurants(self, *, call_id: int, restaurants: list[Any]) -> None:
+        session_factory = getattr(self, "_log_session_factory", None)
+        if session_factory is None:
+            return
+
+        with session_factory() as session:
+            for restaurant in restaurants:
+                restaurant_row = RestaurantLog(
+                    call_id=call_id,
+                    restaurant_id=restaurant.id,
+                    name=restaurant.name,
+                    balance=restaurant.balance,
+                    reputation=restaurant.reputation,
+                    is_open=1 if restaurant.is_open else 0,
+                )
+                session.add(restaurant_row)
+                session.flush()
+
+                for ingredient_name, quantity in restaurant.inventory.items():
+                    session.add(
+                        RestaurantInventoryLog(
+                            restaurant_row_id=restaurant_row.id,
+                            ingredient_name=ingredient_name,
+                            quantity=float(quantity),
+                        )
+                    )
+
+                for menu_item in restaurant.menu.items:
+                    session.add(
+                        RestaurantMenuItemLog(
+                            restaurant_row_id=restaurant_row.id,
+                            name=menu_item.name,
+                            price=menu_item.price,
+                        )
+                    )
+
+            session.commit()
+
+    def _persist_meals(self, *, call_id: int, meals: list[Any]) -> None:
+        session_factory = getattr(self, "_log_session_factory", None)
+        if session_factory is None:
+            return
+
+        with session_factory() as session:
+            for meal in meals:
+                session.add(
+                    MealLog(
+                        call_id=call_id,
+                        payload_json=json.dumps(meal.model_dump(by_alias=True), ensure_ascii=False),
+                    )
+                )
+            session.commit()
+
+    def _persist_market_entries(self, *, call_id: int, entries: list[Any]) -> None:
+        session_factory = getattr(self, "_log_session_factory", None)
+        if session_factory is None:
+            return
+
+        with session_factory() as session:
+            for entry in entries:
+                session.add(
+                    MarketEntryLog(
+                        call_id=call_id,
+                        payload_json=json.dumps(entry.model_dump(by_alias=True), ensure_ascii=False),
+                    )
+                )
+            session.commit()
+
+    def _persist_bid_history(self, *, call_id: int, bids: list[Any]) -> None:
+        session_factory = getattr(self, "_log_session_factory", None)
+        if session_factory is None:
+            return
+
+        with session_factory() as session:
+            for bid in bids:
+                session.add(
+                    BidHistoryLog(
+                        call_id=call_id,
+                        payload_json=json.dumps(bid.model_dump(by_alias=True), ensure_ascii=False),
+                    )
+                )
             session.commit()

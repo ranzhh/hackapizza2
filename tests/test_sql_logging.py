@@ -169,3 +169,89 @@ def test_get_recipes_persists_typed_rows(tmp_path: Path):
     assert _count_rows(db_path, "calls") == 1
     assert _count_rows(db_path, "recipes") == 2
     assert _count_rows(db_path, "recipe_ingredients") == 3
+
+
+def test_get_restaurants_persists_typed_rows(tmp_path: Path):
+    db_path = tmp_path / "calls.db"
+    client = HackapizzaClient(
+        team_id=6,
+        api_key="test-key",
+        enable_sql_logging=True,
+        log_db_path=str(db_path),
+    )
+
+    restaurants_payload = [
+        {
+            "id": "6",
+            "name": "RAGù",
+            "balance": 1000,
+            "inventory": {
+                "Radici di Gravità": 2,
+                "Alghe Bioluminescenti": 1,
+            },
+            "reputation": 100,
+            "isOpen": True,
+            "kitchen": [],
+            "menu": {
+                "items": [
+                    {"name": "Nebulosa Galattica", "price": 42.0},
+                    {"name": "Cosmic Harmony", "price": 30.0},
+                ]
+            },
+            "receivedMessages": [],
+        },
+        {
+            "id": "7",
+            "name": "Other Team",
+            "balance": 950,
+            "inventory": {},
+            "reputation": 97,
+            "isOpen": False,
+            "kitchen": [],
+            "menu": {"items": []},
+            "receivedMessages": [],
+        },
+    ]
+
+    client._session = _FakeSession(get_response=_FakeResponse(payload=restaurants_payload))
+    typed = asyncio.run(client.get_restaurants())
+
+    assert len(typed) == 2
+    client._close_sql_logging()
+
+    assert _count_rows(db_path, "calls") == 1
+    assert _count_rows(db_path, "restaurants") == 2
+    assert _count_rows(db_path, "restaurant_inventory") == 2
+    assert _count_rows(db_path, "restaurant_menu_items") == 2
+
+
+def test_remaining_endpoints_persist_typed_rows(tmp_path: Path):
+    db_path = tmp_path / "calls.db"
+    client = HackapizzaClient(
+        team_id=6,
+        api_key="test-key",
+        enable_sql_logging=True,
+        log_db_path=str(db_path),
+    )
+
+    meals_payload = [{"clientName": "A", "orderText": "Nebulosa"}]
+    client._session = _FakeSession(get_response=_FakeResponse(payload=meals_payload))
+    meals = asyncio.run(client.get_meals("42"))
+    assert len(meals) == 1
+
+    market_payload = [{"id": "m1", "ingredient": "Alghe", "price": 10, "quantity": 2}]
+    client._session = _FakeSession(get_response=_FakeResponse(payload=market_payload))
+    market_entries = asyncio.run(client.get_market_entries())
+    assert len(market_entries) == 1
+
+    bids_payload = [{"teamId": "6", "ingredient": "Alghe", "bid": 5.0, "quantity": 1}]
+    client._session = _FakeSession(get_response=_FakeResponse(payload=bids_payload))
+    bid_history = asyncio.run(client.get_bid_history("42"))
+    assert len(bid_history) == 1
+
+    client._close_sql_logging()
+
+    assert _count_rows(db_path, "calls") == 3
+    assert _count_rows(db_path, "meals") == 1
+    assert _count_rows(db_path, "market_entries") == 1
+    assert _count_rows(db_path, "bid_history") == 1
