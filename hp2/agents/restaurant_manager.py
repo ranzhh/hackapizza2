@@ -37,9 +37,11 @@ class RestaurantManager(BaseAgent):
         self.turn_id = event.turn_id
         self.logger.info("GAME STARTED - turn_id=%s", self.turn_id)
         self.client.set_restaurant_open_status(is_open=True)
+        self.logger.info("Opened restaurant at game start")
 
     async def on_phase_changed(self, phase: GamePhase) -> None:
         self.client.set_restaurant_open_status(is_open=True)
+        self.logger.info("Opened restaurant at phase change: %s", phase.value)
         if phase == GamePhase.SERVING:
             if self._serving_task is None or self._serving_task.done():
                 self.logger.info("SERVING started: launching background loop")
