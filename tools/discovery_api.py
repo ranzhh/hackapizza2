@@ -26,7 +26,7 @@ LOGGER = logging.getLogger("api.discovery_harness")
 
 @dataclass
 class DiscoveryContext:
-    turn_id: int
+    turn_id: str
     ingredient_name: str = "tomato"
     dish_name: str = "margherita"
     client_id: str = "unknown-client"
@@ -69,7 +69,7 @@ def _first_present(payload: dict[str, Any], candidates: list[str], default: Any)
 
 
 def _build_context_from_snapshots(
-    turn_id: int,
+    turn_id: str,
     team_id: int,
     my_restaurant: dict[str, Any] | None,
     restaurants: list[dict[str, Any]] | None,
@@ -80,7 +80,7 @@ def _build_context_from_snapshots(
     context = DiscoveryContext(turn_id=turn_id, recipient_id=team_id)
 
     if my_restaurant:
-        context.turn_id = int(
+        context.turn_id = str(
             _first_present(
                 my_restaurant,
                 ["currentTurnId", "turn_id", "turnId", "activeTurnId"],
@@ -208,7 +208,7 @@ async def run_discovery(
     include_actions: bool = False,
     manage_session: bool = True,
     logger: logging.Logger | None = None,
-    turn_id: int = 7,
+    turn_id: str = "0",
 ) -> Path:
     """Call each endpoint, collect result/error, and persist the report to disk."""
     logger = logger or LOGGER

@@ -281,11 +281,11 @@ class HackapizzaClient(SqlLoggingMixin):
         return await self._get_recipes_typed()
 
     @typed_endpoint(_BID_HISTORY_ADAPTER, persist_method_name="_persist_typed_bid_history")
-    async def _get_bid_history_typed(self, turn_id: int) -> str:
+    async def _get_bid_history_typed(self, turn_id: str) -> str:
         """Historical blind auction bids for a given turn."""
         return f"/bid_history?turn_id={turn_id}"
 
-    async def get_bid_history(self, turn_id: int) -> BidHistoryResponseSchema:
+    async def get_bid_history(self, turn_id: str) -> BidHistoryResponseSchema:
         return await self._get_bid_history_typed(turn_id)
 
     @typed_endpoint(_MY_RESTAURANT_ADAPTER, persist_method_name="_persist_typed_my_restaurant")
