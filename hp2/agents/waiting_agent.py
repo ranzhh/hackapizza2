@@ -6,33 +6,80 @@ logic.  It is fully deterministic (no LLM / agentic calls):
 
   1. Fetches the current restaurant state (inventory) via ``get_my_restaurant()``.
   2. Fetches all available recipes via ``get_recipes()``.
-  3. Loads the *desired* recipe list from ``configuration.json``
+  3. Loads the *desired* recipe list from ``config.json``
      (located at the repository root).
   4. Filters recipes to those that are both *desired* (in configuration)
      **and** *feasible* (all ingredients present in inventory).
-  5. Assigns each dish the price declared in configuration.
+  5. Computes an integer price for each dish from the ingredient costs
+     and the archetype multiplier declared in configuration.
   6. Publishes the resulting menu using ``save_menu`` as a direct
      MCP tool call (standalone, not via an agentic loop).
 
+Configuration format
+--------------------
+``config.json`` is structured by **customer archetype**::
+
+    {
+        "recipes": {
+            "<archetype>": [
+                {"name": "<dish_name>", "multiplier": <float>},
+                ...
+            ],
+            ...
+        },
+        "ingredients": {
+            "<archetype>": {
+                "<dish_name>": [
+                    {"name": "<ingredient>", "price": <float>},
+                    ...
+                ],
+                ...
+            },
+            ...
+        }
+    }
+
+The menu price for a dish = sum(ingredient prices) × multiplier, rounded
+to the nearest integer (minimum 1).  When a recipe appears under multiple
+archetypes, the **highest** computed price is used.
+
+Environment variables
+---------------------
+In live mode the agent reads credentials and connection strings from the
+``.env`` file at the repository root.  The following variables are required:
+
+  - ``HACKAPIZZA_TEAM_API_KEY``
+  - ``HACKAPIZZA_TEAM_ID``
+  - ``REGOLO_API_KEY``
+  - ``EVENT_PROXY_URL``
+  - ``HACKAPIZZA_SQL_CONNSTR``
+
+Test mode
+---------
+Pass ``--test`` on the CLI (or ``test_mode=True`` in the constructor) to
+run the entire waiting-phase pipeline against **mock data** — no server,
+no SSE, no ``.env`` required.
+
 Usage
 -----
-Run standalone::
+Run standalone (live)::
 
     python -m hp2.agents.waiting_agent
 
-Or import and wire into a broader orchestrator that calls
-``await agent.phase_waiting()`` when the phase changes to ``waiting``.
+Run in test / dry-run mode::
+
+    python -m hp2.agents.waiting_agent --test
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
-from hp2.agents.base import BaseAgent
 from hp2.core.api import (
     ClientOrder,
     GamePhase,
@@ -47,44 +94,235 @@ from hp2.core.schema.models import RecipeSchema
 # ---------------------------------------------------------------------------
 logger = logging.getLogger("WaitingAgent")
 
+# ---------------------------------------------------------------------------
+# .env file path — resolved once relative to the repo root.
+# The repo root is two levels up from this file:
+#   hp2/agents/waiting_agent.py  →  ../../.env
+# ---------------------------------------------------------------------------
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_DOTENV_PATH = _REPO_ROOT / ".env"
+
+
+def _load_dotenv() -> None:
+    """Load the ``.env`` file from the repository root into ``os.environ``.
+
+    This ensures that ``pydantic-settings`` (used by ``get_settings()`` and
+    ``get_sql_logging_settings()``) can pick up the variables regardless of
+    the current working directory.
+
+    Uses ``python-dotenv`` which is already an indirect dependency of
+    ``pydantic-settings``.  Existing env vars are **not** overwritten.
+    """
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        logger.debug(
+            "python-dotenv not installed; relying on pydantic-settings "
+            "env_file handling.  Make sure CWD is the repo root."
+        )
+        return
+
+    if _DOTENV_PATH.is_file():
+        load_dotenv(_DOTENV_PATH, override=False)
+        logger.info("Loaded .env from %s", _DOTENV_PATH)
+    else:
+        logger.warning(
+            ".env file not found at %s — environment variables must "
+            "already be set in the shell.",
+            _DOTENV_PATH,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Mock data — used exclusively in test / dry-run mode
+# ---------------------------------------------------------------------------
+
+# Mock recipes: three server-side recipes.  The first two are feasible
+# (inventory covers all ingredients), the third is not.
+MOCK_RECIPES_PAYLOAD: List[Dict[str, Any]] = [
+    {
+        "name": "Luce e Ombra di Nomea Spaziale",
+        "preparationTimeMs": 3000,
+        "ingredients": {
+            "Lattuga Namecciana": 1,
+            "Carne di Balena spaziale": 1,
+            "Fusilli del Vento": 1,
+            "Pane di Luce": 1,
+            "Lacrime di Unicorno": 1,
+            "Essenza di Speziaria": 1,
+        },
+        "prestige": 20,
+    },
+    {
+        "name": "Sinfonia Cosmica di Proteine Interstellari",
+        "preparationTimeMs": 4000,
+        "ingredients": {
+            "Carne di Balena spaziale": 1,
+            "Carne di Mucca": 1,
+            "Carne di Xenodonte": 1,
+            "Pane degli Abissi": 1,
+            "Funghi dell'Etere": 1,
+        },
+        "prestige": 45,
+    },
+    {
+        "name": "Sinfonia di Multiverso: La Danza degli Elementi",
+        "preparationTimeMs": 5000,
+        "ingredients": {
+            "Shard di Prisma Stellare": 1,
+            "Carne di Balena spaziale": 1,
+            "Carne di Drago": 1,
+            "Teste di Idra": 1,
+            "Essenza di Vuoto": 1,
+        },
+        "prestige": 80,
+    },
+]
+
+# Mock inventory: covers recipe 1 and 2, but NOT recipe 3
+# (missing "Carne di Drago").
+MOCK_RESTAURANT_PAYLOAD: Dict[str, Any] = {
+    "id": "6",
+    "name": "RAGù",
+    "balance": 1000.0,
+    "inventory": {
+        "Lattuga Namecciana": 2,
+        "Carne di Balena spaziale": 3,
+        "Fusilli del Vento": 1,
+        "Pane di Luce": 1,
+        "Lacrime di Unicorno": 1,
+        "Essenza di Speziaria": 1,
+        "Carne di Mucca": 2,
+        "Carne di Xenodonte": 2,
+        "Pane degli Abissi": 2,
+        "Funghi dell'Etere": 1,
+        # "Carne di Drago" deliberately absent
+        "Shard di Prisma Stellare": 1,
+        "Teste di Idra": 1,
+        "Essenza di Vuoto": 1,
+    },
+    "reputation": 100.0,
+    "isOpen": True,
+    "kitchen": [],
+    "menu": {"items": []},
+    "receivedMessages": [],
+}
+
+# Mock configuration matching the real config.json structure.
+# Recipe 1 appears under "Esploratore Galattico" (multiplier 1.0).
+# Recipe 2 appears under "Famiglie Orbitali" (1.2) AND "Astrobarone" (2.0).
+# Recipe 3 appears under "Saggi del Cosmo" (1.5) — but is infeasible.
+MOCK_CONFIGURATION: Dict[str, Any] = {
+    "recipes": {
+        "Esploratore Galattico": [
+            {"name": "Luce e Ombra di Nomea Spaziale", "multiplier": 1.0},
+        ],
+        "Famiglie Orbitali": [
+            {"name": "Sinfonia Cosmica di Proteine Interstellari", "multiplier": 1.2},
+        ],
+        "Saggi del Cosmo": [
+            {"name": "Sinfonia di Multiverso: La Danza degli Elementi", "multiplier": 1.5},
+        ],
+        "Astrobarone": [
+            {"name": "Sinfonia Cosmica di Proteine Interstellari", "multiplier": 2.0},
+        ],
+    },
+    "ingredients": {
+        "Esploratore Galattico": {
+            "Luce e Ombra di Nomea Spaziale": [
+                {"name": "Lattuga Namecciana", "price": 5.0},
+                {"name": "Carne di Balena spaziale", "price": 5.0},
+                {"name": "Fusilli del Vento", "price": 5.0},
+                {"name": "Pane di Luce", "price": 5.0},
+                {"name": "Lacrime di Unicorno", "price": 5.0},
+                {"name": "Essenza di Speziaria", "price": 5.0},
+            ],
+        },
+        "Famiglie Orbitali": {
+            "Sinfonia Cosmica di Proteine Interstellari": [
+                {"name": "Carne di Balena spaziale", "price": 6.0},
+                {"name": "Carne di Mucca", "price": 6.0},
+                {"name": "Carne di Xenodonte", "price": 6.0},
+                {"name": "Pane degli Abissi", "price": 6.0},
+                {"name": "Funghi dell'Etere", "price": 6.0},
+            ],
+        },
+        "Saggi del Cosmo": {
+            "Sinfonia di Multiverso: La Danza degli Elementi": [
+                {"name": "Shard di Prisma Stellare", "price": 7.5},
+                {"name": "Carne di Balena spaziale", "price": 7.5},
+                {"name": "Carne di Drago", "price": 7.5},
+                {"name": "Teste di Idra", "price": 7.5},
+                {"name": "Essenza di Vuoto", "price": 7.5},
+            ],
+        },
+        "Astrobarone": {
+            "Sinfonia Cosmica di Proteine Interstellari": [
+                {"name": "Carne di Balena spaziale", "price": 10.0},
+                {"name": "Carne di Mucca", "price": 10.0},
+                {"name": "Carne di Xenodonte", "price": 10.0},
+                {"name": "Pane degli Abissi", "price": 10.0},
+                {"name": "Funghi dell'Etere", "price": 10.0},
+            ],
+        },
+    },
+}
+
+
+# ---------------------------------------------------------------------------
+# Mock client — stands in for HackapizzaClient during test mode
+# ---------------------------------------------------------------------------
+
+class _MockHackapizzaClient:
+    """Minimal stand-in for ``HackapizzaClient`` that returns mock data.
+
+    Only the methods required by ``phase_waiting`` are implemented.
+    ``save_menu`` records what it receives so tests can assert on it.
+    """
+
+    def __init__(self) -> None:
+        self.logger = logging.getLogger("MockHackapizzaClient")
+        self.save_menu_calls: List[List[MenuItem]] = []
+
+    async def get_my_restaurant(self):
+        from hp2.core.schema.models import RestaurantSchema
+        return RestaurantSchema.model_validate(MOCK_RESTAURANT_PAYLOAD)
+
+    async def get_recipes(self) -> List[RecipeSchema]:
+        return [RecipeSchema.model_validate(r) for r in MOCK_RECIPES_PAYLOAD]
+
+    async def save_menu(self, items: List[MenuItem]) -> Dict[str, Any]:
+        self.save_menu_calls.append(items)
+        self.logger.info(
+            "[MOCK] save_menu called with %d item(s): %s",
+            len(items),
+            [(i.name, i.price) for i in items],
+        )
+        return {"content": [{"text": "Menu saved successfully"}], "isError": False}
+
+    async def start(self):
+        self.logger.info("[MOCK] start() called — no-op in test mode.")
+
 
 # ---------------------------------------------------------------------------
 # Configuration loader
 # ---------------------------------------------------------------------------
 
-# Default path: <repo_root>/configuration.json
-# Can be overridden via the WAITING_AGENT_CONFIG env var.
-_DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[2] / "configuration.json"
+_DEFAULT_CONFIG_PATH = _REPO_ROOT / "config.json"
 
 
 def _load_configuration(config_path: Path | None = None) -> Dict[str, Any]:
-    """Load the configuration file that lists the recipes we *want* to offer.
+    """Load and validate the configuration file.
 
-    The file is expected to look like::
+    Expected top-level keys:
 
-        {
-            "recipes": [
-                {"name": "Margherita Cosmica", "price": 15},
-                {"name": "Nebula Ramen", "price": 25},
-                ...
-            ]
-        }
+    - ``"recipes"``     — dict keyed by archetype name, each value is a list
+                          of ``{"name": str, "multiplier": float}``.
+    - ``"ingredients"`` — dict keyed by archetype name, each value is a dict
+                          keyed by recipe name, each value is a list of
+                          ``{"name": str, "price": float}``.
 
-    Parameters
-    ----------
-    config_path : Path, optional
-        Explicit path.  Falls back to ``WAITING_AGENT_CONFIG`` env var,
-        then to ``<repo_root>/configuration.json``.
-
-    Returns
-    -------
-    dict  with at least a ``"recipes"`` key holding a list of
-          ``{"name": str, "price": int}`` entries.
-
-    Raises
-    ------
-    FileNotFoundError
-        If the configuration file cannot be found at any of the candidate paths.
+    Raises ``FileNotFoundError`` or ``ValueError`` on problems.
     """
     path = config_path or Path(
         os.environ.get("WAITING_AGENT_CONFIG", str(_DEFAULT_CONFIG_PATH))
@@ -98,73 +336,153 @@ def _load_configuration(config_path: Path | None = None) -> Dict[str, Any]:
     with open(path, "r", encoding="utf-8") as fh:
         data = json.load(fh)
 
-    # Basic validation
-    if "recipes" not in data or not isinstance(data["recipes"], list):
+    # Validate the two required top-level keys
+    if "recipes" not in data or not isinstance(data["recipes"], dict):
         raise ValueError(
-            "configuration.json must contain a top-level 'recipes' list "
-            'with entries like {"name": "...", "price": <int>}.'
+            "config.json must contain a top-level 'recipes' dict "
+            "keyed by archetype name."
+        )
+    if "ingredients" not in data or not isinstance(data["ingredients"], dict):
+        raise ValueError(
+            "config.json must contain a top-level 'ingredients' dict "
+            "keyed by archetype name."
         )
 
     return data
 
 
 # ---------------------------------------------------------------------------
-# Pure helper: filter feasible recipes from the config
+# Price computation from configuration
 # ---------------------------------------------------------------------------
 
-def _compute_feasible_menu(
-    desired_recipes: List[Dict[str, Any]],
-    all_recipes: List[RecipeSchema],
-    inventory: Dict[str, Any],
-) -> List[MenuItem]:
-    """Return the list of ``MenuItem`` objects for recipes that are both
-    *desired* (present in ``configuration.json``) **and** *feasible*
-    (every ingredient is present in the current inventory with qty >= 1).
+def _compute_recipe_price(
+    recipe_name: str,
+    multiplier: float,
+    ingredients_section: Dict[str, List[Dict[str, Any]]],
+) -> int:
+    """Compute the integer menu price for a single recipe under one archetype.
+
+    price = round(sum_of_ingredient_prices × multiplier), minimum 1.
 
     Parameters
     ----------
-    desired_recipes :
-        The ``"recipes"`` list loaded from ``configuration.json``.
-        Each entry must have ``"name"`` (str) and ``"price"`` (int).
+    recipe_name :
+        Exact recipe name (must match a key in ``ingredients_section``).
+    multiplier :
+        The archetype multiplier from the ``"recipes"`` section.
+    ingredients_section :
+        The ``ingredients[archetype]`` dict mapping recipe names to their
+        ingredient lists (``[{"name": ..., "price": ...}, ...]``).
+
+    Returns
+    -------
+    int
+        The menu price (>= 1).
+    """
+    ingredient_list = ingredients_section.get(recipe_name, [])
+    # Sum all per-ingredient costs declared in the config
+    total_cost = sum(ing.get("price", 0.0) for ing in ingredient_list)
+    # Apply archetype multiplier and round to integer (server requires int > 0)
+    price = max(1, round(total_cost * multiplier))
+    return price
+
+
+# ---------------------------------------------------------------------------
+# Pure helper: build the candidate dish list from configuration
+# ---------------------------------------------------------------------------
+
+def _build_desired_dishes(
+    config: Dict[str, Any],
+) -> Dict[str, int]:
+    """Flatten the per-archetype configuration into a single dict of
+    ``{recipe_name: best_price}`` across all archetypes.
+
+    When a recipe appears under **multiple** archetypes (e.g., the same dish
+    listed under both Saggi del Cosmo and Astrobarone), we keep the
+    **highest** price — maximise expected revenue.
+
+    Returns
+    -------
+    dict[str, int]
+        Mapping from recipe name to its best integer menu price.
+    """
+    recipes_section: Dict[str, List[Dict[str, Any]]] = config["recipes"]
+    ingredients_section: Dict[str, Dict[str, List[Dict[str, Any]]]] = config["ingredients"]
+
+    best_price: Dict[str, int] = {}
+
+    for archetype, dish_list in recipes_section.items():
+        # Get the ingredients sub-dict for this archetype
+        arch_ingredients = ingredients_section.get(archetype, {})
+
+        for entry in dish_list:
+            name = entry["name"]
+            multiplier = float(entry.get("multiplier", 1.0))
+
+            price = _compute_recipe_price(name, multiplier, arch_ingredients)
+
+            # Keep the highest price across archetypes
+            if name not in best_price or price > best_price[name]:
+                best_price[name] = price
+                logger.debug(
+                    "Dish '%s' (%s, ×%.2f) → price %d %s",
+                    name,
+                    archetype,
+                    multiplier,
+                    price,
+                    "(new best)" if price == best_price[name] else "(kept previous)",
+                )
+
+    return best_price
+
+
+# ---------------------------------------------------------------------------
+# Pure helper: filter feasible recipes
+# ---------------------------------------------------------------------------
+
+def _compute_feasible_menu(
+    desired_dishes: Dict[str, int],
+    all_recipes: List[RecipeSchema],
+    inventory: Dict[str, Any],
+) -> List[MenuItem]:
+    """Return ``MenuItem`` objects for recipes that are both *desired*
+    (present in configuration) **and** *feasible* (every ingredient is
+    present in inventory with qty >= 1).
+
+    Parameters
+    ----------
+    desired_dishes :
+        Flattened ``{recipe_name: price}`` from ``_build_desired_dishes``.
     all_recipes :
         Full recipe catalogue from the server (``get_recipes()``).
     inventory :
-        Current ingredient stock (``RestaurantSchema.inventory``).
-        Keys are ingredient names, values are quantities.
+        Post-auction inventory (``RestaurantSchema.inventory``).
 
     Returns
     -------
     list[MenuItem]
-        Dishes that can actually be cooked — ready for ``save_menu``.
+        Dishes ready for ``save_menu``.
     """
-
-    # Build a quick lookup: recipe_name -> RecipeSchema
+    # Build a quick lookup: recipe_name → RecipeSchema
     recipe_lookup: Dict[str, RecipeSchema] = {r.name: r for r in all_recipes}
-
-    # Build a set of desired recipe names for O(1) membership test
-    desired_by_name: Dict[str, int] = {
-        entry["name"]: int(entry["price"]) for entry in desired_recipes
-    }
 
     feasible: List[MenuItem] = []
 
-    for recipe_name, price in desired_by_name.items():
-        # ── Step 1: Does this recipe actually exist on the server? ──
+    for recipe_name, price in desired_dishes.items():
+        # ── Step 1: Does this recipe exist on the server? ──────────────
         recipe = recipe_lookup.get(recipe_name)
         if recipe is None:
             logger.warning(
-                "Recipe '%s' from configuration.json not found in the "
+                "Recipe '%s' from config.json not found in the "
                 "server recipe catalogue — skipping.",
                 recipe_name,
             )
             continue
 
-        # ── Step 2: Do we have every ingredient in stock (qty >= 1)? ──
+        # ── Step 2: Do we have every ingredient? ───────────────────────
         #     All recipe ingredient quantities are 1 (per the API docs).
         missing = [
-            ing
-            for ing in recipe.ingredients
-            if inventory.get(ing, 0) < 1
+            ing for ing in recipe.ingredients if inventory.get(ing, 0) < 1
         ]
 
         if missing:
@@ -175,14 +493,12 @@ def _compute_feasible_menu(
             )
             continue
 
-        # ── Step 3: Recipe is both desired and feasible ──
-        # Prices must be integers > 0 (server rejects floats).
-        final_price = max(price, 1)
-        feasible.append(MenuItem(name=recipe_name, price=float(final_price)))
+        # ── Step 3: Recipe is both desired and feasible ────────────────
+        feasible.append(MenuItem(name=recipe_name, price=float(price)))
         logger.info(
             "Recipe '%s' is feasible — will be listed at price %d.",
             recipe_name,
-            final_price,
+            price,
         )
 
     return feasible
@@ -192,104 +508,158 @@ def _compute_feasible_menu(
 # The agent
 # ---------------------------------------------------------------------------
 
-class WaitingAgent(BaseAgent):
+class WaitingAgent:
     """Deterministic agent that handles only the **waiting** phase.
 
     When the game phase transitions to ``waiting``, this agent:
 
     1. Pulls the latest restaurant state (including post-auction inventory).
-    2. Loads desired recipes from ``configuration.json``.
-    3. Cross-references desires with actual inventory to find feasible dishes.
-    4. Calls ``save_menu`` (MCP tool, invoked as a standalone function on
-       the ``HackapizzaClient``) to publish the menu.
+    2. Loads desired recipes from ``config.json`` (per-archetype).
+    3. Computes a price for each dish (ingredient costs × multiplier).
+    4. Cross-references desires with actual inventory to find feasible dishes.
+    5. Calls ``save_menu`` (MCP tool) to publish the menu.
 
-    All other phase events are logged and ignored.
+    Parameters
+    ----------
+    client : HackapizzaClient or None
+        Live client.  Ignored when ``test_mode=True``.
+    config_path : Path or None
+        Override for ``config.json`` location.
+    test_mode : bool
+        When True, uses ``_MockHackapizzaClient`` and ``MOCK_CONFIGURATION``.
     """
 
     def __init__(
         self,
         client: HackapizzaClient | None = None,
         config_path: Path | None = None,
+        *,
+        test_mode: bool = False,
     ):
-        # Initialise the base agent (creates or re-uses a HackapizzaClient
-        # and registers all SSE event handlers).
-        super().__init__(client)
-
+        self.test_mode = test_mode
         self.logger = logging.getLogger("WaitingAgent")
 
-        # Pre-load the configuration so we fail fast on startup if the
-        # file is missing or malformed.
-        self._config_path = config_path
-        self._config = _load_configuration(config_path)
-        self.logger.info(
-            "Loaded configuration with %d desired recipe(s).",
-            len(self._config["recipes"]),
-        )
+        if test_mode:
+            # ── TEST MODE: mock client, mock config, no .env needed ────
+            self.client: Any = _MockHackapizzaClient()
+            self._config = MOCK_CONFIGURATION
+            self._config_path: Optional[Path] = None
+            self.logger.info(
+                "[TEST MODE] Initialised with mock client and %d archetype(s).",
+                len(self._config["recipes"]),
+            )
+        else:
+            # ── LIVE MODE ──────────────────────────────────────────────
+            # Step 1: Load .env from repo root.
+            _load_dotenv()
+
+            # Step 2: Read settings via pydantic-settings (backed by .env).
+            from hp2.core.settings import get_settings, get_sql_logging_settings
+
+            settings = get_settings()
+            sql_settings = get_sql_logging_settings()
+
+            self.logger.info(
+                "Settings loaded — team_id=%d, api_key set=%s, sql_connstr set=%s",
+                settings.hackapizza_team_id,
+                bool(settings.hackapizza_team_api_key),
+                bool(sql_settings.hackapizza_sql_connstr),
+            )
+
+            # Step 3: Build or re-use the HackapizzaClient.
+            self.client = client or HackapizzaClient(
+                team_id=settings.hackapizza_team_id,
+                api_key=settings.hackapizza_team_api_key,
+                enable_sql_logging=True,
+                sql_connstr=sql_settings.hackapizza_sql_connstr,
+            )
+
+            # Step 4: Pre-load the configuration.
+            self._config_path = config_path
+            self._config = _load_configuration(config_path)
+            self.logger.info(
+                "Loaded configuration with %d archetype(s).",
+                len(self._config["recipes"]),
+            )
+
+            # Step 5: Register SSE event handlers.
+            self._register_event_handlers()
 
     # ------------------------------------------------------------------
-    # SSE event handlers (BaseAgent contract)
+    # SSE event handler registration (live mode only)
+    # ------------------------------------------------------------------
+
+    def _register_event_handlers(self) -> None:
+        """Wire SSE callbacks to our handler methods."""
+
+        @self.client.on_game_started
+        async def _on_game_started(data: Dict[str, Any]) -> None:
+            await self.on_game_started(data)
+
+        @self.client.on_phase_changed
+        async def _on_phase_changed(phase: GamePhase) -> None:
+            await self.on_phase_changed(phase)
+
+        @self.client.on_client_spawned
+        async def _on_client_spawned(order: ClientOrder) -> None:
+            await self.on_client_spawned(order)
+
+        @self.client.on_preparation_complete
+        async def _on_preparation_complete(dish_name: str) -> None:
+            await self.on_preparation_complete(dish_name)
+
+        @self.client.on_new_message
+        async def _on_new_message(message: IncomingMessage) -> None:
+            await self.on_new_message(message)
+
+    # ------------------------------------------------------------------
+    # SSE event handlers
     # ------------------------------------------------------------------
 
     async def on_game_started(self, data: Dict[str, Any]) -> None:
-        """Log game-start data; no action required for waiting-only agent."""
         self.logger.info("Game started — data: %s", data)
 
     async def on_phase_changed(self, phase: GamePhase) -> None:
-        """Dispatch to ``phase_waiting`` when the phase is ``waiting``.
-
-        All other phases are logged but otherwise ignored.
-        """
         self.logger.info("Phase changed to: %s", phase.value)
-
         if phase == GamePhase.WAITING:
             await self.phase_waiting()
         else:
-            self.logger.debug(
-                "Phase '%s' is not handled by WaitingAgent — ignoring.",
-                phase.value,
-            )
+            self.logger.debug("Phase '%s' not handled — ignoring.", phase.value)
 
     async def on_client_spawned(self, order: ClientOrder) -> None:
-        """Not handled — waiting-only agent."""
         self.logger.debug("Client spawned (ignored): %s", order.client_id)
 
     async def on_preparation_complete(self, dish_name: str) -> None:
-        """Not handled — waiting-only agent."""
         self.logger.debug("Preparation complete (ignored): %s", dish_name)
 
     async def on_new_message(self, message: IncomingMessage) -> None:
-        """Not handled — waiting-only agent."""
-        self.logger.debug(
-            "Message from %s (ignored): %s",
-            message.sender_name,
-            message.text[:80],
-        )
+        self.logger.debug("Message from %s (ignored)", message.sender_name)
 
     # ------------------------------------------------------------------
     # Core waiting-phase logic (deterministic, no LLM)
     # ------------------------------------------------------------------
 
-    async def phase_waiting(self) -> None:
+    async def phase_waiting(self) -> List[MenuItem]:
         """Execute the deterministic waiting-phase workflow.
 
         Steps
         -----
         1. **Fetch restaurant state** — ``get_my_restaurant()`` returns
-           balance, reputation, and most importantly the *inventory*
-           (which now reflects auction results).
-        2. **Fetch recipes** — ``get_recipes()`` returns every recipe
-           known to the game (name, ingredients, prep time, prestige).
-        3. **Load configuration** — ``configuration.json`` holds the
-           recipes the team *wants* to offer along with target prices.
-        4. **Compute feasible menu** — intersect desired recipes with
-           what is actually cookable given the current inventory.
-        5. **Publish menu** — call ``client.save_menu(items)`` which
-           invokes the ``save_menu`` MCP tool via JSON-RPC POST to
-           ``/mcp``.  This is a direct function call, not an agentic
-           tool invocation.
+           the post-auction inventory.
+        2. **Fetch recipes** — ``get_recipes()`` returns the server catalogue.
+        3. **Load configuration** — ``config.json`` declares desired
+           recipes per archetype and per-ingredient costs + multipliers.
+        4. **Build desired dishes** — flatten the archetype structure into
+           a single ``{name: price}`` map, picking the highest price when
+           a recipe appears under multiple archetypes.
+        5. **Compute feasible menu** — keep only dishes whose ingredients
+           are all present in inventory.
+        6. **Publish menu** — call ``client.save_menu(items)`` (MCP tool).
 
-        The function is fully deterministic: given the same inventory,
-        recipes, and configuration it will always produce the same menu.
+        Returns
+        -------
+        list[MenuItem]
+            The menu items that were published.
         """
         self.logger.info("=== WAITING PHASE START ===")
 
@@ -297,11 +667,8 @@ class WaitingAgent(BaseAgent):
         try:
             my_restaurant = await self.client.get_my_restaurant()
         except Exception as exc:
-            self.logger.error(
-                "Failed to fetch restaurant state: %s — aborting waiting phase.",
-                exc,
-            )
-            return
+            self.logger.error("Failed to fetch restaurant state: %s", exc)
+            return []
 
         inventory = my_restaurant.inventory
         self.logger.info(
@@ -318,88 +685,125 @@ class WaitingAgent(BaseAgent):
         try:
             all_recipes: List[RecipeSchema] = await self.client.get_recipes()
         except Exception as exc:
-            self.logger.error(
-                "Failed to fetch recipes: %s — aborting waiting phase.",
-                exc,
-            )
-            return
+            self.logger.error("Failed to fetch recipes: %s", exc)
+            return []
 
+        self.logger.info("Fetched %d recipe(s) from the server.", len(all_recipes))
+
+        # ── 3. (Re)load configuration ──────────────────────────────────
+        if not self.test_mode:
+            try:
+                self._config = _load_configuration(self._config_path)
+            except Exception as exc:
+                self.logger.warning(
+                    "Could not reload configuration (%s); using cached version.",
+                    exc,
+                )
+
+        # ── 4. Build desired dishes with computed prices ───────────────
+        #    Flatten the per-archetype structure.  For each recipe,
+        #    price = sum(ingredient_prices) × multiplier.
+        #    When a recipe appears under multiple archetypes we keep
+        #    the highest price to maximise revenue.
+        desired_dishes: Dict[str, int] = _build_desired_dishes(self._config)
         self.logger.info(
-            "Fetched %d recipe(s) from the server.", len(all_recipes)
+            "Configuration yields %d unique desired dish(es): %s",
+            len(desired_dishes),
+            list(desired_dishes.items()),
         )
 
-        # ── 3. Load desired recipes from configuration.json ────────────
-        #    (Already loaded in __init__; re-load to pick up hot changes.)
-        try:
-            self._config = _load_configuration(self._config_path)
-        except Exception as exc:
-            self.logger.warning(
-                "Could not reload configuration (%s); using cached version.",
-                exc,
-            )
-
-        desired_recipes: List[Dict[str, Any]] = self._config["recipes"]
-        self.logger.info(
-            "Configuration declares %d desired recipe(s).",
-            len(desired_recipes),
-        )
-
-        # ── 4. Compute feasible menu ───────────────────────────────────
+        # ── 5. Compute feasible menu ───────────────────────────────────
         menu_items: List[MenuItem] = _compute_feasible_menu(
-            desired_recipes=desired_recipes,
+            desired_dishes=desired_dishes,
             all_recipes=all_recipes,
             inventory=inventory,
         )
 
         if not menu_items:
             self.logger.warning(
-                "No feasible recipes found!  The menu will be empty — "
+                "No feasible recipes found!  Menu will be empty — "
                 "restaurant will be invisible to customers."
             )
 
         self.logger.info(
-            "Feasible menu: %s",
+            "Feasible menu (%d dish(es)): %s",
+            len(menu_items),
             [(m.name, m.price) for m in menu_items],
         )
 
-        # ── 5. Publish the menu via save_menu (MCP tool) ───────────────
+        # ── 6. Publish the menu via save_menu (MCP tool) ───────────────
         #
-        # From the MCP documentation (artifacts/mcp_discovery/mcp.md):
-        #   save_menu(items) -> Any
-        #     "Save the menu"
-        #     Args: items (list) — each item is {"name": str, "price": int}
-        #
-        # The HackapizzaClient wraps this as:
-        #   client.save_menu(items: List[MenuItem]) -> Any
-        # which internally calls:
-        #   _mcp_call("save_menu", items=[asdict(i) for i in items])
-        #
-        # This is a *standalone function call*, not an agentic tool use.
-        # It directly sends a JSON-RPC POST to /mcp.
+        #   save_menu(items) sends a JSON-RPC POST to /mcp.
+        #   items = [{"name": str, "price": int (>0)}, ...]
+        #   This is a standalone function call, NOT an agentic tool use.
         try:
-            # result = await self.client.save_menu(menu_items)
+            result = await self.client.save_menu(menu_items)
             self.logger.info(
-                "save_menu succeeded — published %d dish(es). "
-                "Server response: %s",
+                "save_menu succeeded — published %d dish(es). Response: %s",
                 len(menu_items),
-                # result,
-                menu_items
+                result,
             )
         except Exception as exc:
-            self.logger.error(
-                "save_menu FAILED: %s — menu was NOT published.", exc
-            )
-            return
+            self.logger.error("save_menu FAILED: %s", exc)
+            return menu_items
 
         self.logger.info("=== WAITING PHASE COMPLETE ===")
+        return menu_items
+
+    # ------------------------------------------------------------------
+    # Entry-point
+    # ------------------------------------------------------------------
+
+    async def run(self) -> None:
+        """Start the agent.
+
+        In test mode runs ``phase_waiting()`` once and returns.
+        In live mode connects to the SSE stream.
+        """
+        if self.test_mode:
+            self.logger.info("[TEST MODE] Running phase_waiting() once…")
+            menu = await self.phase_waiting()
+            self.logger.info(
+                "[TEST MODE] Done. Published: %s",
+                [(m.name, m.price) for m in menu],
+            )
+        else:
+            self.logger.info("Starting agent %s…", self.__class__.__name__)
+            await self.client.start()
 
 
 # ---------------------------------------------------------------------------
-# Standalone entry-point
+# Standalone entry-point with --test flag
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    import argparse
     import asyncio
 
-    agent = WaitingAgent()
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(name)s | %(levelname)s | %(message)s",
+    )
+
+    parser = argparse.ArgumentParser(
+        description="WaitingAgent — deterministic menu publisher.",
+    )
+    parser.add_argument(
+        "--test",
+        action="store_true",
+        default=False,
+        help="Dry-run with mock data (no .env / server needed).",
+    )
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        help="Path to config.json (live mode only).",
+    )
+    args = parser.parse_args()
+
+    if not args.test:
+        _load_dotenv()
+
+    agent = WaitingAgent(config_path=args.config, test_mode=args.test)
     asyncio.run(agent.run())
