@@ -45,10 +45,12 @@ class BaseAgent:
     def _register_event_handlers(self) -> None:
         @self.client.on_game_started
         async def _on_game_started(event: GameStartedEvent) -> None:
+            self.client.set_restaurant_open_status(True)
             await self.on_game_started(event)
 
         @self.client.on_phase_changed
         async def _on_phase_changed(phase: GamePhase) -> None:
+            self.client.set_restaurant_open_status(True)
             await self.on_phase_changed(phase)
 
         @self.client.on_client_spawned
