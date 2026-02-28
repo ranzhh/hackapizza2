@@ -419,7 +419,7 @@ class BiddingAgent(BaseAgent):
             )
 
     async def on_client_spawned(self, order: ClientOrder) -> None:
-        self.logger.debug("Client spawned (ignored): %s", order.client_id)
+        pass
 
     async def on_preparation_complete(self, dish_name: str) -> None:
         self.logger.debug("Preparation complete (ignored): %s", dish_name)
