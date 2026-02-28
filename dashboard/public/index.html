@@ -7,6 +7,243 @@
   <meta name="description" content="Real-time monitoring dashboard for Hackapizza 2.0">
   <link rel="stylesheet" href="/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='8' cy='8' r='7' fill='%237c3aed'/></svg>">
+  <style>
+    /* ---- Bids bubble chart ---- */
+    .bids-chart-wrap {
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px 12px;
+      margin-bottom: 14px;
+      position: relative;
+      /* height driven by JS via --bubble-h custom property */
+      height: var(--bubble-h, 500px);
+      transition: height 0.2s ease;
+    }
+
+    .bids-chart-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-2);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 8px;
+    }
+
+    .bids-chart-canvas-wrap {
+      position: relative;
+      /* canvas is container minus header (~38px) */
+      height: calc(var(--bubble-h, 500px) - 38px);
+      transition: height 0.2s ease;
+    }
+
+    /* ---- Ingredient history chart ---- */
+    .bids-history-wrap {
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px 12px;
+      margin-bottom: 14px;
+      height: 340px;
+    }
+
+    .bids-history-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .bids-history-canvas-wrap {
+      position: relative;
+      height: 272px;
+    }
+
+    /* ---- Matrix table — height driven by JS via --table-h ---- */
+    .bids-wrap {
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--bg-1);
+      max-height: var(--table-h, 380px);
+      transition: max-height 0.2s ease;
+    }
+
+    /* ---- Size-control row ---- */
+    .bids-size-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .bids-size-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .bids-size-group label {
+      font-size: 11px;
+      color: var(--text-2);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .size-btn-group {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .size-btn {
+      padding: 3px 9px;
+      font-size: 11px;
+      font-family: var(--mono);
+      font-weight: 500;
+      background: var(--bg-2);
+      color: var(--text-2);
+      border: none;
+      border-right: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+      line-height: 1.6;
+    }
+
+    .size-btn:last-child { border-right: none; }
+    .size-btn:hover { background: var(--bg-3); color: var(--text-0); }
+    .size-btn.active { background: var(--purple-bg); color: var(--purple); }
+
+    .bids-table {
+      border-collapse: collapse;
+      font-size: 11px;
+      width: max-content;
+      min-width: 100%;
+    }
+
+    /* sticky header row */
+    .bids-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      padding: 7px 12px;
+      text-align: center;
+      font-weight: 600;
+      color: var(--text-2);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+
+    /* sticky ingredient column */
+    .bids-table td.ing-col,
+    .bids-table th.ing-col {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      min-width: 180px;
+      max-width: 240px;
+      white-space: nowrap;
+      font-weight: 500;
+      color: var(--text-0);
+      font-size: 11px;
+      padding: 6px 12px;
+    }
+    .bids-table thead th.ing-col { z-index: 4; }
+
+    .bids-table tbody tr:hover td { background: var(--bg-2); }
+    .bids-table tbody tr:hover td.ing-col { background: var(--bg-3); }
+
+    /* data cells */
+    .bids-table td.bid-cell {
+      padding: 5px 8px;
+      vertical-align: middle;
+      text-align: center;
+      min-width: 90px;
+      border: 1px solid var(--border);
+    }
+
+    .bid-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+
+    /* Price chip — prominent */
+    .bid-price {
+      display: inline-block;
+      background: var(--purple-bg);
+      color: var(--purple);
+      font-family: var(--mono);
+      font-weight: 600;
+      font-size: 12px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      letter-spacing: 0.2px;
+    }
+
+    /* Qty chip — secondary */
+    .bid-qty {
+      display: inline-block;
+      background: var(--bg-3);
+      color: var(--text-1);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      padding: 1px 6px;
+      border-radius: 3px;
+    }
+
+    /* empty cell */
+    .bid-empty {
+      color: var(--border);
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    /* turn selector area */
+    .bids-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .bids-toolbar label {
+      font-size: 12px;
+      color: var(--text-2);
+      font-weight: 500;
+    }
+
+    .turn-select {
+      min-width: 120px;
+    }
+
+    .bids-legend {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 11px;
+      color: var(--text-2);
+    }
+
+    .bids-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+  </style>
 </head>
 <body>
   <div class="app">
@@ -55,6 +292,14 @@
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
           <span>Recipes</span>
           <span class="nav-badge" id="recipeCount">0</span>
+        </div>
+
+        <div class="nav-sep"></div>
+
+        <!-- NEW: Market Bids tab -->
+        <div class="nav-item" data-panel="bids">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="6" height="18" rx="1"/><rect x="9" y="8" width="6" height="13" rx="1"/><rect x="16" y="13" width="6" height="8" rx="1"/></svg>
+          <span>Market Bids</span>
         </div>
 
         <div class="nav-sep"></div>
@@ -114,8 +359,8 @@
                 <th style="width:40px">ID</th>
                 <th style="width:140px">Time</th>
                 <th style="width:60px">Turn</th>
-                <th style="width:140px">Type</th>
-                <th>Data</th>
+                <th style="width:160px">Type</th>
+                <th>Detail</th>
               </tr></thead>
               <tbody id="eventsBody"></tbody>
             </table>
@@ -215,6 +460,83 @@
           <div class="card-grid" id="recipeGrid"></div>
         </div>
 
+        <!-- ===================== MARKET BIDS ===================== -->
+        <div class="panel" id="panel-bids">
+          <div class="bids-toolbar">
+            <label for="bidTurnSelect">Turn</label>
+            <select class="turn-select" id="bidTurnSelect" onchange="loadBids()">
+              <option value="">Loading…</option>
+            </select>
+            <span id="bidsStatus" style="font-size:11px;color:var(--text-2);font-family:var(--mono)"></span>
+            <div class="bids-legend">
+              <div class="bids-legend-item">
+                <span class="bid-price" style="font-size:10px;padding:1px 5px">120</span>
+                <span>unit price</span>
+              </div>
+              <div class="bids-legend-item">
+                <span class="bid-qty" style="font-size:10px">×3</span>
+                <span>quantity</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bubble chart -->
+          <div class="bids-chart-wrap" id="bidsChartWrap" style="display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div class="bids-chart-title" style="margin:0">Price vs Ingredient — bubble size = quantity bought</div>
+              <div class="bids-size-group">
+                <label>Chart height</label>
+                <div class="size-btn-group" id="chartSizeBtns">
+                  <button class="size-btn" data-h="300"  onclick="resizeBubbleChart(300,  this)">S</button>
+                  <button class="size-btn active" data-h="500" onclick="resizeBubbleChart(500, this)">M</button>
+                  <button class="size-btn" data-h="700"  onclick="resizeBubbleChart(700,  this)">L</button>
+                  <button class="size-btn" data-h="1000" onclick="resizeBubbleChart(1000, this)">XL</button>
+                </div>
+              </div>
+            </div>
+            <div class="bids-chart-canvas-wrap" id="bidsChartCanvasWrap">
+              <canvas id="bidsChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Ingredient history chart -->
+          <div class="bids-history-wrap" id="bidsHistoryWrap" style="display:none;">
+            <div class="bids-history-header">
+              <div class="bids-chart-title" style="margin:0;white-space:nowrap">Weighted avg price over turns —</div>
+              <select id="ingHistorySelect" onchange="loadIngredientHistory()" style="min-width:220px">
+                <option value="">Select an ingredient…</option>
+              </select>
+              <span id="historyStatus" style="font-size:11px;color:var(--text-2);font-family:var(--mono)"></span>
+            </div>
+            <div class="bids-history-canvas-wrap">
+              <canvas id="bidsHistoryChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Table size control -->
+          <div class="bids-size-controls" id="tableSizeControls" style="display:none;">
+            <div class="bids-size-group">
+              <label>Table height</label>
+              <div class="size-btn-group" id="tableSizeBtns">
+                <button class="size-btn" data-h="200"  onclick="resizeTable(200,  this)">S</button>
+                <button class="size-btn active" data-h="380" onclick="resizeTable(380, this)">M</button>
+                <button class="size-btn" data-h="600"  onclick="resizeTable(600,  this)">L</button>
+                <button class="size-btn" data-h="900"  onclick="resizeTable(900,  this)">XL</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bids-wrap" id="bidsWrap">
+            <!-- table injected here -->
+          </div>
+
+          <div class="empty" id="bidsEmpty" style="display:none;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="6" height="18" rx="1"/><rect x="9" y="8" width="6" height="13" rx="1"/><rect x="16" y="13" width="6" height="8" rx="1"/></svg>
+            <p>No bid data found for this turn</p>
+          </div>
+        </div>
+        <!-- ======================================================= -->
+
         <!-- STATS -->
         <div class="panel" id="panel-stats">
           <div class="stats-row" id="statsGrid"></div>
@@ -229,6 +551,7 @@
     </main>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

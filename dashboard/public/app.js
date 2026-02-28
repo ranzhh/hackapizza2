@@ -61,6 +61,71 @@ function jsonCell(payload) {
     <pre class="json-content" id="${id}">${esc(prettyJson(payload))}</pre>`;
 }
 
+// Render structured detail for an event row — no raw JSON toggle needed
+const DETAIL_LABELS = {
+  // value → { label, colour-class }
+};
+
+function detailCell(eventType, detail) {
+  if (!detail || !Object.keys(detail).length) return '<span style="color:var(--text-2);font-size:11px;">—</span>';
+
+  const pairs = Object.entries(detail);
+
+  // Special formatting per event type
+  if (eventType === 'game_phase_changed') {
+    const cls = `phase-${detail.phase || 'unknown'}`;
+    return `<span class="phase-badge ${cls}">${esc(detail.phase || '?')}</span>`;
+  }
+
+  if (eventType === 'new_message' || eventType === 'mcp_send_message') {
+    const sender = detail.sender ? `<span class="badge badge-info" style="margin-right:4px">${esc(detail.sender)}</span>` : '';
+    const rid = detail.recipient_id != null ? `<span class="badge badge-muted" style="margin-right:4px">→ #${detail.recipient_id}</span>` : '';
+    const text = detail.text ? `<span style="color:var(--text-1);font-size:11px">${esc(detail.text)}</span>` : '';
+    return sender + rid + text;
+  }
+
+  if (eventType === 'mcp_create_market_entry') {
+    const sideClass = detail.side === 'ask' ? 'badge-error' : 'badge-ok';
+    return `<span class="badge ${sideClass}">${esc(detail.side)}</span> `
+      + `<span class="pill">${esc(detail.ingredient)}</span> `
+      + `<span class="mono" style="font-size:11px">×${detail.qty} @ ${detail.price}</span>`;
+  }
+
+  if (eventType === 'mcp_set_open_status') {
+    return detail.is_open
+      ? '<span class="badge badge-ok">open</span>'
+      : '<span class="badge badge-error">closed</span>';
+  }
+
+  if (eventType === 'mcp_closed_bid') {
+    const bids = detail.bids;
+    if (Array.isArray(bids)) {
+      const id = 'j'+(++_jtId);
+      return `<span style="font-size:11px;color:var(--text-2)">${bids.length} bids</span>
+        <span class="json-toggle" onclick="$('${id}').classList.toggle('open')">show</span>
+        <pre class="json-content" id="${id}">${esc(JSON.stringify(bids, null, 2))}</pre>`;
+    }
+    return `<span style="font-size:11px;color:var(--text-2)">${esc(String(detail.bids_json || ''))}</span>`;
+  }
+
+  if (eventType === 'mcp_save_menu') {
+    const items = detail.items;
+    if (Array.isArray(items)) {
+      const id = 'j'+(++_jtId);
+      return `<span style="font-size:11px;color:var(--text-2)">${items.length} items</span>
+        <span class="json-toggle" onclick="$('${id}').classList.toggle('open')">show</span>
+        <pre class="json-content" id="${id}">${esc(JSON.stringify(items, null, 2))}</pre>`;
+    }
+  }
+
+  // Generic fallback: render key: value chips inline
+  return pairs.map(([k, v]) => {
+    const val = v == null ? '—' : (typeof v === 'object' ? JSON.stringify(v).slice(0, 60) : String(v));
+    return `<span style="font-size:11px;color:var(--text-2)">${esc(k)}:</span>`
+      + `<span class="mono" style="font-size:11px;margin-right:8px;color:var(--text-0)"> ${esc(val)}</span>`;
+  }).join('');
+}
+
 // ---------------------------------------------------------------------------
 // Theme
 // ---------------------------------------------------------------------------
@@ -102,18 +167,20 @@ function switchPanel(panel) {
 
   const titles = {
     events:'Events', clients:'Clients', preparations:'Preparations',
-    messages:'Messages', restaurants:'Restaurants', recipes:'Recipes', stats:'Stats'
+    messages:'Messages', restaurants:'Restaurants', recipes:'Recipes',
+    stats:'Stats', bids:'Market Bids'
   };
   $('panelTitle').textContent = titles[panel] || panel;
   $('liveIndicator').style.display = panel === 'events' ? 'flex' : 'none';
 
-  if (panel === 'events') loadEvents();
-  if (panel === 'clients') loadClients();
-  if (panel === 'preparations') loadPreparations();
-  if (panel === 'messages') loadMessages();
-  if (panel === 'restaurants') loadRestaurants();
-  if (panel === 'recipes') loadRecipes();
-  if (panel === 'stats') loadStats();
+  if (panel === 'events')        loadEvents();
+  if (panel === 'clients')       loadClients();
+  if (panel === 'preparations')  loadPreparations();
+  if (panel === 'messages')      loadMessages();
+  if (panel === 'restaurants')   loadRestaurants();
+  if (panel === 'recipes')       loadRecipes();
+  if (panel === 'stats')         loadStats();
+  if (panel === 'bids')          initBids();
 }
 
 // ---------------------------------------------------------------------------
@@ -163,19 +230,18 @@ async function loadEvents() {
     <td class="mono">${formatTime(e.timestamp_utc)}</td>
     <td class="mono">${e.turn_id||'—'}</td>
     <td>${eventTypeBadge(e.event_type)}</td>
-    <td>${jsonCell(e.data)}</td>
+    <td>${detailCell(e.event_type, e.detail)}</td>
   </tr>`).join('');
 }
 
 function appendNewEvents(events) {
   let phaseChanged = false;
   for (const e of events) {
-    if (e.event_type === 'game_phase_changed' && e.data && e.data.phase) {
-      updatePhaseBadge(e.data.phase);
+    if (e.event_type === 'game_phase_changed' && e.detail && e.detail.phase) {
+      updatePhaseBadge(e.detail.phase);
       phaseChanged = true;
     }
   }
-  // Append to events table if on events panel
   if (currentPanel === 'events') {
     const tbody = $('eventsBody');
     const empty = $('eventsEmpty');
@@ -187,17 +253,16 @@ function appendNewEvents(events) {
         <td class="mono">${formatTime(e.timestamp_utc)}</td>
         <td class="mono">${e.turn_id||'—'}</td>
         <td>${eventTypeBadge(e.event_type)}</td>
-        <td>${jsonCell(e.data)}</td>`;
+        <td>${detailCell(e.event_type, e.detail)}</td>`;
       tbody.insertBefore(tr, tbody.firstChild);
     }
     const cnt = $('eventCount');
     cnt.textContent = parseInt(cnt.textContent) + events.length;
     if ($('autoScroll').checked) $('eventsTableWrap').scrollTop = 0;
   }
-  // Auto-refresh sub-panels if active
-  if (currentPanel === 'clients') loadClients();
-  if (currentPanel === 'preparations') loadPreparations();
-  if (currentPanel === 'messages') loadMessages();
+  if (currentPanel === 'clients')       loadClients();
+  if (currentPanel === 'preparations')  loadPreparations();
+  if (currentPanel === 'messages')      loadMessages();
   if (phaseChanged && currentPanel === 'restaurants') loadRestaurants();
 }
 
@@ -366,6 +431,507 @@ async function loadStats() {
 }
 
 // ---------------------------------------------------------------------------
+// MARKET BIDS
+// ---------------------------------------------------------------------------
+
+// Populated once, then reused when switching turns
+let _bidsInitialised = false;
+let _bidsChart = null;       // Chart.js bubble chart instance
+let _historyChart = null;    // Chart.js history line chart instance
+
+// Per-turn bid data cache: turn_id (string) → API response object
+const _bidsCache = {};
+
+// Ordered list of all known turn_ids (ascending numbers, for history fetching)
+let _knownTurns = [];
+
+// Distinct colours for up to 30 restaurants; cycles if more
+const BUBBLE_PALETTE = [
+  '#a78bfa','#60a5fa','#34d399','#fbbf24','#f87171',
+  '#c084fc','#38bdf8','#4ade80','#fb923c','#f472b6',
+  '#818cf8','#22d3ee','#a3e635','#facc15','#e879f9',
+  '#6ee7b7','#93c5fd','#fca5a5','#fdba74','#d8b4fe',
+  '#67e8f9','#86efac','#fde68a','#fca5e0','#a5b4fc',
+  '#5eead4','#bef264','#fed7aa','#c4b5fd','#7dd3fc',
+];
+
+async function initBids() {
+  if (!_bidsInitialised) {
+    try {
+      const data = await api('/api/turns');
+
+      // Store turns ascending for history chart (fetch oldest→newest)
+      _knownTurns = [...data.turn_ids].sort((a, b) => {
+        const na = Number(a), nb = Number(b);
+        return (!isNaN(na) && !isNaN(nb)) ? na - nb : String(a).localeCompare(String(b));
+      });
+
+      const sel = $('bidTurnSelect');
+      sel.innerHTML = data.turn_ids.length === 0
+        ? '<option value="">No turns available</option>'
+        : [..._knownTurns]
+            .reverse()                               // descending for display
+            .map(t => `<option value="${esc(String(t))}">${esc(String(t))}</option>`).join('');
+
+      if (data.turn_ids.length > 0) sel.selectedIndex = 0;
+      _bidsInitialised = true;
+    } catch (err) {
+      const s = $('bidsStatus');
+      s.textContent = '✕ Could not load turns: ' + String(err);
+      s.style.color = 'var(--red)';
+      return;
+    }
+  }
+  await loadBids();
+}
+
+async function loadBids() {
+  const sel = $('bidTurnSelect');
+  const turnId = sel.value;
+  const status = $('bidsStatus');
+  const wrap = $('bidsWrap');
+  const empty = $('bidsEmpty');
+
+  status.textContent = 'Loading…';
+  status.style.color = 'var(--text-2)';
+  wrap.innerHTML = '';
+  empty.style.display = 'none';
+  _hideBidsChart();
+
+  try {
+    const url = turnId ? `/api/bids?turn_id=${encodeURIComponent(turnId)}` : '/api/bids';
+    const data = await api(url);
+
+    // Cache this turn's data for the history chart
+    const cacheKey = String(data.turn_id ?? turnId);
+    if (cacheKey && data.ingredients && data.ingredients.length) {
+      _bidsCache[cacheKey] = data;
+    }
+
+    const { restaurants, ingredients, bids, error } = data;
+
+    if (error) {
+      status.textContent = '⚠ ' + error;
+      status.style.color = 'var(--amber)';
+    }
+
+    if (!restaurants || !restaurants.length || !ingredients || !ingredients.length) {
+      wrap.innerHTML = '';
+      empty.style.display = 'block';
+      $('tableSizeControls').style.display = 'none';
+      if (!error) status.textContent = 'No data';
+      return;
+    }
+
+    status.textContent =
+      `${ingredients.length} ingredient${ingredients.length !== 1 ? 's' : ''}` +
+      ` × ${restaurants.length} restaurant${restaurants.length !== 1 ? 's' : ''}`;
+    status.style.color = 'var(--text-2)';
+
+    // ---- Populate ingredient history selector (merge with any already seen) ----
+    _populateIngredientSelector(ingredients);
+
+    // ---- Bubble chart ----
+    _renderBidsChart(restaurants, ingredients, bids);
+
+    // ---- Matrix table ----
+    const headerCells = restaurants.map(r => {
+      const short = r.replace(/^Restaurant\s+/, 'R.');
+      return `<th title="${esc(r)}">${esc(short)}</th>`;
+    }).join('');
+
+    const rows = ingredients.map(ing => {
+      const cells = restaurants.map(rest => {
+        const bid = bids[ing] && bids[ing][rest];
+        if (!bid) return `<td class="bid-cell"><span class="bid-empty">·</span></td>`;
+        return `<td class="bid-cell">
+          <div class="bid-inner">
+            <span class="bid-price">${bid.unit_price}</span>
+            <span class="bid-qty">×${bid.quantity}</span>
+          </div>
+        </td>`;
+      }).join('');
+      return `<tr><td class="ing-col">${esc(ing)}</td>${cells}</tr>`;
+    }).join('');
+
+    wrap.innerHTML = `
+      <table class="bids-table">
+        <thead><tr>
+          <th class="ing-col" style="text-align:left">Ingredient</th>
+          ${headerCells}
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+
+    // Reveal the table size control strip
+    $('tableSizeControls').style.display = 'flex';
+
+  } catch (err) {
+    status.textContent = '✕ ' + String(err);
+    status.style.color = 'var(--red)';
+    wrap.innerHTML = `<div class="empty"><p style="color:var(--red)">${esc(String(err))}</p></div>`;
+  }
+}
+
+// Keep the ingredient <select> populated with union of all seen ingredients
+function _populateIngredientSelector(ingredients) {
+  const sel = $('ingHistorySelect');
+  const current = new Set(Array.from(sel.options).map(o => o.value).filter(Boolean));
+  const prev = sel.value;          // preserve selection across turns
+
+  let added = false;
+  ingredients.forEach(ing => {
+    if (!current.has(ing)) {
+      const opt = document.createElement('option');
+      opt.value = ing;
+      opt.textContent = ing;
+      sel.appendChild(opt);
+      added = true;
+    }
+  });
+
+  // Restore selection if it still exists, otherwise leave placeholder
+  if (prev && current.has(prev)) sel.value = prev;
+
+  // Show history panel as soon as we have something to pick
+  if (sel.options.length > 1) $('bidsHistoryWrap').style.display = 'block';
+}
+
+// ---------------------------------------------------------------------------
+// Size controls
+// ---------------------------------------------------------------------------
+
+function resizeBubbleChart(px, btn) {
+  // Update CSS custom property on the panel so both container + canvas resize
+  document.getElementById('panel-bids').style.setProperty('--bubble-h', px + 'px');
+
+  // Highlight active button
+  document.querySelectorAll('#chartSizeBtns .size-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  // Tell Chart.js to recalculate — use a short timeout so the CSS transition
+  // has time to commit before Chart.js measures the canvas parent
+  setTimeout(() => { if (_bidsChart) _bidsChart.resize(); }, 220);
+}
+
+function resizeTable(px, btn) {
+  document.getElementById('panel-bids').style.setProperty('--table-h', px + 'px');
+
+  document.querySelectorAll('#tableSizeBtns .size-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+// ---------------------------------------------------------------------------
+// Bubble chart helpers
+// ---------------------------------------------------------------------------
+
+function _hideBidsChart() {
+  $('bidsChartWrap').style.display = 'none';
+  if (_bidsChart) { _bidsChart.destroy(); _bidsChart = null; }
+}
+
+function _hideHistoryChart() {
+  if (_historyChart) { _historyChart.destroy(); _historyChart = null; }
+  // Don't hide the whole panel — just clear the canvas
+}
+
+// ---------------------------------------------------------------------------
+// Ingredient weighted-average history chart
+// ---------------------------------------------------------------------------
+
+async function loadIngredientHistory() {
+  const ingredient = $('ingHistorySelect').value;
+  const statusEl = $('historyStatus');
+
+  if (!ingredient) {
+    _hideHistoryChart();
+    statusEl.textContent = '';
+    return;
+  }
+
+  statusEl.textContent = 'Fetching all turns…';
+  statusEl.style.color = 'var(--text-2)';
+
+  // Fetch any turns we haven't cached yet, in parallel batches of 5
+  const missing = _knownTurns.filter(t => !_bidsCache[String(t)]);
+  const BATCH = 5;
+  for (let i = 0; i < missing.length; i += BATCH) {
+    const batch = missing.slice(i, i + BATCH);
+    await Promise.all(batch.map(async t => {
+      try {
+        const d = await api(`/api/bids?turn_id=${encodeURIComponent(t)}`);
+        if (d && d.ingredients && d.ingredients.length) {
+          _bidsCache[String(t)] = d;
+          _populateIngredientSelector(d.ingredients); // expand selector if needed
+        }
+      } catch { /* skip bad turns silently */ }
+    }));
+    statusEl.textContent = `Fetching… ${Math.min(i + BATCH, missing.length)}/${missing.length}`;
+  }
+
+  // Compute weighted average price per turn for the selected ingredient
+  const points = []; // {turn, wavg, totalQty}
+
+  for (const t of _knownTurns) {
+    const d = _bidsCache[String(t)];
+    if (!d || !d.bids || !d.bids[ingredient]) continue;
+
+    let totalCost = 0, totalQty = 0;
+    for (const rest of d.restaurants) {
+      const bid = d.bids[ingredient][rest];
+      if (!bid) continue;
+      totalCost += bid.unit_price * bid.quantity;
+      totalQty  += bid.quantity;
+    }
+    if (totalQty === 0) continue;
+
+    points.push({
+      turn: t,
+      wavg: parseFloat((totalCost / totalQty).toFixed(2)),
+      totalQty,
+    });
+  }
+
+  if (!points.length) {
+    statusEl.textContent = `No bids found for "${ingredient}"`;
+    statusEl.style.color = 'var(--amber)';
+    _hideHistoryChart();
+    return;
+  }
+
+  statusEl.textContent = `${points.length} turn${points.length !== 1 ? 's' : ''} with data`;
+  statusEl.style.color = 'var(--text-2)';
+  _renderHistoryChart(ingredient, points);
+}
+
+function _renderHistoryChart(ingredient, points) {
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const gridColor  = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  const labelColor = isDark ? '#a0a0a8' : '#52525b';
+  const tooltipBg  = isDark ? '#19191c' : '#ffffff';
+  const tooltipFg  = isDark ? '#ececef' : '#18181b';
+  const lineColor  = '#a78bfa';  // purple — matches the accent colour
+
+  _hideHistoryChart();
+
+  const ctx = $('bidsHistoryChart').getContext('2d');
+
+  _historyChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: points.map(p => `T${p.turn}`),
+      datasets: [{
+        label: 'Weighted avg price',
+        data: points.map(p => p.wavg),
+        borderColor: lineColor,
+        backgroundColor: lineColor + '22',
+        borderWidth: 2,
+        pointRadius: points.map(p => {
+          // scale point radius by quantity (4–14 px)
+          const maxQ = Math.max(...points.map(x => x.totalQty));
+          return 4 + ((p.totalQty / maxQ) * 10);
+        }),
+        pointHoverRadius: points.map(p => {
+          const maxQ = Math.max(...points.map(x => x.totalQty));
+          return 6 + ((p.totalQty / maxQ) * 10);
+        }),
+        pointBackgroundColor: lineColor + 'cc',
+        pointBorderColor: lineColor,
+        pointBorderWidth: 1.5,
+        fill: true,
+        tension: 0.35,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      layout: { padding: { top: 8, right: 8 } },
+      scales: {
+        x: {
+          ticks: {
+            color: labelColor,
+            font: { family: "'JetBrains Mono', monospace", size: 10 },
+            maxRotation: 0,
+          },
+          grid: { color: gridColor },
+          title: {
+            display: true,
+            text: 'Turn',
+            color: labelColor,
+            font: { family: "'Inter', sans-serif", size: 11, weight: '500' },
+          },
+        },
+        y: {
+          beginAtZero: false,
+          ticks: {
+            color: labelColor,
+            font: { family: "'JetBrains Mono', monospace", size: 10 },
+          },
+          grid: { color: gridColor },
+          title: {
+            display: true,
+            text: 'Weighted Avg Price',
+            color: labelColor,
+            font: { family: "'Inter', sans-serif", size: 11, weight: '500' },
+          },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: tooltipBg,
+          borderColor: isDark ? '#2a2a2e' : '#d4d4d8',
+          borderWidth: 1,
+          titleColor: tooltipFg,
+          bodyColor: labelColor,
+          titleFont: { family: "'Inter', sans-serif", size: 12, weight: '600' },
+          bodyFont:  { family: "'JetBrains Mono', monospace", size: 11 },
+          padding: 10,
+          callbacks: {
+            title: (items) => `Turn ${points[items[0].dataIndex].turn}`,
+            label: (item) => {
+              const p = points[item.dataIndex];
+              return [
+                `Wtd avg price : ${p.wavg}`,
+                `Total qty     : ${p.totalQty}`,
+              ];
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+function _renderBidsChart(restaurants, ingredients, bids) {
+  // Detect theme for grid/label colours
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const gridColor  = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  const labelColor = isDark ? '#a0a0a8' : '#52525b';
+  const tooltipBg  = isDark ? '#19191c' : '#ffffff';
+  const tooltipFg  = isDark ? '#ececef' : '#18181b';
+
+  // Find max quantity for bubble radius scaling
+  let maxQty = 1;
+  for (const ing of ingredients) {
+    for (const rest of restaurants) {
+      const bid = bids[ing] && bids[ing][rest];
+      if (bid && bid.quantity > maxQty) maxQty = bid.quantity;
+    }
+  }
+
+  // One dataset per restaurant — each point: {x: ingIndex, y: price, r: scaled}
+  const MIN_R = 4, MAX_R = 22;
+  const datasets = restaurants.map((rest, ri) => {
+    const colour = BUBBLE_PALETTE[ri % BUBBLE_PALETTE.length];
+    const points = [];
+    ingredients.forEach((ing, ii) => {
+      const bid = bids[ing] && bids[ing][rest];
+      if (!bid) return;
+      const r = MIN_R + ((bid.quantity / maxQty) * (MAX_R - MIN_R));
+      points.push({ x: ii, y: bid.unit_price, r, _qty: bid.quantity, _ing: ing });
+    });
+    return {
+      label: rest,
+      data: points,
+      backgroundColor: colour + 'bb', // ~73% opacity
+      borderColor: colour,
+      borderWidth: 1.5,
+    };
+  }).filter(ds => ds.data.length > 0);
+
+  if (_bidsChart) { _bidsChart.destroy(); _bidsChart = null; }
+
+  $('bidsChartWrap').style.display = 'block';
+  const ctx = $('bidsChart').getContext('2d');
+
+  _bidsChart = new Chart(ctx, {
+    type: 'bubble',
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      layout: { padding: { top: 24, right: 16, bottom: 8, left: 8 } },
+      scales: {
+        x: {
+          type: 'linear',
+          min: -0.5,
+          max: ingredients.length - 0.5,
+          ticks: {
+            stepSize: 1,
+            color: labelColor,
+            font: { family: "'JetBrains Mono', monospace", size: 10 },
+            callback: (val) => {
+              const idx = Math.round(val);
+              if (idx < 0 || idx >= ingredients.length) return '';
+              // Truncate long ingredient names
+              const name = ingredients[idx];
+              return name.length > 18 ? name.slice(0, 16) + '…' : name;
+            },
+            maxRotation: 35,
+            minRotation: 25,
+          },
+          grid: { color: gridColor },
+        },
+        y: {
+          beginAtZero: true,
+          grace: '8%',
+          ticks: {
+            color: labelColor,
+            font: { family: "'JetBrains Mono', monospace", size: 10 },
+          },
+          grid: { color: gridColor },
+          title: {
+            display: true,
+            text: 'Unit Price',
+            color: labelColor,
+            font: { family: "'Inter', sans-serif", size: 11, weight: '500' },
+          },
+        },
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'right',
+          labels: {
+            color: labelColor,
+            font: { family: "'Inter', sans-serif", size: 11 },
+            boxWidth: 10,
+            boxHeight: 10,
+            padding: 8,
+            usePointStyle: true,
+            pointStyle: 'circle',
+          },
+        },
+        tooltip: {
+          backgroundColor: tooltipBg,
+          borderColor: isDark ? '#2a2a2e' : '#d4d4d8',
+          borderWidth: 1,
+          titleColor: tooltipFg,
+          bodyColor: labelColor,
+          titleFont: { family: "'Inter', sans-serif", size: 12, weight: '600' },
+          bodyFont:  { family: "'JetBrains Mono', monospace", size: 11 },
+          padding: 10,
+          callbacks: {
+            title: (items) => items[0]?.dataset?.label || '',
+            label: (item) => {
+              const d = item.raw;
+              return [
+                `Ingredient : ${d._ing}`,
+                `Unit price : ${d.y}`,
+                `Quantity   : ${d._qty}`,
+              ];
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
 // WebSocket
 // ---------------------------------------------------------------------------
 function connectWs() {
@@ -388,12 +954,25 @@ function connectWs() {
 async function refreshAll() {
   await loadEvents();
   await loadPhase();
-  if (currentPanel === 'clients') await loadClients();
-  if (currentPanel === 'preparations') await loadPreparations();
-  if (currentPanel === 'messages') await loadMessages();
-  if (currentPanel === 'restaurants') await loadRestaurants();
-  if (currentPanel === 'stats') await loadStats();
-  if (currentPanel === 'recipes') { allRecipes=[]; await loadRecipes(); }
+  if (currentPanel === 'clients')       await loadClients();
+  if (currentPanel === 'preparations')  await loadPreparations();
+  if (currentPanel === 'messages')      await loadMessages();
+  if (currentPanel === 'restaurants')   await loadRestaurants();
+  if (currentPanel === 'stats')         await loadStats();
+  if (currentPanel === 'recipes')       { allRecipes=[]; await loadRecipes(); }
+  if (currentPanel === 'bids') {
+    _bidsInitialised = false;
+    _hideBidsChart();
+    _hideHistoryChart();
+    Object.keys(_bidsCache).forEach(k => delete _bidsCache[k]);
+    // Reset ingredient selector to placeholder
+    const sel = $('ingHistorySelect');
+    sel.innerHTML = '<option value="">Select an ingredient…</option>';
+    $('bidsHistoryWrap').style.display = 'none';
+    $('tableSizeControls').style.display = 'none';
+    $('historyStatus').textContent = '';
+    await initBids();
+  }
 }
 
 // ---------------------------------------------------------------------------
