@@ -4,6 +4,7 @@ Strictly typed, event-driven client for the Hackapizza Gastronomic Multiverse.
 """
 
 import asyncio
+import inspect
 import json
 import logging
 from dataclasses import asdict, dataclass
@@ -69,6 +70,38 @@ def typed_endpoint(
                 endpoint, adapter, persist_method_name=persist_method_name
             )
             return cast(T, result)
+
+        return wrapper
+
+    return decorator
+
+
+def log_mcp_event(
+    event_type: str, *, persist_method_name: str
+) -> Callable[
+    [Callable[Concatenate["HackapizzaClient", P], Awaitable[T]]],
+    Callable[Concatenate["HackapizzaClient", P], Awaitable[T]],
+]:
+    """Decorator: logs the MCP tool call as an event in `events` + its typed table."""
+
+    def decorator(
+        func: Callable[Concatenate["HackapizzaClient", P], Awaitable[T]]
+    ) -> Callable[Concatenate["HackapizzaClient", P], Awaitable[T]]:
+        sig = inspect.signature(func)
+
+        @wraps(func)
+        async def wrapper(self: "HackapizzaClient", *args: P.args, **kwargs: P.kwargs) -> T:
+            result = await func(self, *args, **kwargs)
+            if self._sql_logging_enabled:
+                bound = sig.bind(self, *args, **kwargs)
+                bound.apply_defaults()
+                data = {k: v for k, v in bound.arguments.items() if k != "self"}
+                self._log_mcp_event(
+                    event_type=event_type,
+                    persist_method_name=persist_method_name,
+                    data=data,
+                )
+            return result
 
         return wrapper
 
@@ -180,6 +213,7 @@ class HackapizzaClient(SqlLoggingMixin):
             "Accept": "application/json, text/event-stream",
         }
         self._session: Optional[aiohttp.ClientSession] = None
+        self._current_turn_id: Optional[str] = None
 
         # Event Callbacks
         self._on_game_started: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None
@@ -274,14 +308,17 @@ class HackapizzaClient(SqlLoggingMixin):
 
     # --- MCP Tools (Action Endpoints) ---
 
+    @log_mcp_event("event_closed_bid", persist_method_name="_persist_mcp_closed_bid")
     async def submit_closed_bids(self, bids: List[BidRequest]) -> Any:
         """Phase: closed_bid. Send your blind auction offers."""
         return await self._mcp_call("closed_bid", bids=[asdict(b) for b in bids])
 
+    @log_mcp_event("event_save_menu", persist_method_name="_persist_mcp_save_menu")
     async def save_menu(self, items: List[MenuItem]) -> Any:
         """Phase: speaking, closed_bid, waiting. Set your menu and prices."""
         return await self._mcp_call("save_menu", items=[asdict(i) for i in items])
 
+    @log_mcp_event("event_create_market_entry", persist_method_name="_persist_mcp_create_market_entry")
     async def create_market_entry(
         self, side: MarketSide, ingredient_name: str, quantity: int, price: float
     ) -> Any:
@@ -294,26 +331,32 @@ class HackapizzaClient(SqlLoggingMixin):
             price=price,
         )
 
+    @log_mcp_event("event_execute_transaction", persist_method_name="_persist_mcp_execute_transaction")
     async def execute_transaction(self, market_entry_id: int) -> Any:
         """Phase: all EXCEPT stopped. Fulfill another team's market offer."""
         return await self._mcp_call("execute_transaction", market_entry_id=market_entry_id)
 
+    @log_mcp_event("event_delete_market_entry", persist_method_name="_persist_mcp_delete_market_entry")
     async def delete_market_entry(self, market_entry_id: int) -> Any:
         """Phase: all EXCEPT stopped. Remove your active P2P market offer."""
         return await self._mcp_call("delete_market_entry", market_entry_id=market_entry_id)
 
+    @log_mcp_event("event_prepare_dish", persist_method_name="_persist_mcp_prepare_dish")
     async def prepare_dish(self, dish_name: str) -> Any:
         """Phase: serving. Start cooking a dish."""
         return await self._mcp_call("prepare_dish", dish_name=dish_name)
 
+    @log_mcp_event("event_serve_dish", persist_method_name="_persist_mcp_serve_dish")
     async def serve_dish(self, dish_name: str, client_id: str) -> Any:
         """Phase: serving. Serve a completed dish to a specific customer."""
         return await self._mcp_call("serve_dish", dish_name=dish_name, client_id=client_id)
 
+    @log_mcp_event("event_set_open_status", persist_method_name="_persist_mcp_set_open_status")
     async def set_restaurant_open_status(self, is_open: bool) -> Any:
         """Phase: all (serving is close-only). Open or close the restaurant to avoid collapse."""
         return await self._mcp_call("update_restaurant_is_open", is_open=is_open)
 
+    @log_mcp_event("event_send_message", persist_method_name="_persist_mcp_send_message")
     async def send_direct_message(self, recipient_id: int, text: str) -> Any:
         """Phase: all EXCEPT stopped. Send a DM to another team."""
         return await self._mcp_call("send_message", recipient_id=recipient_id, text=text)
@@ -609,6 +652,10 @@ class HackapizzaClient(SqlLoggingMixin):
 
     async def _dispatch_event(self, event_type: str, data: Dict[str, Any]):
         try:
+            if event_type == "game_started":
+                self._current_turn_id = str(
+                    data.get("turnId") or data.get("turn_id") or data.get("value") or ""
+                )
             if event_type == "game_started" and self._on_game_started:
                 await self._on_game_started(data)
 

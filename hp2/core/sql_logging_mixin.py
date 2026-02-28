@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import logging
+from dataclasses import asdict
 from datetime import UTC, datetime
 from typing import Any, Optional
 from urllib.parse import parse_qs, urlparse
@@ -117,6 +119,112 @@ class BidHistoryLog(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     call_id: Mapped[int] = mapped_column(ForeignKey("calls.id", ondelete="CASCADE"), nullable=False)
     payload_json: Mapped[str] = mapped_column(String, nullable=False)
+
+
+# ---------------------------------------------------------------------------
+# Shared event log table (mirrors the event_logger service's `events` table)
+# ---------------------------------------------------------------------------
+
+class MixinEventLog(Base):
+    """ORM mapping to the shared `events` table owned by the event_logger service."""
+    __tablename__ = "events"
+    __table_args__ = {"extend_existing": True}
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    timestamp_utc: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    turn_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    event_type: Mapped[str] = mapped_column(String, nullable=False)
+    data_json: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+
+# ---------------------------------------------------------------------------
+# Typed MCP action event tables
+# ---------------------------------------------------------------------------
+
+class McpClosedBidEvent(Base):
+    __tablename__ = "event_mcp_closed_bid"
+    __table_args__ = (Index("idx_mcp_closed_bid_event_id", "event_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    bids_json: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class McpSaveMenuEvent(Base):
+    __tablename__ = "event_mcp_save_menu"
+    __table_args__ = (Index("idx_mcp_save_menu_event_id", "event_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    items_json: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class McpCreateMarketEntryEvent(Base):
+    __tablename__ = "event_mcp_create_market_entry"
+    __table_args__ = (Index("idx_mcp_create_market_entry_event_id", "event_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    side: Mapped[str] = mapped_column(String, nullable=False)
+    ingredient_name: Mapped[str] = mapped_column(String, nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    price: Mapped[float] = mapped_column(Float, nullable=False)
+
+
+class McpExecuteTransactionEvent(Base):
+    __tablename__ = "event_mcp_execute_transaction"
+    __table_args__ = (Index("idx_mcp_execute_transaction_event_id", "event_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    market_entry_id: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class McpDeleteMarketEntryEvent(Base):
+    __tablename__ = "event_mcp_delete_market_entry"
+    __table_args__ = (Index("idx_mcp_delete_market_entry_event_id", "event_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    market_entry_id: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class McpPrepareDishEvent(Base):
+    __tablename__ = "event_mcp_prepare_dish"
+    __table_args__ = (Index("idx_mcp_prepare_dish_event_id", "event_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    dish_name: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class McpServeDishEvent(Base):
+    __tablename__ = "event_mcp_serve_dish"
+    __table_args__ = (Index("idx_mcp_serve_dish_event_id", "event_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    dish_name: Mapped[str] = mapped_column(String, nullable=False)
+    client_id: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class McpSetOpenStatusEvent(Base):
+    __tablename__ = "event_mcp_set_open_status"
+    __table_args__ = (Index("idx_mcp_set_open_status_event_id", "event_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    is_open: Mapped[int] = mapped_column(Integer, nullable=False)  # 1=open, 0=closed
+
+
+class McpSendMessageEvent(Base):
+    __tablename__ = "event_mcp_send_message"
+    __table_args__ = (Index("idx_mcp_send_message_event_id", "event_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    recipient_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    text: Mapped[str] = mapped_column(String, nullable=False)
 
 
 class SqlLoggingMixin:
@@ -301,3 +409,100 @@ class SqlLoggingMixin:
                     )
                 )
             session.commit()
+
+    # --- MCP Action Event Logging ---
+
+    def _log_mcp_event(
+        self,
+        *,
+        event_type: str,
+        persist_method_name: str,
+        data: dict[str, Any],
+    ) -> None:
+        """Write a self-generated MCP action to `events` + its typed table."""
+        session_factory = getattr(self, "_log_session_factory", None)
+        if session_factory is None:
+            return
+
+        turn_id: Optional[str] = getattr(self, "_current_turn_id", None)
+        _logger = getattr(self, "logger", logging.getLogger(__name__))
+
+        try:
+            with session_factory() as session:
+                event_row = MixinEventLog(
+                    timestamp_utc=datetime.now(UTC),
+                    turn_id=turn_id,
+                    event_type=event_type,
+                    data_json=None,
+                )
+                session.add(event_row)
+                session.flush()
+                event_id = event_row.id
+
+                persist_method = getattr(self, persist_method_name, None)
+                if callable(persist_method):
+                    persist_method(session=session, event_id=event_id, data=data)
+
+                session.commit()
+        except Exception as e:
+            _logger.debug("MCP event logging failed: %s", e, exc_info=True)
+
+    def _persist_mcp_closed_bid(self, *, session, event_id: int, data: dict) -> None:
+        session.add(McpClosedBidEvent(
+            event_id=event_id,
+            bids_json=json.dumps([asdict(b) for b in data.get("bids", [])], default=str),
+        ))
+
+    def _persist_mcp_save_menu(self, *, session, event_id: int, data: dict) -> None:
+        session.add(McpSaveMenuEvent(
+            event_id=event_id,
+            items_json=json.dumps([asdict(i) for i in data.get("items", [])], default=str),
+        ))
+
+    def _persist_mcp_create_market_entry(self, *, session, event_id: int, data: dict) -> None:
+        side = data.get("side", "")
+        session.add(McpCreateMarketEntryEvent(
+            event_id=event_id,
+            side=side.value if hasattr(side, "value") else str(side),
+            ingredient_name=data.get("ingredient_name", ""),
+            quantity=data.get("quantity", 0),
+            price=data.get("price", 0.0),
+        ))
+
+    def _persist_mcp_execute_transaction(self, *, session, event_id: int, data: dict) -> None:
+        session.add(McpExecuteTransactionEvent(
+            event_id=event_id,
+            market_entry_id=data.get("market_entry_id", 0),
+        ))
+
+    def _persist_mcp_delete_market_entry(self, *, session, event_id: int, data: dict) -> None:
+        session.add(McpDeleteMarketEntryEvent(
+            event_id=event_id,
+            market_entry_id=data.get("market_entry_id", 0),
+        ))
+
+    def _persist_mcp_prepare_dish(self, *, session, event_id: int, data: dict) -> None:
+        session.add(McpPrepareDishEvent(
+            event_id=event_id,
+            dish_name=data.get("dish_name", ""),
+        ))
+
+    def _persist_mcp_serve_dish(self, *, session, event_id: int, data: dict) -> None:
+        session.add(McpServeDishEvent(
+            event_id=event_id,
+            dish_name=data.get("dish_name", ""),
+            client_id=data.get("client_id", ""),
+        ))
+
+    def _persist_mcp_set_open_status(self, *, session, event_id: int, data: dict) -> None:
+        session.add(McpSetOpenStatusEvent(
+            event_id=event_id,
+            is_open=1 if data.get("is_open") else 0,
+        ))
+
+    def _persist_mcp_send_message(self, *, session, event_id: int, data: dict) -> None:
+        session.add(McpSendMessageEvent(
+            event_id=event_id,
+            recipient_id=data.get("recipient_id", 0),
+            text=data.get("text", ""),
+        ))
