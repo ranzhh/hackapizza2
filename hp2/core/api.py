@@ -472,8 +472,8 @@ class HackapizzaClient(SqlLoggingMixin):
 
     # --- Event Loop / SSE Parsing ---
 
-    async def start(self):
-        """Connects to the SSE endpoint and begins routing events to your callbacks."""
+    async def start_old_sse(self):
+        """[Deprecated] Connects directly to the SSE endpoint. Use start() instead."""
         timeout = aiohttp.ClientTimeout(total=None, sock_connect=15, sock_read=None)
 
         async with aiohttp.ClientSession(timeout=timeout, headers=self._headers) as session:
@@ -499,9 +499,9 @@ class HackapizzaClient(SqlLoggingMixin):
             finally:
                 self._session = None
 
-    async def start_ws(
+    async def start(
         self,
-        ws_url: str = "ws://localhost:8765",
+        ws_url: str | None = None,
         *,
         retry_initial: float = 2.0,
         retry_max: float = 8.0,
@@ -516,6 +516,9 @@ class HackapizzaClient(SqlLoggingMixin):
         Resilient: if the WS server is down or the connection drops, the
         client retries with exponential back-off (capped at *retry_max* s).
         """
+        if ws_url is None:
+            ws_url = get_settings().event_proxy_url
+
         timeout = aiohttp.ClientTimeout(total=None, sock_connect=15, sock_read=None)
         backoff = retry_initial
 

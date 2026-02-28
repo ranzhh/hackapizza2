@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     hackapizza_team_api_key: str
     hackapizza_team_id: int
     regolo_api_key: str
+    event_proxy_url: str
 
 
 class SqlLoggingSettings(BaseSettings):

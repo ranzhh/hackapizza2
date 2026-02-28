@@ -597,14 +597,9 @@ async def main():
     async def _on_new_message(msg: IncomingMessage):
         await phase_mgr.handle_message(msg)
 
-    # ── 7. Start the blocking SSE event loop ──────────────────────────────────
-    logger.info("Connecting to SSE event stream… waiting for game to start.")
-    while True:
-        try:
-            await hackapizza_client.start()
-        except Exception as e:
-            logger.error(f"SSE connection lost: {e} — reconnecting in 5 s…")
-            await asyncio.sleep(5)
+    # ── 7. Start the blocking WS event loop (resilient retry built-in) ────────
+    logger.info("Connecting to event proxy WS… waiting for game to start.")
+    await hackapizza_client.start()
 
 
 if __name__ == "__main__":
