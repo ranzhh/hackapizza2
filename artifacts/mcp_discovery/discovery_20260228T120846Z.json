@@ -1,0 +1,406 @@
+{
+  "generated_at": "20260228T120846Z",
+  "team_id": "6",
+  "base_url": "https://hackapizza.datapizza.tech",
+  "server_info": {
+    "meta": null,
+    "protocolVersion": "2025-06-18",
+    "capabilities": {
+      "experimental": null,
+      "logging": null,
+      "prompts": null,
+      "resources": null,
+      "tools": {
+        "listChanged": true
+      },
+      "completions": null,
+      "tasks": null
+    },
+    "serverInfo": {
+      "name": "hackapizza",
+      "title": null,
+      "version": "1.0.0",
+      "websiteUrl": null,
+      "icons": null,
+      "capabilities": {
+        "resources": {},
+        "tools": {}
+      }
+    },
+    "instructions": null
+  },
+  "results": [
+    {
+      "endpoint": "initialize",
+      "status": "ok",
+      "duration_ms": 104.06508300002315,
+      "args": {},
+      "result": {
+        "meta": null,
+        "protocolVersion": "2025-06-18",
+        "capabilities": {
+          "experimental": null,
+          "logging": null,
+          "prompts": null,
+          "resources": null,
+          "tools": {
+            "listChanged": true
+          },
+          "completions": null,
+          "tasks": null
+        },
+        "serverInfo": {
+          "name": "hackapizza",
+          "title": null,
+          "version": "1.0.0",
+          "websiteUrl": null,
+          "icons": null,
+          "capabilities": {
+            "resources": {},
+            "tools": {}
+          }
+        },
+        "instructions": null
+      },
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "endpoint": "tools/list",
+      "status": "ok",
+      "duration_ms": 197.1526659981464,
+      "args": {},
+      "result": {
+        "meta": null,
+        "nextCursor": null,
+        "tools": [
+          {
+            "name": "closed_bid",
+            "title": null,
+            "description": "Place a closed bid for a dish",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "bids": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "ingredient": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "bid": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "quantity": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      }
+                    },
+                    "required": [
+                      "ingredient",
+                      "bid",
+                      "quantity"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "bids"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null,
+            "execution": null
+          },
+          {
+            "name": "save_menu",
+            "title": null,
+            "description": "Save the menu",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "price": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 1000
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "price"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "items"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null,
+            "execution": null
+          },
+          {
+            "name": "create_market_entry",
+            "title": null,
+            "description": "Create a buy or sell request into the market. The 'side' field can be either 'BUY' or 'SELL', the 'ingredient_name' field is the name of the ingredient, the 'quantity' is the quantity of the ingredient and the 'price' is the total price of the transaction",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "side": {
+                  "type": "string",
+                  "enum": [
+                    "SELL",
+                    "BUY"
+                  ]
+                },
+                "ingredient_name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "quantity": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "price": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "side",
+                "ingredient_name",
+                "quantity",
+                "price"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null,
+            "execution": null
+          },
+          {
+            "name": "execute_transaction",
+            "title": null,
+            "description": "execute the transaction in the market",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "market_entry_id": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "market_entry_id"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null,
+            "execution": null
+          },
+          {
+            "name": "delete_market_entry",
+            "title": null,
+            "description": "Delete a market entry by id. Only the restaurant that created the entry can delete it.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "market_entry_id": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "market_entry_id"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null,
+            "execution": null
+          },
+          {
+            "name": "prepare_dish",
+            "title": null,
+            "description": "Prepare a dish",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "dish_name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "dish_name"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null,
+            "execution": null
+          },
+          {
+            "name": "serve_dish",
+            "title": null,
+            "description": "Serve a dish to a customer",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "dish_name": {
+                  "type": "string"
+                },
+                "client_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "dish_name",
+                "client_id"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null,
+            "execution": null
+          },
+          {
+            "name": "update_restaurant_is_open",
+            "title": null,
+            "description": "Open or close the restaurant for business. Pass is_open=true to open, is_open=false to close.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "is_open": {
+                  "type": "boolean",
+                  "description": "true to open the restaurant, false to close it"
+                }
+              },
+              "required": [
+                "is_open"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null,
+            "execution": null
+          },
+          {
+            "name": "send_message",
+            "title": null,
+            "description": "Send a message to another restaurant. The recipient will receive a real-time notification.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "recipient_id": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "description": "The ID of the recipient restaurant"
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000,
+                  "description": "The message text to send"
+                }
+              },
+              "required": [
+                "recipient_id",
+                "text"
+              ],
+              "additionalProperties": false,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "outputSchema": null,
+            "icons": null,
+            "annotations": null,
+            "meta": null,
+            "execution": null
+          }
+        ]
+      },
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "endpoint": "prompts/list",
+      "status": "error",
+      "duration_ms": 28.39379199940595,
+      "args": {},
+      "result": null,
+      "error_type": "McpError",
+      "error_message": "Method not found"
+    },
+    {
+      "endpoint": "resources/list",
+      "status": "error",
+      "duration_ms": 29.67387500029872,
+      "args": {},
+      "result": null,
+      "error_type": "McpError",
+      "error_message": "Method not found"
+    }
+  ],
+  "summary": {
+    "total": 4,
+    "ok": 2,
+    "error": 2,
+    "tool_count": 9,
+    "prompt_count": 0,
+    "resource_count": 0,
+    "tool_names": [
+      "closed_bid",
+      "save_menu",
+      "create_market_entry",
+      "execute_transaction",
+      "delete_market_entry",
+      "prepare_dish",
+      "serve_dish",
+      "update_restaurant_is_open",
+      "send_message"
+    ],
+    "prompt_names": [],
+    "resource_uris": []
+  }
+}

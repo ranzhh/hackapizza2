@@ -82,6 +82,157 @@ class EndpointCallResult:
 
 
 # ---------------------------------------------------------------------------
+# Markdown renderer
+# ---------------------------------------------------------------------------
+
+
+def _schema_type(prop: dict) -> str:
+    """Convert a JSON Schema property dict to a compact Python-style type string."""
+    t = prop.get("type")
+    enum = prop.get("enum")
+    if enum:
+        return "Literal[" + ", ".join(repr(v) for v in enum) + "]"
+    mapping = {
+        "string":  "str",
+        "integer": "int",
+        "number":  "float",
+        "boolean": "bool",
+        "array":   "list",
+        "object":  "dict",
+    }
+    return mapping.get(t, "Any") if t else "Any"
+
+
+def _render_tool(tool: dict) -> str:
+    """Render a single MCP tool as a Python function stub (smolagents style)."""
+    name: str = tool["name"]
+    description: str = tool.get("description") or ""
+    schema: dict = tool.get("inputSchema") or {}
+    props: dict = schema.get("properties") or {}
+    required: list = schema.get("required") or []
+
+    # Derive output type
+    out_schema = tool.get("outputSchema") or {}
+    output_type = _schema_type(out_schema) if out_schema else "Any"
+
+    # Build argument list for the signature
+    sig_args = ", ".join(props.keys())
+    lines: list[str] = []
+    lines.append(f"def {name}({sig_args}) -> {output_type}:")
+    lines.append(f'  """{description}')
+
+    if props:
+        lines.append("  Args:")
+        for arg_name, arg_info in props.items():
+            arg_type = _schema_type(arg_info)
+            if arg_name not in required:
+                arg_type += ", optional"
+            arg_desc = arg_info.get("description", "")
+            # Inline constraints (min, max, enum already covered by type)
+            constraints = []
+            if "minLength" in arg_info:
+                constraints.append(f"minLength={arg_info['minLength']}")
+            if "maxLength" in arg_info:
+                constraints.append(f"maxLength={arg_info['maxLength']}")
+            if "minimum" in arg_info:
+                constraints.append(f">={arg_info['minimum']}")
+            if "exclusiveMinimum" in arg_info:
+                constraints.append(f">{arg_info['exclusiveMinimum']}")
+            if "maximum" in arg_info:
+                constraints.append(f"<={arg_info['maximum']}")
+            if constraints:
+                suffix = " [" + ", ".join(constraints) + "]"
+            else:
+                suffix = ""
+            desc_text = (arg_desc + suffix).strip() or "–"
+            lines.append(f"    {arg_name} ({arg_type}): {desc_text}")
+
+    lines.append('  """')
+    return "\n".join(lines)
+
+
+def _render_markdown(
+    server_info: dict,
+    tools: list[dict],
+    prompts: list[dict],
+    resources: list[dict],
+    generated_at: str,
+    base_url: str,
+) -> str:
+    sv = server_info.get("serverInfo", {})
+    server_name = sv.get("name", "MCP Server")
+    server_ver  = sv.get("version", "?")
+    protocol    = server_info.get("protocolVersion", "?")
+
+    lines: list[str] = [
+        f"# {server_name} — MCP Reference",
+        "",
+        "| | |",
+        "|---|---|",
+        f"| **Server** | `{server_name}` v{server_ver} |",
+        f"| **Protocol** | `{protocol}` |",
+        f"| **Endpoint** | `{base_url}/mcp` |",
+        f"| **Generated** | `{generated_at}` |",
+        "",
+    ]
+
+    # ── Tools ──────────────────────────────────────────────────────────────
+    lines.append("## Tools")
+    lines.append("")
+    if tools:
+        lines.append(f"> {len(tools)} tool(s) available.")
+        lines.append("")
+        for tool in tools:
+            lines.append(f"### `{tool['name']}`")
+            lines.append("")
+            if tool.get("description"):
+                lines.append(tool["description"])
+                lines.append("")
+            lines.append("```python")
+            lines.append(_render_tool(tool))
+            lines.append("```")
+            lines.append("")
+    else:
+        lines.append("_No tools available._")
+        lines.append("")
+
+    # ── Prompts ────────────────────────────────────────────────────────────
+    if prompts:
+        lines.append("## Prompts")
+        lines.append("")
+        for p in prompts:
+            lines.append(f"### `{p['name']}`")
+            lines.append("")
+            if p.get("description"):
+                lines.append(p["description"])
+                lines.append("")
+            args = p.get("arguments") or []
+            if args:
+                lines.append("| Argument | Required | Description |")
+                lines.append("|---|---|---|")
+                for a in args:
+                    req = "✓" if a.get("required") else ""
+                    lines.append(f"| `{a['name']}` | {req} | {a.get('description', '')} |")
+                lines.append("")
+
+    # ── Resources ──────────────────────────────────────────────────────────
+    if resources:
+        lines.append("## Resources")
+        lines.append("")
+        lines.append("| URI | MIME type | Description |")
+        lines.append("|---|---|---|")
+        for r in resources:
+            lines.append(
+                f"| `{r.get('uri', '')}` "
+                f"| `{r.get('mimeType', '')}` "
+                f"| {r.get('description', '')} |"
+            )
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
 # Timed SDK call wrapper – produces an EndpointCallResult
 # ---------------------------------------------------------------------------
 
@@ -222,9 +373,21 @@ async def crawl(
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
 
+    # Also write a timestamped snapshot alongside latest.json
+    snapshot_path = out.parent / f"discovery_{now}.json"
+    snapshot_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    # Human-readable markdown (always overwritten with the latest data)
+    md_path = out.parent / "mcp.md"
+    md_content = _render_markdown(server_info, tools, prompts, resources, now, base_url)
+    md_path.write_text(md_content, encoding="utf-8")
+
     ok    = report["summary"]["ok"]
     total = report["summary"]["total"]
-    print(f"\n[✓] {ok}/{total} calls succeeded.  Report → {out}")
+    print(f"[✓] {ok}/{total} calls succeeded.")
+    print(f"    JSON   → {out}")
+    print(f"    Snapshot → {snapshot_path}")
+    print(f"    Markdown → {md_path}")
     return out
 
 
