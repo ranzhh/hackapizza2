@@ -34,9 +34,9 @@ class BaseAgent:
         async def _on_phase_changed(phase: GamePhase) -> None:
             await self.on_phase_changed(phase)
 
-        @self.client.on_client_order
-        async def _on_client_order(order: ClientOrder) -> None:
-            await self.on_client_order(order)
+        @self.client.on_client_spawned
+        async def on_client_spawned(order: ClientOrder) -> None:
+            await self.on_client_spawned(order)
 
         @self.client.on_preparation_complete
         async def _on_preparation_complete(dish_name: str) -> None:
@@ -52,7 +52,7 @@ class BaseAgent:
     async def on_phase_changed(self, phase: GamePhase) -> None:
         raise NotImplementedError("Override on_phase_changed() in your agent.")
 
-    async def on_client_order(self, order: ClientOrder) -> None:
+    async def on_client_spawned(self, order: ClientOrder) -> None:
         raise NotImplementedError("Override on_client_order() in your agent.")
 
     async def on_preparation_complete(self, dish_name: str) -> None:

@@ -21,7 +21,7 @@ class RestaurantScanner(BaseAgent):
     async def on_phase_changed(self, phase: GamePhase) -> None:
         await self._log_open_restaurants(trigger=f"phase:{phase.value}")
 
-    async def on_client_order(self, order: ClientOrder) -> None:
+    async def on_client_spawned(self, order: ClientOrder) -> None:
         pass
 
     async def on_preparation_complete(self, dish_name: str) -> None:
