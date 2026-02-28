@@ -5,19 +5,22 @@ Strictly typed, event-driven client for the Hackapizza Gastronomic Multiverse.
 
 import json
 import logging
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from enum import Enum
-import os
-from typing import Any, Callable, Awaitable, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 import aiohttp
+
+from _settings import get_settings
 
 # ---------------------------------------------------------------------------
 # Enums
 # ---------------------------------------------------------------------------
 
+
 class GamePhase(str, Enum):
     """The sequential phases of a game turn."""
+
     SPEAKING = "speaking"
     CLOSED_BID = "closed_bid"
     WAITING = "waiting"
@@ -25,46 +28,59 @@ class GamePhase(str, Enum):
     STOPPED = "stopped"
     UNKNOWN = "unknown"
 
+
 class MarketSide(str, Enum):
     """Direction of a P2P market transaction."""
+
     BUY = "BUY"
     SELL = "SELL"
+
 
 # ---------------------------------------------------------------------------
 # Data Models (Strict Typing)
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class BidRequest:
     """Represents a request to buy an ingredient during the blind auction."""
+
     ingredient: str
     bid: float
     quantity: int
 
+
 @dataclass
 class MenuItem:
     """A dish offered on your restaurant's menu."""
+
     name: str
     price: float
+
 
 @dataclass
 class ClientOrder:
     """Incoming order from a Multiverse customer."""
+
     client_name: str
     order_text: str
+
 
 @dataclass
 class IncomingMessage:
     """Direct message from another team."""
+
     message_id: str
     sender_id: str
     sender_name: str
     text: str
     datetime: str
 
+
 # ---------------------------------------------------------------------------
 # The SDK Client
 # ---------------------------------------------------------------------------
+
 
 class HackapizzaClient:
     """
@@ -72,18 +88,21 @@ class HackapizzaClient:
     Manages API calls, MCP tool execution, and the SSE event loop.
     """
 
-    def __init__(self, team_id: int | None, api_key: str | None, base_url: str = "https://hackapizza.datapizza.tech"):
-        self.team_id = team_id or os.getenv("HACKAPIZZA_TEAM_ID")
-        self.api_key = api_key or os.getenv("HACKAPIZZA_TEAM_API_KEY")
+    def __init__(
+        self,
+        team_id: int | None,
+        api_key: str | None,
+        base_url: str = "https://hackapizza.datapizza.tech",
+    ):
+        settings = get_settings() if team_id is None or api_key is None else None
+        self.team_id = team_id or settings.hackapizza_team_id
+        self.api_key = api_key or settings.hackapizza_team_api_key
         self.base_url = base_url.rstrip("/")
         self.logger = logging.getLogger(f"HackapizzaClient[{self.team_id}]")
-        
-        self._headers = {
-            "x-api-key": self.api_key,
-            "Content-Type": "application/json"
-        }
+
+        self._headers = {"x-api-key": self.api_key, "Content-Type": "application/json"}
         self._session: Optional[aiohttp.ClientSession] = None
-        
+
         # Event Callbacks
         self._on_game_started: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None
         self._on_phase_changed: Optional[Callable[[GamePhase], Awaitable[None]]] = None
@@ -154,14 +173,16 @@ class HackapizzaClient:
         """Phase: speaking, closed_bid, waiting. Set your menu and prices."""
         return await self._mcp_call("save_menu", items=[asdict(i) for i in items])
 
-    async def create_market_entry(self, side: MarketSide, ingredient_name: str, quantity: int, price: float) -> Any:
+    async def create_market_entry(
+        self, side: MarketSide, ingredient_name: str, quantity: int, price: float
+    ) -> Any:
         """Phase: all EXCEPT stopped. Create a P2P market offer."""
         return await self._mcp_call(
-            "create_market_entry", 
-            side=side.value, 
-            ingredient_name=ingredient_name, 
-            quantity=quantity, 
-            price=price
+            "create_market_entry",
+            side=side.value,
+            ingredient_name=ingredient_name,
+            quantity=quantity,
+            price=price,
         )
 
     async def execute_transaction(self, market_entry_id: int) -> Any:
@@ -193,7 +214,9 @@ class HackapizzaClient:
     async def _http_get(self, endpoint: str) -> Any:
         """Helper for GET requests."""
         if not self._session:
-            raise RuntimeError("Client session not initialized. Run within context manager or start().")
+            raise RuntimeError(
+                "Client session not initialized. Run within context manager or start()."
+            )
         async with self._session.get(f"{self.base_url}{endpoint}") as resp:
             resp.raise_for_status()
             return await resp.json()
@@ -202,30 +225,27 @@ class HackapizzaClient:
         """Helper to execute JSON-RPC calls against the MCP endpoint."""
         if not self._session:
             raise RuntimeError("Client session not initialized.")
-            
+
         payload = {
             "jsonrpc": "2.0",
             "method": "tools/call",
-            "params": {
-                "name": tool_name,
-                "arguments": kwargs
-            },
-            "id": 1 # ID can be static for simple single-threaded request/response
+            "params": {"name": tool_name, "arguments": kwargs},
+            "id": 1,  # ID can be static for simple single-threaded request/response
         }
-        
+
         self.logger.debug(f"MCP Call -> {tool_name} with args {kwargs}")
         async with self._session.post(f"{self.base_url}/mcp", json=payload) as resp:
             if resp.status == 401:
                 raise PermissionError("401 Unauthorized: Invalid API Key")
-                
+
             resp.raise_for_status()
             data = await resp.json()
-            
+
             result = data.get("result", {})
             if result.get("isError"):
                 error_msg = result.get("content", [{}])[0].get("text", "Unknown MCP Tool Error")
                 raise RuntimeError(f"MCP Error on '{tool_name}': {error_msg}")
-                
+
             return result
 
     # --- Event Loop / SSE Parsing ---
@@ -233,19 +253,19 @@ class HackapizzaClient:
     async def start(self):
         """Connects to the SSE endpoint and begins routing events to your callbacks."""
         timeout = aiohttp.ClientTimeout(total=None, sock_connect=15, sock_read=None)
-        
+
         async with aiohttp.ClientSession(timeout=timeout, headers=self._headers) as session:
             self._session = session
             url = f"{self.base_url}/events/{self.team_id}"
             self.logger.info(f"Connecting to SSE Event Stream: {url}")
-            
+
             headers = {"Accept": "text/event-stream"}
-            
+
             try:
                 async with session.get(url, headers=headers) as response:
                     response.raise_for_status()
                     self.logger.info("SSE Connection Established.")
-                    
+
                     async for raw_line in response.content:
                         await self._parse_sse_line(raw_line)
             except Exception as e:
@@ -270,13 +290,13 @@ class HackapizzaClient:
             event_json = json.loads(payload)
             event_type = event_json.get("type")
             data = event_json.get("data", {})
-            
+
             # Normalize single values to dict for consistent handling
             if not isinstance(data, dict):
                 data = {"value": data}
-                
+
             await self._dispatch_event(event_type, data)
-            
+
         except json.JSONDecodeError:
             self.logger.warning(f"Failed to parse SSE line: {payload}")
 
@@ -284,37 +304,37 @@ class HackapizzaClient:
         try:
             if event_type == "game_started" and self._on_game_started:
                 await self._on_game_started(data)
-                
+
             elif event_type == "game_phase_changed" and self._on_phase_changed:
                 try:
                     phase = GamePhase(data.get("phase", "unknown"))
                 except ValueError:
                     phase = GamePhase.UNKNOWN
                 await self._on_phase_changed(phase)
-                
+
             elif event_type == "client_spawned" and self._on_client_spawned:
                 order = ClientOrder(
                     client_name=data.get("clientName", "unknown"),
-                    order_text=data.get("orderText", "unknown")
+                    order_text=data.get("orderText", "unknown"),
                 )
                 await self._on_client_spawned(order)
-                
+
             elif event_type == "preparation_complete" and self._on_preparation_complete:
                 await self._on_preparation_complete(data.get("dish", "unknown"))
-                
+
             elif event_type == "new_message" and self._on_new_message:
                 msg = IncomingMessage(
                     message_id=data.get("messageId", ""),
                     sender_id=data.get("senderId", ""),
                     sender_name=data.get("senderName", ""),
                     text=data.get("text", ""),
-                    datetime=data.get("datetime", "")
+                    datetime=data.get("datetime", ""),
                 )
                 await self._on_new_message(msg)
-                
+
             # Log heartbeats silently, don't dispatch unless needed
             elif event_type == "heartbeat":
-                pass 
-                
+                pass
+
         except Exception as e:
             self.logger.error(f"Error in handler for {event_type}: {e}", exc_info=True)
