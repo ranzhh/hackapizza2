@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from core.client import BidRequest, MenuItem
-from discovery_harness import DISCOVERY_ENDPOINTS, run_discovery
+from hp2.core.api import BidRequest, MenuItem
+from tools.discovery_api import DISCOVERY_ENDPOINTS, run_discovery
 
 
 class FakeClient:
@@ -101,7 +101,7 @@ async def test_run_discovery_calls_all_endpoints_and_persists_report(tmp_path: P
     client = FakeClient()
 
     report_path = await run_discovery(
-        client,
+        client,  # type: ignore
         output_dir=tmp_path,
         include_actions=True,
         manage_session=False,
@@ -125,13 +125,13 @@ async def test_run_discovery_is_stable_across_repeated_runs(tmp_path: Path):
     client = FakeClient()
 
     first = await run_discovery(
-        client,
+        client,  # type: ignore
         output_dir=tmp_path,
         include_actions=False,
         manage_session=False,
     )
     second = await run_discovery(
-        client,
+        client,  # type: ignore
         output_dir=tmp_path,
         include_actions=False,
         manage_session=False,

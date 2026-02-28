@@ -1,0 +1,3 @@
+[submodule "datapizza-ai"]
+	path = datapizza-ai
+	url = https://github.com/datapizza-labs/datapizza-ai.git

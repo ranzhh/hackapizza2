@@ -1,0 +1,71 @@
+{
+  "generated_at": "20260228T112153Z",
+  "team_id": "6",
+  "base_url": "https://hackapizza.datapizza.tech",
+  "server_info": {},
+  "results": [
+    {
+      "endpoint": "initialize",
+      "status": "error",
+      "duration_ms": 170.21412500253064,
+      "args": {
+        "protocolVersion": "2024-11-05",
+        "capabilities": {},
+        "clientInfo": {
+          "name": "mcp-crawler",
+          "version": "1.0.0"
+        }
+      },
+      "result": null,
+      "error_type": "ClientResponseError",
+      "error_message": "406, message='Not Acceptable', url='https://hackapizza.datapizza.tech/mcp'"
+    },
+    {
+      "endpoint": "notifications/initialized",
+      "status": "error",
+      "duration_ms": 27.551709001272684,
+      "args": {},
+      "result": null,
+      "error_type": "ClientResponseError",
+      "error_message": "406, message='Not Acceptable', url='https://hackapizza.datapizza.tech/mcp'"
+    },
+    {
+      "endpoint": "tools/list",
+      "status": "error",
+      "duration_ms": 28.900334000354633,
+      "args": {},
+      "result": null,
+      "error_type": "ClientResponseError",
+      "error_message": "406, message='Not Acceptable', url='https://hackapizza.datapizza.tech/mcp'"
+    },
+    {
+      "endpoint": "prompts/list",
+      "status": "error",
+      "duration_ms": 27.85079100067378,
+      "args": {},
+      "result": null,
+      "error_type": "ClientResponseError",
+      "error_message": "406, message='Not Acceptable', url='https://hackapizza.datapizza.tech/mcp'"
+    },
+    {
+      "endpoint": "resources/list",
+      "status": "error",
+      "duration_ms": 27.834915999847,
+      "args": {},
+      "result": null,
+      "error_type": "ClientResponseError",
+      "error_message": "406, message='Not Acceptable', url='https://hackapizza.datapizza.tech/mcp'"
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "ok": 0,
+    "error": 5,
+    "tool_count": 0,
+    "prompt_count": 0,
+    "resource_count": 0,
+    "tool_names": [],
+    "prompt_names": [],
+    "resource_uris": []
+  }
+}

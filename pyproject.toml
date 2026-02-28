@@ -1,3 +1,10 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hp2"]
+
 [project]
 name = "hackapizza2"
 version = "0.1.0"
@@ -6,7 +13,10 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "aiohttp>=3.12.3",
-    "datapizza-ai>=0.0.9",
+    "datapizza-ai",
     "datapizza-ai-clients-openai-like>=0.0.9",
     "pytest>=9.0.2",
 ]
+
+[tool.uv.sources]
+datapizza-ai = { path = "./datapizza-ai", editable = true }
