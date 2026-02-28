@@ -12,21 +12,22 @@ class ExampleAgent(BaseAgent):
 
     def __init__(self, client: HackapizzaClient | None = None):
         self.logger = logging.getLogger("ExampleAgent")
+        super().__init__(client)
 
     async def on_game_started(self, data: Dict[str, Any]) -> None:
         self.logger.info("Example agent started with data: %s", data)
 
     async def on_phase_changed(self, phase: GamePhase) -> None:
-        pass
+        self.logger.info("Phase changed to: %s", phase)
 
     async def on_client_spawned(self, order: ClientOrder) -> None:
-        pass
+        self.logger.info("Client spawned with order: %s", order)
 
     async def on_preparation_complete(self, dish_name: str) -> None:
-        pass
+        self.logger.info("Preparation complete for dish: %s", dish_name)
 
     async def on_new_message(self, message: IncomingMessage) -> None:
-        pass
+        self.logger.info("New message received: %s", message)
 
 
 if __name__ == "__main__":

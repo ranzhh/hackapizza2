@@ -26,7 +26,7 @@ LOGGER = logging.getLogger("api.discovery_harness")
 
 @dataclass
 class DiscoveryContext:
-    turn_id: str = "current"
+    turn_id: str = "8"
     ingredient_name: str = "tomato"
     dish_name: str = "margherita"
     client_id: str = "unknown-client"

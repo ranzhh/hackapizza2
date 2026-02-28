@@ -58,10 +58,29 @@ class MarketEntrySchema(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
+class MealCustomerSchema(BaseModel):
+    """Customer block embedded in meal payloads."""
+
+    model_config = ConfigDict(extra="allow")
+
+    name: str
+
+
 class MealSchema(BaseModel):
     """Observed/expected shape for meals endpoint entries."""
 
     model_config = ConfigDict(extra="allow")
+
+    id: int
+    turn_id: int = Field(alias="turnId")
+    customer_id: int = Field(alias="customerId")
+    restaurant_id: int = Field(alias="restaurantId")
+    request: str
+    start_time: str = Field(alias="startTime")
+    served_dish_id: Optional[int] = Field(default=None, alias="servedDishId")
+    status: str
+    customer: Optional[MealCustomerSchema] = None
+    executed: Optional[bool] = None
 
 
 class BidHistoryEntrySchema(BaseModel):

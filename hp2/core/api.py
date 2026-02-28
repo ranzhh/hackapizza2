@@ -85,7 +85,7 @@ def log_mcp_event(
     """Decorator: logs the MCP tool call as an event in `events` + its typed table."""
 
     def decorator(
-        func: Callable[Concatenate["HackapizzaClient", P], Awaitable[T]]
+        func: Callable[Concatenate["HackapizzaClient", P], Awaitable[T]],
     ) -> Callable[Concatenate["HackapizzaClient", P], Awaitable[T]]:
         sig = inspect.signature(func)
 
@@ -318,7 +318,9 @@ class HackapizzaClient(SqlLoggingMixin):
         """Phase: speaking, closed_bid, waiting. Set your menu and prices."""
         return await self._mcp_call("save_menu", items=[asdict(i) for i in items])
 
-    @log_mcp_event("event_create_market_entry", persist_method_name="_persist_mcp_create_market_entry")
+    @log_mcp_event(
+        "event_create_market_entry", persist_method_name="_persist_mcp_create_market_entry"
+    )
     async def create_market_entry(
         self, side: MarketSide, ingredient_name: str, quantity: int, price: float
     ) -> Any:
@@ -331,12 +333,16 @@ class HackapizzaClient(SqlLoggingMixin):
             price=price,
         )
 
-    @log_mcp_event("event_execute_transaction", persist_method_name="_persist_mcp_execute_transaction")
+    @log_mcp_event(
+        "event_execute_transaction", persist_method_name="_persist_mcp_execute_transaction"
+    )
     async def execute_transaction(self, market_entry_id: int) -> Any:
         """Phase: all EXCEPT stopped. Fulfill another team's market offer."""
         return await self._mcp_call("execute_transaction", market_entry_id=market_entry_id)
 
-    @log_mcp_event("event_delete_market_entry", persist_method_name="_persist_mcp_delete_market_entry")
+    @log_mcp_event(
+        "event_delete_market_entry", persist_method_name="_persist_mcp_delete_market_entry"
+    )
     async def delete_market_entry(self, market_entry_id: int) -> Any:
         """Phase: all EXCEPT stopped. Remove your active P2P market offer."""
         return await self._mcp_call("delete_market_entry", market_entry_id=market_entry_id)
@@ -696,4 +702,3 @@ class HackapizzaClient(SqlLoggingMixin):
 
         except Exception as e:
             self.logger.error(f"Error in handler for {event_type}: {e}", exc_info=True)
-
