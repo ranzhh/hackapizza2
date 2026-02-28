@@ -65,10 +65,32 @@ class EventLog(Base):
     )
     turn_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     event_type: Mapped[str] = mapped_column(String, nullable=False)
-    data_json: Mapped[str] = mapped_column(String, nullable=False)
+    data_json: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
 
-class ClientSpawnedEvent(Base):
+class GameStartedEvent(Base):
+    __tablename__ = "event_game_started"
+    __table_args__ = (Index("idx_game_started_event_id", "event_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id", ondelete="CASCADE"), nullable=False
+    )
+    turn_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+
+class GamePhaseChangedEvent(Base):
+    __tablename__ = "event_game_phase_changed"
+    __table_args__ = (Index("idx_phase_changed_event_id", "event_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id", ondelete="CASCADE"), nullable=False
+    )
+    phase: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class ClientOrderEvent(Base):
     __tablename__ = "event_client_spawned"
     __table_args__ = (Index("idx_client_spawned_event_id", "event_id"),)
 
@@ -133,6 +155,15 @@ def persist_to_db(event_type: str, data: Dict[str, Any]):
             data.get("turnId") or data.get("turn_id") or data.get("value")
         )
 
+    # Only store raw JSON for unknown event types
+    is_known = event_type in (
+        "game_started",
+        "game_phase_changed",
+        "client_spawned",
+        "preparation_complete",
+        "new_message",
+    )
+
     try:
         with Session() as session:
             # 1) Generic events row
@@ -140,19 +171,33 @@ def persist_to_db(event_type: str, data: Dict[str, Any]):
                 timestamp_utc=datetime.now(UTC),
                 turn_id=_current_turn_id,
                 event_type=event_type,
-                data_json=json.dumps(data, default=str),
+                data_json=None if is_known else json.dumps(data, default=str),
             )
             session.add(event_row)
             session.flush()
             event_id = event_row.id
 
             # 2) Typed table for known event types
-            if event_type == "client_spawned":
+            if event_type == "game_started":
                 session.add(
-                    ClientSpawnedEvent(
+                    GameStartedEvent(
                         event_id=event_id,
-                        client_name=data.get("clientName", "unknown"),
-                        order_text=data.get("orderText", "unknown"),
+                        turn_id=_current_turn_id,
+                    )
+                )
+            elif event_type == "game_phase_changed":
+                session.add(
+                    GamePhaseChangedEvent(
+                        event_id=event_id,
+                        phase=data.get("phase", "unknown"),
+                    )
+                )
+            elif event_type == "client_spawned":
+                session.add(
+                    ClientOrderEvent(
+                        event_id=event_id,
+                        client_name=data.get("clientName", data.get("name", "unknown")),
+                        order_text=data.get("orderText", data.get("order_text", data.get("text", "unknown"))),
                     )
                 )
             elif event_type == "preparation_complete":
