@@ -267,7 +267,7 @@ async def handle_sse_payload(json_str: str):
         # 2. Broadcast it
         await broadcast(json_str)
 
-        logger.info(f"Relayed Event: {event_type}")
+        logger.info(f"Relayed Event: {str(event_json)[:250]}...")
     except json.JSONDecodeError:
         logger.warning(f"Malformed JSON skipped: {json_str[:50]}...")
 
