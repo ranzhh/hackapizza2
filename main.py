@@ -151,7 +151,7 @@ class PhaseManager:
             self.state.recipes = [
                 r.model_dump(by_alias=True) for r in await self.client.get_recipes()
             ]
-            print(self.state.recipes)
+            print(self.state.recipes[:10])
         except Exception as e:
             logger.error(f"refresh_state (recipes) failed: {e}")
 
