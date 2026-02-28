@@ -166,7 +166,6 @@ async def main():
     
     # Example: Run the agent with a test scenario
     response = await agent.run(
-        "Hey, first of all, how are you?"
         "Check the current game state and tell me what phase we're in. "
         "Then analyze what actions we should take."
     )

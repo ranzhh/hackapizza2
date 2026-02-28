@@ -143,19 +143,22 @@ async def main():
     for tool in mcp_tools:
         print(f"  - {tool.name}: {tool.description}")
     
-    # Combine custom tools with MCP tools as a list
-    all_tools = [
-        analyze_customer_request,
-        check_inventory,
-        calculate_bid,
-        serve_customer,
-    ] + mcp_tools  # MCP tools are already Tool objects
+    # Combine custom tools with MCP tools
+    all_tools = {
+        "analyze_customer_request": analyze_customer_request,
+        "check_inventory": check_inventory,
+        "calculate_bid": calculate_bid,
+        "serve_customer": serve_customer,
+    }
+    
+    # Add MCP tools to the agent's toolset
+    all_tools.update({tool.name: tool for tool in mcp_tools})
     
     # Create the agent with both custom and MCP tools
     agent = Agent(
         name="hackapizza_agent",
         client=regolo_client,
-        tools=all_tools  # Pass as list, not dict
+        tools=all_tools
     )
     
     print("\n" + "=" * 50)
@@ -166,7 +169,6 @@ async def main():
     
     # Example: Run the agent with a test scenario
     response = await agent.run(
-        "Hey, first of all, how are you?"
         "Check the current game state and tell me what phase we're in. "
         "Then analyze what actions we should take."
     )

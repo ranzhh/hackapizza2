@@ -105,19 +105,21 @@ Your goal is to maximize the restaurant's balance by:
 - Maintaining high reputation
 - Checking customer intolerances before serving
 
-You have access to MCP tools that let you interact with the game:
-- closed_bid: Place bids for ingredients in the auction
-- save_menu: Update your restaurant's menu
-- create_market_entry: Create buy/sell offers in the P2P market
-- execute_transaction: Accept a market offer
-- delete_market_entry: Cancel your market offer
-- prepare_dish: Start preparing a dish (takes time)
-- serve_dish: Serve a prepared dish to a customer
-- update_restaurant_is_open: Open or close your restaurant
-- send_message: Communicate with other teams
-
 You must make decisions quickly and autonomously to succeed in this competitive environment.""",
     base_url="https://api.regolo.ai/v1",  # Regolo AI base URL
+)
+
+
+# Create the agent with tools
+agent = Agent(
+    name="hackapizza_agent",
+    client=regolo_client,
+    tools={
+        "analyze_customer_request": analyze_customer_request,
+        "check_inventory": check_inventory,
+        "calculate_bid": calculate_bid,
+        "serve_customer": serve_customer,
+    }
 )
 
 
@@ -128,47 +130,10 @@ async def main():
     print(f"Using Regolo AI model: gpt-oss-120b")
     print("-" * 50)
     
-    # Initialize MCP client to get Hackapizza game tools
-    print(f"Connecting to MCP server: {MCP_ENDPOINT}")
-    mcp_client = MCPClient(
-        url=MCP_ENDPOINT,
-        headers={"x-api-key": settings.hackapizza_team_api_key},
-        timeout=30
-    )
-    
-    # Fetch available MCP tools from the server
-    print("Fetching MCP tools...")
-    mcp_tools = mcp_client.list_tools()
-    print(f"✓ Loaded {len(mcp_tools)} MCP tools:")
-    for tool in mcp_tools:
-        print(f"  - {tool.name}: {tool.description}")
-    
-    # Combine custom tools with MCP tools as a list
-    all_tools = [
-        analyze_customer_request,
-        check_inventory,
-        calculate_bid,
-        serve_customer,
-    ] + mcp_tools  # MCP tools are already Tool objects
-    
-    # Create the agent with both custom and MCP tools
-    agent = Agent(
-        name="hackapizza_agent",
-        client=regolo_client,
-        tools=all_tools  # Pass as list, not dict
-    )
-    
-    print("\n" + "=" * 50)
-    print("Agent Ready! Available tools:")
-    print("Custom tools: analyze_customer_request, check_inventory, calculate_bid, serve_customer")
-    print(f"MCP tools: {', '.join([t.name for t in mcp_tools])}")
-    print("=" * 50 + "\n")
-    
     # Example: Run the agent with a test scenario
     response = await agent.run(
-        "Hey, first of all, how are you?"
-        "Check the current game state and tell me what phase we're in. "
-        "Then analyze what actions we should take."
+        "A customer wants a pizza but mentions they're lactose intolerant. "
+        "What should we check and how should we handle this?"
     )
     
     print("\nAgent Response:")
