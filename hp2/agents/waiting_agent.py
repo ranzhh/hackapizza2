@@ -181,7 +181,7 @@ def _compute_recipe_price(
     total_cost = sum(ing.get("price", 0.0) for ing in ingredient_list)
     # Apply archetype multiplier and round to integer (server requires int > 0)
     price = max(1, round(total_cost * multiplier))
-    return price * GLOBAL_MULTIPLIER
+    return round(price * GLOBAL_MULTIPLIER)
 
 
 # ---------------------------------------------------------------------------
