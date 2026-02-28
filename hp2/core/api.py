@@ -668,8 +668,8 @@ class HackapizzaClient(SqlLoggingMixin):
             if event_type == "game_started":
                 turn_id = str(data.get("turnId") or data.get("turn_id") or data.get("value") or "")
                 self._current_turn_id = turn_id
-            if event_type == "game_started" and self._on_game_started:
-                await self._on_game_started(GameStartedEvent(turn_id=turn_id))
+                if self._on_game_started:
+                    await self._on_game_started(GameStartedEvent(turn_id=turn_id))
 
             elif event_type == "game_phase_changed" and self._on_phase_changed:
                 try:
