@@ -184,7 +184,11 @@ class ServingAgent(BaseAgent):
 
         # Verify we have the recipe and ingredients (programmatic safety net)
         recipe = self._find_recipe(dish_name)
-        if recipe and not self._has_ingredients(recipe):
+        if recipe is None:
+            logger.warning("[SERVING] No recipe found for '%s' — skipping %s. Available recipes: %s",
+                           dish_name, order.client_name, [r.name for r in self.recipes])
+            return
+        if not self._has_ingredients(recipe):
             logger.warning("[SERVING] Not enough ingredients for '%s' — skipping %s.", dish_name, order.client_name)
             return
 
@@ -310,7 +314,8 @@ class ServingAgent(BaseAgent):
             raise ValueError("Turn ID is not set — cannot resolve client ID")
         try:
             meals = await self.client.get_meals(self.turn_id)
-        except Exception:
+        except Exception as exc:
+            logger.error("[RESOLVE] get_meals failed for turn=%s: %s", self.turn_id, exc)
             return None
 
         for meal in meals:
@@ -320,6 +325,8 @@ class ServingAgent(BaseAgent):
                 logger.info("[RESOLVE] %s -> %s (meal.customer_id)", order.client_name, resolved)
                 return resolved
 
+        available_names = [m.customer.name for m in meals if m.customer]
+        logger.warning("[RESOLVE] '%s' not found in meals. Available: %s", order.client_name, available_names)
         return None
 
     def _find_recipe(self, dish_name: str) -> Optional[RecipeSchema]:
@@ -329,9 +336,14 @@ class ServingAgent(BaseAgent):
         return None
 
     def _has_ingredients(self, recipe: RecipeSchema) -> bool:
+        missing = []
         for ing, qty in recipe.ingredients.items():
-            if self.shadow_inventory.get(ing, 0) < qty:
-                return False
+            available = self.shadow_inventory.get(ing, 0)
+            if available < qty:
+                missing.append(f"{ing}: need {qty}, have {available}")
+        if missing:
+            logger.warning("[INVENTORY] Missing for '%s': %s", recipe.name, "; ".join(missing))
+            return False
         return True
 
     def _reset_state(self) -> None:
