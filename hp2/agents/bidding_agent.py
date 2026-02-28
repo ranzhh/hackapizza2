@@ -112,8 +112,6 @@ logger = logging.getLogger("BiddingAgent")
 # ---------------------------------------------------------------------------
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 
-GLOBAL_MULTIPLIER = 0.7
-
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -234,7 +232,7 @@ def _compile_bids(
 
         for entry in dish_list:
             dish_name = entry["name"]
-            multiplier = float(entry.get("multiplier", 1.0)) * GLOBAL_MULTIPLIER
+            multiplier = float(entry.get("multiplier", 1.0))
             ingredient_list = arch_ingredients.get(dish_name, [])
 
             for ing in ingredient_list:
