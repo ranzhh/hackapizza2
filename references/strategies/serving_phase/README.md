@@ -1,0 +1,3 @@
+# Kitchen Load Management (Serving Phase)
+
+The rules explicitly state: "an overwhelmed restaurant can decide to close temporarily... A closed restaurant or one without a menu is invisible to customers." If you accept an order you cannot finish in time, you lose the ingredients, you don't get paid, and your reputation drops. This function uses basic queueing theory to determine exactly when to trigger the update_restaurant_is_open(False) tool.
