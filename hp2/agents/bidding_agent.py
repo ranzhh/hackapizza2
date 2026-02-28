@@ -118,7 +118,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 # ---------------------------------------------------------------------------
 
 # Budget fraction — we spend at most this share of our balance on bids.
-BUDGET_FRACTION = 0.2
+BUDGET_FRACTION = 0.05
 
 # Maximum portions per dish we ever want to stock.  The budget is spent
 # proportionally across all ingredients; this cap prevents over-stocking
@@ -146,9 +146,7 @@ def _load_config(config_path: Path | None = None) -> Dict[str, Any]:
 
     Raises ``FileNotFoundError`` or ``ValueError`` on problems.
     """
-    path = config_path or Path(
-        os.environ.get("BIDDING_AGENT_CONFIG", str(_DEFAULT_CONFIG_PATH))
-    )
+    path = config_path or Path(os.environ.get("BIDDING_AGENT_CONFIG", str(_DEFAULT_CONFIG_PATH)))
     if not path.exists():
         raise FileNotFoundError(
             f"Config file not found at {path}.  "
@@ -159,9 +157,7 @@ def _load_config(config_path: Path | None = None) -> Dict[str, Any]:
         data = json.load(fh)
 
     if "recipes" not in data or "ingredients" not in data:
-        raise ValueError(
-            "config.json must contain top-level 'recipes' and 'ingredients' keys."
-        )
+        raise ValueError("config.json must contain top-level 'recipes' and 'ingredients' keys.")
 
     return data
 
@@ -169,6 +165,7 @@ def _load_config(config_path: Path | None = None) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Pure helper: compile the ingredient bid list from configuration
 # ---------------------------------------------------------------------------
+
 
 def _compile_bids(
     config: Dict[str, Any],
@@ -263,9 +260,7 @@ def _compile_bids(
     # max_portions_per_dish.  Using a float here keeps proportions exact
     # before we round to integers below.
     budget = balance * budget_fraction
-    cost_per_round = sum(
-        info["base_qty"] * info["bid"] for info in ingredient_info.values()
-    )
+    cost_per_round = sum(info["base_qty"] * info["bid"] for info in ingredient_info.values())
 
     if cost_per_round <= 0:
         return []
@@ -353,6 +348,7 @@ def _compile_bids(
 # ---------------------------------------------------------------------------
 # The agent
 # ---------------------------------------------------------------------------
+
 
 class BiddingAgent(BaseAgent):
     """Deterministic agent that handles only the **closed_bid** phase.
@@ -463,9 +459,7 @@ class BiddingAgent(BaseAgent):
             try:
                 self._config = _load_config(self._config_path)
             except Exception as exc:
-                self.logger.warning(
-                    "Could not reload config (%s); using cached version.", exc
-                )
+                self.logger.warning("Could not reload config (%s); using cached version.", exc)
 
         # ── 2. Fetch game state (we only need the balance for budgeting) ─
         balance = 0.0
@@ -484,9 +478,7 @@ class BiddingAgent(BaseAgent):
         )
 
         if not bids:
-            self.logger.warning(
-                "No bids compiled from configuration — nothing to submit."
-            )
+            self.logger.warning("No bids compiled from configuration — nothing to submit.")
             self.logger.info("=== CLOSED BID PHASE COMPLETE ===")
             return []
 
