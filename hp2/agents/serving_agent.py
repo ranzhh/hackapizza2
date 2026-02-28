@@ -156,7 +156,11 @@ class ServingAgent(BaseAgent):
         #     logger.error("[SERVING] Failed to open restaurant: %s", exc)
 
         # 2. Refresh recipes, menu, inventory
-        await self._refresh_context()
+        try:
+            self.recipes = await self.client.get_recipes()
+        except Exception as exc:
+            logger.warning("[SERVING] Could not fetch recipes: %s", exc)
+        await self._refresh_inventory()
 
         # 3. Process any orders that queued before the phase started
         for order in self.pending_orders:
@@ -169,7 +173,7 @@ class ServingAgent(BaseAgent):
             return
 
         # Refresh inventory before deciding
-        await self._refresh_context()
+        await self._refresh_inventory()
 
         # ── Single LLM call: pick the dish ──
         dish_name = await self._ask_llm_for_dish(order)
@@ -263,6 +267,7 @@ class ServingAgent(BaseAgent):
 
             if not dish:
                 logger.info("[LLM] Not serving %s.", order.client_name)
+                logger.warning("[LLM] Prompt: %s", prompt)
                 return None
 
             # Resolve exact menu name (case-insensitive)
@@ -287,13 +292,8 @@ class ServingAgent(BaseAgent):
 
     # ── Programmatic helpers ─────────────────────────────────────────
 
-    async def _refresh_context(self) -> None:
+    async def _refresh_inventory(self) -> None:
         """Pull latest recipes, menu, and inventory from the API."""
-        try:
-            self.recipes = await self.client.get_recipes()
-        except Exception as exc:
-            logger.warning("[SERVING] Could not fetch recipes: %s", exc)
-
         try:
             restaurant = await self.client.get_my_restaurant()
             self.shadow_inventory = restaurant.inventory
