@@ -66,7 +66,7 @@
         { "name": "Shard di Materia Oscura", "price": 5.0 },
         { "name": "Lattuga Namecciana", "price": 5.0 },
         { "name": "Radici di Gravità", "price": 5.0 },
-        { "name": "Funghi dell'Etere", "price": 5.0 },
+        { "name": "Funghi dell’Etere", "price": 5.0 },
         { "name": "Essenza di Vuoto", "price": 5.0 }
       ],
       "Più Lontano delle Stelle": [
@@ -83,7 +83,7 @@
         { "name": "Carne di Mucca", "price": 6.0 },
         { "name": "Carne di Xenodonte", "price": 6.0 },
         { "name": "Pane degli Abissi", "price": 6.0 },
-        { "name": "Funghi dell'Etere", "price": 6.0 }
+        { "name": "Funghi dell’Etere", "price": 6.0 }
       ],
       "Universo in Fusilli - Variazione Celestiale": [
         { "name": "Teste di Idra", "price": 6.0 },
@@ -184,7 +184,7 @@
         { "name": "Carne di Mucca", "price": 10.0 },
         { "name": "Carne di Xenodonte", "price": 10.0 },
         { "name": "Pane degli Abissi", "price": 10.0 },
-        { "name": "Funghi dell'Etere", "price": 10.0 }
+        { "name": "Funghi dell’Etere", "price": 10.0 }
       ],
       "Sinfonia Cosmica di Mare e Stelle": [
         { "name": "Carne di Balena spaziale", "price": 10.0 },
