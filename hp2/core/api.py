@@ -172,7 +172,7 @@ class HackapizzaClient(SqlLoggingMixin):
         # Event Callbacks
         self._on_game_started: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None
         self._on_phase_changed: Optional[Callable[[GamePhase], Awaitable[None]]] = None
-        self._on_client_order: Optional[Callable[[ClientOrder], Awaitable[None]]] = None
+        self._on_client_spawned: Optional[Callable[[ClientOrder], Awaitable[None]]] = None
         self._on_preparation_complete: Optional[Callable[[str], Awaitable[None]]] = None
         self._on_new_message: Optional[Callable[[IncomingMessage], Awaitable[None]]] = None
 
@@ -186,8 +186,8 @@ class HackapizzaClient(SqlLoggingMixin):
         self._on_phase_changed = func
         return func
 
-    def on_client_order(self, func: Callable[[ClientOrder], Awaitable[None]]):
-        self._on_client_order = func
+    def on_client_spawned(self, func: Callable[[ClientOrder], Awaitable[None]]):
+        self._on_client_spawned = func
         return func
 
     def on_preparation_complete(self, func: Callable[[str], Awaitable[None]]):
@@ -605,13 +605,13 @@ class HackapizzaClient(SqlLoggingMixin):
                     phase = GamePhase.UNKNOWN
                 await self._on_phase_changed(phase)
 
-            elif event_type == "client_spawned" and self._on_client_order:
+            elif event_type == "client_spawned" and self._on_client_spawned:
                 order = ClientOrder(
                     client_id=str(data.get("clientId", data.get("client_id", data.get("id", "unknown")))),
                     client_name=data.get("clientName", data.get("name", "unknown")),
                     order_text=data.get("orderText", data.get("order_text", data.get("text", "unknown"))),
                 )
-                await self._on_client_order(order)
+                await self._on_client_spawned(order)
 
             elif event_type == "preparation_complete" and self._on_preparation_complete:
                 await self._on_preparation_complete(data.get("dish", "unknown"))
@@ -631,3 +631,4 @@ class HackapizzaClient(SqlLoggingMixin):
 
         except Exception as e:
             self.logger.error(f"Error in handler for {event_type}: {e}", exc_info=True)
+
