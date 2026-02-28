@@ -5,6 +5,8 @@ import logging
 import time
 from collections import deque
 
+import aiohttp
+
 from hp2.agents.base import BaseAgent
 from hp2.core.api import (
     ClientOrder,
@@ -36,11 +38,13 @@ class RestaurantManager(BaseAgent):
     async def on_game_started(self, event: GameStartedEvent) -> None:
         self.turn_id = event.turn_id
         self.logger.info("GAME STARTED - turn_id=%s", self.turn_id)
-        self.client.set_restaurant_open_status(is_open=True)
+        await self.client.set_restaurant_open_status(is_open=True)
+        self._is_open = True
         self.logger.info("Opened restaurant at game start")
 
     async def on_phase_changed(self, phase: GamePhase) -> None:
-        self.client.set_restaurant_open_status(is_open=True)
+        await self.client.set_restaurant_open_status(is_open=True)
+        self._is_open = True
         self.logger.info("Opened restaurant at phase change: %s", phase.value)
         if phase == GamePhase.SERVING:
             if self._serving_task is None or self._serving_task.done():
@@ -189,7 +193,50 @@ class RestaurantManager(BaseAgent):
             # TODO: enable
             # await self.client.set_restaurant_open_status(is_open=False)
 
+    async def shutdown(self) -> None:
+        """Graceful stop: cancel loops and close restaurant before exit."""
+        if self._serving_task and not self._serving_task.done():
+            self._serving_task.cancel()
+            try:
+                await self._serving_task
+            except asyncio.CancelledError:
+                pass
+
+        await self._close_restaurant_best_effort()
+
+    async def _close_restaurant_best_effort(self) -> None:
+        """Attempt to close restaurant, creating a temporary HTTP session if needed."""
+        self.logger.info("Attempting to close restaurant before shutdown")
+
+        if self.client._session is not None:
+            try:
+                await self.client.set_restaurant_open_status(is_open=False)
+                self._is_open = False
+                self.logger.info("Restaurant closed")
+            except Exception as exc:
+                self.logger.warning("Failed to close restaurant with existing session: %s", exc)
+            return
+
+        timeout = aiohttp.ClientTimeout(total=10)
+        async with aiohttp.ClientSession(timeout=timeout, headers=self.client._headers) as session:
+            self.client._session = session
+            try:
+                await self.client.set_restaurant_open_status(is_open=False)
+                self._is_open = False
+                self.logger.info("Restaurant closed")
+            except Exception as exc:
+                self.logger.warning("Failed to close restaurant on shutdown: %s", exc)
+            finally:
+                self.client._session = None
+
 
 if __name__ == "__main__":
     agent = RestaurantManager()
-    asyncio.run(agent.run())
+    try:
+        asyncio.run(agent.run())
+    except KeyboardInterrupt:
+        agent.logger.warning("Ctrl+C received, shutting down gracefully")
+        try:
+            asyncio.run(agent.shutdown())
+        except Exception as exc:
+            agent.logger.warning("Shutdown encountered an error: %s", exc)
