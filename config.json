@@ -94,115 +94,115 @@
       "Luce e Ombra di Nomea Spaziale": [
         {
           "name": "Lattuga Namecciana",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Carne di Balena spaziale",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Fusilli del Vento",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Pane di Luce",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Lacrime di Unicorno",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Essenza di Speziaria",
-          "price": 2.0
+          "price": 1.0
         }
       ],
       "Essenze dell'Infinito": [
         {
           "name": "Lattuga Namecciana",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Baccacedro",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Carne di Kraken",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Funghi Orbitali",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Essenza di Vuoto",
-          "price": 2.0
+          "price": 1.0
         }
       ],
       "Etereo Crepuscolare": [
         {
           "name": "Vero Ghiaccio",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Colonia di Mycoflora",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Lattuga Namecciana",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Gnocchi del Crepuscolo",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Granuli di Nebbia Arcobaleno",
-          "price": 2.0
+          "price": 1.0
         }
       ],
       "Rintocchi del Cosmo": [
         {
           "name": "Shard di Materia Oscura",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Lattuga Namecciana",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Radici di Gravità",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Funghi dell’Etere",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Essenza di Vuoto",
-          "price": 2.0
+          "price": 1.0
         }
       ],
       "Più Lontano delle Stelle": [
         {
           "name": "Polvere di Pulsar",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Foglie di Mandragora",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Teste di Idra",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Lacrime di Unicorno",
-          "price": 2.0
+          "price": 1.0
         },
         {
           "name": "Essenza di Vuoto",
-          "price": 2.0
+          "price": 1.0
         }
       ]
     },
@@ -210,119 +210,119 @@
       "Sinfonia Cosmica di Proteine Interstellari": [
         {
           "name": "Carne di Balena spaziale",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Carne di Mucca",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Carne di Xenodonte",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Pane degli Abissi",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Funghi dell’Etere",
-          "price": 3.0
+          "price": 1.0
         }
       ],
       "Universo in Fusilli - Variazione Celestiale": [
         {
           "name": "Teste di Idra",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Carne di Xenodonte",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Pane degli Abissi",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Fusilli del Vento",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Muffa Lunare",
-          "price": 3.0
+          "price": 1.0
         }
       ],
       "Risotto Cosmico Multiversale": [
         {
           "name": "Shard di Materia Oscura",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Carne di Xenodonte",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Carne di Mucca",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Granuli di Nebbia Arcobaleno",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Muffa Lunare",
-          "price": 3.0
+          "price": 1.0
         }
       ],
       "Armonia Cosmica alla Tavola d'Oro": [
         {
           "name": "Polvere di Crononite",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Baccacedro",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Pane degli Abissi",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Muffa Lunare",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Sale Temporale",
-          "price": 3.0
+          "price": 1.0
         }
       ],
       "L'Estasi Cosmica di Nova": [
         {
           "name": "Polvere di Pulsar",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Foglie di Mandragora",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Carne di Balena spaziale",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Pane di Luce",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Granuli di Nebbia Arcobaleno",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Funghi Orbitali",
-          "price": 3.0
+          "price": 1.0
         },
         {
           "name": "Sale Temporale",
-          "price": 3.0
+          "price": 1.0
         }
       ]
     },
@@ -330,119 +330,119 @@
       "Sinfonia di Multiverso: La Danza degli Elementi": [
         {
           "name": "Shard di Prisma Stellare",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Carne di Balena spaziale",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Carne di Drago",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Teste di Idra",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Essenza di Vuoto",
-          "price": 3.5
+          "price": 1.0
         }
       ],
       "Sinfonia Quantica dell'Oceano Interstellare": [
         {
           "name": "Vero Ghiaccio",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Carne di Xenodonte",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Teste di Idra",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Carne di Kraken",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Nettare di Sirena",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Essenza di Vuoto",
-          "price": 3.5
+          "price": 1.0
         }
       ],
       "Più-dimensionale Sinfonia di Sapori: La Carne del Cosmo": [
         {
           "name": "Shard di Prisma Stellare",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Carne di Balena spaziale",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Carne di Xenodonte",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Pane degli Abissi",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Muffa Lunare",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Polvere di Stelle",
-          "price": 3.5
+          "price": 1.0
         }
       ],
       "Sinfonia Temporale di Fenice e Xenodonte su Pane degli Abissi con Colata di Plasma Vitale e Polvere di Crononite": [
         {
           "name": "Polvere di Crononite",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Uova di Fenice",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Carne di Xenodonte",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Pane degli Abissi",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Plasma Vitale",
-          "price": 3.5
+          "price": 1.0
         }
       ],
       "Sinfonia del Multiverso Calante": [
         {
           "name": "Shard di Prisma Stellare",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Granuli di Nebbia Arcobaleno",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Fusilli del Vento",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Pane degli Abissi",
-          "price": 3.5
+          "price": 1.0
         },
         {
           "name": "Lacrime di Unicorno",
-          "price": 3.5
+          "price": 1.0
         }
       ]
     },
@@ -450,119 +450,119 @@
       "Sinfonia di Multiverso: La Danza degli Elementi": [
         {
           "name": "Shard di Prisma Stellare",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Carne di Balena spaziale",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Carne di Drago",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Teste di Idra",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Essenza di Vuoto",
-          "price": 5.0
+          "price": 1.0
         }
       ],
       "Sinfonia Quantica dell'Oceano Interstellare": [
         {
           "name": "Vero Ghiaccio",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Carne di Xenodonte",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Teste di Idra",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Carne di Kraken",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Nettare di Sirena",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Essenza di Vuoto",
-          "price": 5.0
+          "price": 1.0
         }
       ],
       "Più-dimensionale Sinfonia di Sapori: La Carne del Cosmo": [
         {
           "name": "Shard di Prisma Stellare",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Carne di Balena spaziale",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Carne di Xenodonte",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Pane degli Abissi",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Muffa Lunare",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Polvere di Stelle",
-          "price": 5.0
+          "price": 1.0
         }
       ],
       "Sinfonia Cosmica di Proteine Interstellari": [
         {
           "name": "Carne di Balena spaziale",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Carne di Mucca",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Carne di Xenodonte",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Pane degli Abissi",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Funghi dell’Etere",
-          "price": 5.0
+          "price": 1.0
         }
       ],
       "Sinfonia Cosmica di Mare e Stelle": [
         {
           "name": "Carne di Balena spaziale",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Carne di Kraken",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Carne di Xenodonte",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Lacrime di Andromeda",
-          "price": 5.0
+          "price": 1.0
         },
         {
           "name": "Salsa Szechuan",
-          "price": 5.0
+          "price": 1.0
         }
       ]
     }
