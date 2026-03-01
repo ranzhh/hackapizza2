@@ -232,7 +232,6 @@ def _compile_bids(
 
         for entry in dish_list:
             dish_name = entry["name"]
-            multiplier = float(entry.get("multiplier", 1.0))
             ingredient_list = arch_ingredients.get(dish_name, [])
 
             for ing in ingredient_list:
