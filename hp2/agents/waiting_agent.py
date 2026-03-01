@@ -340,7 +340,7 @@ class WaitingAgent(BaseAgent):
         # ── 2. Fetch all available recipes from the server ─────────────
         try:
             all_recipes: List[RecipeSchema] = await self.client.get_recipes()
-            
+
         except Exception as exc:
             self.logger.error("Failed to fetch recipes: %s", exc)
             return []
