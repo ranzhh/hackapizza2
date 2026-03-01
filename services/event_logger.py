@@ -197,8 +197,8 @@ def persist_to_db(event_type: str, data: Dict[str, Any]):
                 session.add(
                     ClientOrderEvent(
                         event_id=event_id,
-                        client_name=data.get("clientName", data.get("name", "unknown")),
-                        order_text=data.get("orderText", data.get("order_text", data.get("text", "unknown"))),
+                        client_name=data.get("clientName", "unknown"),
+                        order_text=data.get("orderText", "unknown"),
                     )
                 )
             elif event_type == "preparation_complete":
