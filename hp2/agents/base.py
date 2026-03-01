@@ -4,6 +4,7 @@ import asyncio
 import logging
 from typing import Any, Dict
 
+import aiohttp
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
@@ -66,6 +67,10 @@ class BaseAgent:
     async def on_game_started(self, event: GameStartedEvent) -> None:
         raise NotImplementedError("Override on_game_started() in your agent.")
 
+    async def on_start(self) -> None:
+        """Optional startup hook executed before the event stream loop starts."""
+        return
+
     async def on_phase_changed(self, phase: GamePhase) -> None:
         raise NotImplementedError("Override on_phase_changed() in your agent.")
 
@@ -82,9 +87,24 @@ class BaseAgent:
         """Start consuming events from the Hackapizza event stream."""
         self.client.logger.info("Starting agent %s...", self.__class__.__name__)
         try:
+            await self._run_startup_hook()
             await self.client.start()
         finally:
             self._log_engine.dispose()
+
+    async def _run_startup_hook(self) -> None:
+        """Run `on_start` with a temporary HTTP session if needed."""
+        if self.client._session is not None:
+            await self.on_start()
+            return
+
+        timeout = aiohttp.ClientTimeout(total=10)
+        async with aiohttp.ClientSession(timeout=timeout, headers=self.client._headers) as session:
+            self.client._session = session
+            try:
+                await self.on_start()
+            finally:
+                self.client._session = None
 
     def query_logging_db(
         self, query: str, params: Dict[str, Any] | None = None

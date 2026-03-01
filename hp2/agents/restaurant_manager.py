@@ -38,31 +38,65 @@ class RestaurantManager(BaseAgent):
     async def on_game_started(self, event: GameStartedEvent) -> None:
         self.turn_id = event.turn_id
         self.logger.info("GAME STARTED - turn_id=%s", self.turn_id)
-        await self.client.set_restaurant_open_status(is_open=True)
-        self._is_open = True
-        self.logger.info("Opened restaurant at game start")
+        await self._open_if_closed(trigger="game_start")
+
+    async def on_start(self) -> None:
+        """Best-effort startup sync when process boots mid-turn."""
+        await self._open_if_closed(trigger="agent_start")
 
     async def on_phase_changed(self, phase: GamePhase) -> None:
-        if phase not in [GamePhase.SERVING, GamePhase.STOPPED]:
-            await self.client.set_restaurant_open_status(is_open=True)
-        self._is_open = True
-        self.logger.info("Opened restaurant at phase change: %s", phase.value)
+        self.logger.info("Phase changed: %s", phase.value)
+
         if phase == GamePhase.SERVING:
-            if self._serving_task is None or self._serving_task.done():
-                self.logger.info("SERVING started: launching background loop")
-                self._serving_task = asyncio.create_task(self._serving_loop())
-                self._is_serving_phase = True
-                self.spawned = 0
-                self.served = 0
-                self.unserviceable = 0
-                self.pending_serviceable = 0
-                self._recent_serviceable.clear()
-                try:
-                    status = await self.client.get_my_restaurant()
-                    self._is_open = bool(status.is_open)
-                except Exception as exc:
-                    self.logger.warning("Failed to read current open status: %s", exc)
+            await self._enter_serving_phase()
             return
+
+        self._is_serving_phase = False
+        if phase not in [GamePhase.SERVING, GamePhase.STOPPED]:
+            await self._open_if_closed(trigger=f"phase_change:{phase.value}")
+
+    async def _enter_serving_phase(self) -> None:
+        self._is_serving_phase = True
+        self._reset_serving_metrics()
+
+        if self._serving_task is None or self._serving_task.done():
+            self.logger.info("SERVING started: launching background loop")
+            self._serving_task = asyncio.create_task(self._serving_loop())
+        else:
+            self.logger.info("SERVING started: reusing background loop")
+
+        try:
+            status = await self.client.get_my_restaurant()
+            self._is_open = bool(status.is_open)
+        except Exception as exc:
+            self.logger.warning("Failed to read current open status: %s", exc)
+
+    def _reset_serving_metrics(self) -> None:
+        self.spawned = 0
+        self.served = 0
+        self.unserviceable = 0
+        self.pending_serviceable = 0
+        self._recent_serviceable.clear()
+
+    async def _open_if_closed(self, trigger: str) -> None:
+        """Open restaurant only when currently closed; safe to call repeatedly."""
+        try:
+            status = await self.client.get_my_restaurant()
+            self._is_open = bool(status.is_open)
+        except Exception as exc:
+            self.logger.warning("[%s] Failed to read current open status: %s", trigger, exc)
+            return
+
+        if self._is_open:
+            self.logger.info("[%s] Restaurant already open", trigger)
+            return
+
+        try:
+            await self.client.set_restaurant_open_status(is_open=True)
+            self._is_open = True
+            self.logger.info("[%s] Restaurant was closed, now opened", trigger)
+        except Exception as exc:
+            self.logger.warning("[%s] Could not open restaurant (phase may forbid it): %s", trigger, exc)
 
     async def on_client_spawned(self, order: ClientOrder) -> None:
         if not self._is_serving_phase:
@@ -92,9 +126,18 @@ class RestaurantManager(BaseAgent):
         if not self._is_serving_phase:
             return
 
-        self.served += 1
         if self.pending_serviceable > 0:
+            self.served += 1
             self.pending_serviceable -= 1
+        else:
+            self.logger.warning(
+                "[PREP] unmatched preparation_complete for dish=%s (spawned=%s served=%s pending=%s)",
+                dish_name,
+                self.spawned,
+                self.served,
+                self.pending_serviceable,
+            )
+            return
 
         self.logger.info(
             "[PREP] dish=%s spawned=%s served=%s pending=%s",
@@ -111,6 +154,10 @@ class RestaurantManager(BaseAgent):
     async def _serving_loop(self) -> None:
         try:
             while True:
+                if not self._is_serving_phase:
+                    await asyncio.sleep(1)
+                    continue
+
                 served_ratio = (self.served / self.spawned) if self.spawned else 1.0
                 status = await self.client.get_my_restaurant()
                 self._is_open = bool(status.is_open)
