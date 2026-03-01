@@ -28,9 +28,7 @@ def _build_agent_log_file(logger_name: str) -> Path:
     return DEFAULT_AGENT_LOG_DIR / f"{safe_name}.log"
 
 
-def _attach_file_handler(
-    logger: logging.Logger, log_file: Path | None = None
-) -> None:
+def _attach_file_handler(logger: logging.Logger, log_file: Path | None = None) -> None:
     """Attach a file handler to the given logger (once per file path)."""
     if log_file is None:
         log_file = _build_agent_log_file(logger.name)
