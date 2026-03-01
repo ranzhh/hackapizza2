@@ -62,18 +62,12 @@ async def _async_get_recipes() -> List[Dict]:
     return [
         {
             "name": recipe.name,
-            "preparation_time_ms": recipe.preparation_time_ms,
-            "prestige": recipe.prestige,
             "ingredients": recipe.ingredients,
         }
         for recipe in recipes
     ]
 
-
-def main(ingredients: list[str]):
-    """Based on the list of ingredients extract the list of available recipes."""
-    recipes = get_recipes()
-
+def get_all(ingredients, recipes):
     available_recipes = []
 
     for recipe in recipes:
@@ -81,10 +75,48 @@ def main(ingredients: list[str]):
             if ingredient not in ingredients:
                 break
         else:
-            available_recipes.append(recipe)
+            available_recipes.append(recipe["name"])
 
     return available_recipes
 
+
+def get_individual(ingredients, recipes):
+    available_recipes = []
+
+    for recipe in recipes:
+        for ingredient in recipe["ingredients"]:
+            if ingredient in ingredients:
+                available_recipes.append(recipe['name'])
+                break
+
+    return available_recipes
+
+
+def get_weak(ingredients, recipes, match):
+    available_recipes = []
+
+    for recipe in recipes:
+        count = 0
+        for ingredient in recipe["ingredients"]:
+            if ingredient in ingredients:
+                count += 1
+
+        if count >= match:
+            available_recipes.append(recipe['name'])
+
+    return available_recipes
+
+
+def create_recipe_subset(ingredients: list[str], individual: bool, match = -1):
+    """Based on the list of ingredients extract the list of available recipes."""
+    recipes = get_recipes()
+
+    if match > 0:
+        return get_weak(ingredients, recipes, match)
+    elif individual:
+        return get_individual(ingredients, recipes)
+
+    return get_all(ingredients, recipes)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -104,6 +136,20 @@ if __name__ == "__main__":
         type=Path,
         default=Path("available_recipes.json"),
         help="Path to the output JSON file (default: available_recipes.json)",
+    )
+# --weak: remove type=bool
+    parser.add_argument(
+        "--weak",
+        type=int,
+        default=-1,
+        help="Weaker pattern matching that returns all recipes that contain all of the given ingredients",
+    )
+
+# --individual: remove type=bool
+    parser.add_argument(
+        "--individual",
+        action="store_true",
+        default=False,
     )
     args = parser.parse_args()
 
@@ -138,7 +184,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # --- Run and write results to JSON ---
-    result = main(ingredients_input)
+    result = create_recipe_subset(ingredients_input, args.individual, args.weak)
 
     output_path: Path = args.output
     output_path.write_text(
@@ -147,5 +193,4 @@ if __name__ == "__main__":
     )
 
     print(f"Available recipes ({len(result)}) written to {output_path}:")
-    for recipe in result:
-        print(f"  - {recipe['name']}")
+
