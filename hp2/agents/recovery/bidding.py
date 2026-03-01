@@ -63,7 +63,7 @@ class BiddingAgent(BaseAgent):
             # Create a menu for this phase
             menu_items: list[MenuItem] = []
             for recipe in self._config.recipes:
-                if self._validate_recipe(recipe):
+                if await self._validate_recipe(recipe):
                     menu_items.append(
                         MenuItem(name=recipe.name, price=int((recipe.prestige + 1) * 1.0))
                     )
