@@ -168,29 +168,7 @@ def _compile_bids(
                 dish_demand.get(dish_name, 0.0) + 1, max_portions_per_dish
             )
 
-<<<<<<< Updated upstream
-        for entry in dish_list:
-            dish_name = entry["name"]
-            ingredient_list = arch_ingredients.get(dish_name, [])
-
-            for ing in ingredient_list:
-                ing_name = ing["name"]
-                ing_price = float(ing.get("price", 1.0))
-
-                if ing_name not in ingredient_info:
-                    ingredient_info[ing_name] = {"bid": ing_price, "base_qty": 0.0}
-
-                # Always keep the highest bid price across archetypes.
-                if ing_price > ingredient_info[ing_name]["bid"]:
-                    ingredient_info[ing_name]["bid"] = ing_price
-
-                # Accumulate demand weighted by the archetype multiplier.
-                ingredient_info[ing_name]["base_qty"] += MAX_PORTIONS_PER_DISH
-
-    if not ingredient_info:
-=======
     if not dish_demand:
->>>>>>> Stashed changes
         return []
 
     # ── Step 2: Resolve dishes → real ingredients ─────────────────────
@@ -217,32 +195,10 @@ def _compile_bids(
 
     # ── Step 3: Build raw bid list ────────────────────────────────────
     budget = balance * budget_fraction
-<<<<<<< Updated upstream
-    cost_per_round = sum(info["base_qty"] * info["bid"] for info in ingredient_info.values())
-
-    if cost_per_round <= 0:
-        return []
-    
-    logger.info(
-        "Budget: %.0f ",
-        budget,
-    )
-
-    # ── Step 4: Round quantities — no forced floor of 1 ───────────────────
-    #
-    # Forcing qty = max(1, ...) would distort proportions and silently blow
-    # the budget (many cheap ingredients, each bumped to 1, add up fast).
-    # Instead we let rounding produce 0 and filter those out below.
-    bids_raw: List[Dict[str, Any]] = []
-    for ing_name, info in ingredient_info.items():
-        bid = max(1, round(info["bid"]))
-        qty = info["base_qty"]
-=======
     bids_raw: List[Dict[str, Any]] = []
     for ing_name, demand in ingredient_demand.items():
         bid = max(1, round(bid_price))
         qty = round(demand)
->>>>>>> Stashed changes
         if qty > 0:
             bids_raw.append({"ingredient": ing_name, "bid": bid, "quantity": qty})
 

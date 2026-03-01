@@ -1,69 +1,3 @@
-"""
-WaitingAgent — Deterministic menu-publishing agent for the *waiting* phase.
-
-This agent extends ``BaseAgent`` and implements **only** the ``phase_waiting``
-logic.  It is fully deterministic (no LLM / agentic calls):
-
-  1. Fetches the current restaurant state (inventory) via ``get_my_restaurant()``.
-  2. Fetches all available recipes via ``get_recipes()``.
-  3. Loads the *desired* recipe list from ``config.json``
-     (located at the repository root).
-  4. Filters recipes to those that are both *desired* (in configuration)
-     **and** *feasible* (all ingredients present in inventory).
-  5. Computes an integer price for each dish from the ingredient costs
-     and the archetype multiplier declared in configuration.
-  6. Publishes the resulting menu using ``save_menu`` as a direct
-     MCP tool call (standalone, not via an agentic loop).
-
-Configuration format
---------------------
-``config.json`` is structured by **customer archetype**::
-
-    {
-        "recipes": {
-            "<archetype>": {
-                "recipes": ["<dish_name>", ...],
-                "profit_multiplier": <float>
-            },
-            ...
-        },
-        "ingredients": {
-            "bidding_price": <float>
-        }
-    }
-
-The menu price for a dish = num_ingredients × bidding_price × profit_multiplier,
-rounded to the nearest integer (minimum 1).  When a recipe appears under
-multiple archetypes, the **highest** computed price is used.
-
-Environment variables
----------------------
-In live mode the agent reads credentials and connection strings from the
-``.env`` file at the repository root.  The following variables are required:
-
-  - ``HACKAPIZZA_TEAM_API_KEY``
-  - ``HACKAPIZZA_TEAM_ID``
-  - ``REGOLO_API_KEY``
-  - ``EVENT_PROXY_URL``
-  - ``HACKAPIZZA_SQL_CONNSTR``
-
-Test mode
----------
-Pass ``--test`` on the CLI (or ``test_mode=True`` in the constructor) to
-run the entire waiting-phase pipeline against **mock data** — no server,
-no SSE, no ``.env`` required.
-
-Usage
------
-Run standalone (live)::
-
-    python -m hp2.agents.waiting_agent
-
-Run in test / dry-run mode::
-
-    python -m hp2.agents.waiting_agent --test
-"""
-
 from __future__ import annotations
 
 import json
@@ -169,7 +103,7 @@ def _compute_recipe_price(
         The menu price (>= 1).
     """
     total_cost = num_ingredients * bidding_price
-    price = max(1, round(total_cost * profit_multiplier))
+    price = int(max(1, round(total_cost * profit_multiplier)))
     return price
 
 
@@ -273,19 +207,13 @@ def _compute_feasible_menu(
             )
             continue
 
-<<<<<<< Updated upstream
-        # ── Step 3: Recipe is both desired and feasible ────────────────
-        price = float(price) * (1.0 + (float(recipe.prestige)/100.0))
-        feasible.append(MenuItem(name=recipe_name, price=int(price)))
-=======
         # ── Step 3: Compute price and add to menu ──────────────────────
         price = _compute_recipe_price(
             num_ingredients=len(recipe.ingredients),
             bidding_price=bidding_price,
             profit_multiplier=profit_multiplier,
         )
-        feasible.append(MenuItem(name=recipe_name, price=float(price)))
->>>>>>> Stashed changes
+        feasible.append(MenuItem(name=recipe_name, price=price))
         logger.info(
             "Recipe '%s' is feasible — will be listed at price %d.",
             recipe_name,
