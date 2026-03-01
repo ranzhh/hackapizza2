@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import logging
 import re
 from dataclasses import dataclass
 from typing import Any, List, Literal, Optional
@@ -20,8 +19,6 @@ from hp2.core.api import (
 )
 from hp2.core.schema.models import MealSchema, RecipeSchema
 from hp2.core.settings import get_settings
-
-logger = logging.getLogger("ServingAgent")
 
 # ── LLM prompt ───────────────────────────────────────────────────────────
 
@@ -100,7 +97,7 @@ class ServingAgent(BaseAgent):
         self.log_only = log_only
 
         if self.log_only:
-            logger.info(
+            self.logger.info(
                 "[INIT] ServingAgent initialized in LOG-ONLY mode. No actions will be executed, only logged."
             )
 
@@ -130,19 +127,19 @@ class ServingAgent(BaseAgent):
     async def on_phase_changed(self, event: PhaseChangedEvent) -> None:
         if event.new_phase == GamePhase.SERVING:
             await self._load_menu()
-            logger.info("[SERVING] Entering SERVING phase. Menu items: %s", self.menu_items)
+            self.logger.info("[SERVING] Entering SERVING phase. Menu items: %s", self.menu_items)
             try:
                 self.recipes = {
                     r.name: r for r in await self.client.get_recipes() if r.name in self.menu_items
                 }
             except Exception as exc:
-                logger.warning("[SERVING] Could not fetch recipes: %s", exc)
-            logger.info("[SERVING] Loaded recipes: %s", list(self.recipes.keys()))
+                self.logger.warning("[SERVING] Could not fetch recipes: %s", exc)
+            self.logger.info("[SERVING] Loaded recipes: %s", list(self.recipes.keys()))
         elif event.new_phase == GamePhase.STOPPED:
             self._reset_state()
 
     async def on_client_spawned(self, order: ClientOrder) -> None:
-        logger.debug("[CUSTOMER] name=%s: %s", order.client_name, order.order_text)
+        self.logger.debug("[CUSTOMER] name=%s: %s", order.client_name, order.order_text)
         pending = PendingOrder(
             turn_id=order.turn_id,
             client_name=order.client_name,
@@ -152,7 +149,7 @@ class ServingAgent(BaseAgent):
         await self._process_order(pending)
 
     async def on_preparation_complete(self, dish_name: str) -> None:
-        logger.debug("[PREP DONE] %s", dish_name)
+        self.logger.debug("[PREP DONE] %s", dish_name)
         await self._serve_ready_dish(dish_name)
 
     async def on_new_message(self, message: IncomingMessage) -> None:
@@ -166,14 +163,14 @@ class ServingAgent(BaseAgent):
             return
 
         if self.log_only:
-            logger.info(f"[LOG-ONLY] Pending order received: {order}")
+            self.logger.info(f"[LOG-ONLY] Pending order received: {order}")
             return
 
         # ── Single LLM call: pick the dish ──
         dish_name = await _ask_llm_for_dish(self.llm, self.menu_items, list(self.recipes.values()), order)
 
         if dish_name is None:
-            logger.warning("[SERVING] LLM decided not to serve %s.", order.client_name)
+            self.logger.warning("[SERVING] LLM decided not to serve %s.", order.client_name)
             return
 
         order.matched_dish = dish_name
@@ -182,20 +179,20 @@ class ServingAgent(BaseAgent):
         # ── Programmatic: call prepare_dish ──
         try:
             await self.client.prepare_dish(dish_name=dish_name)
-            logger.info("[SERVING] Cooking '%s' for %s.", dish_name, order.client_name)
+            self.logger.info("[SERVING] Cooking '%s' for %s.", dish_name, order.client_name)
         except Exception as exc:
-            logger.error("[SERVING] prepare_dish failed for '%s': %s", dish_name, exc)
+            self.logger.error("[SERVING] prepare_dish failed for '%s': %s", dish_name, exc)
             order.preparing = False
             self.failed_serves += 1
             if self.failed_serves >= self.config.close_on_missing_ingredients_threshold:
-                logger.warning(
+                self.logger.warning(
                     "[SERVING] Too many failed serves (%d), closing restaurant.",
                     self.failed_serves,
                 )
                 try:
                     await self.client.set_restaurant_open_status(is_open=False)
                 except Exception as exc:
-                    logger.error("[SERVING] Failed to close restaurant: %s", exc)
+                    self.logger.error("[SERVING] Failed to close restaurant: %s", exc)
 
     async def parse_order_message(
         self,
@@ -227,7 +224,7 @@ class ServingAgent(BaseAgent):
     async def _serve_ready_dish(self, dish_name: str) -> None:
         """Dish is ready — find matching customer and serve. Fully programmatic."""
         if self.log_only:
-            logger.info(f"[LOG-ONLY] Serving dish '{dish_name}'")
+            self.logger.info(f"[LOG-ONLY] Serving dish '{dish_name}'")
             return
 
         target: Optional[PendingOrder] = None
@@ -237,14 +234,14 @@ class ServingAgent(BaseAgent):
                 break
 
         if target is None:
-            logger.warning("[SERVING] Dish '%s' ready but no matching customer.", dish_name)
+            self.logger.warning("[SERVING] Dish '%s' ready but no matching customer.", dish_name)
             return
 
         # Resolve canonical client ID from meals endpoint
         resolved_id = await self._resolve_client_id(target)
 
         if not resolved_id:
-            logger.warning(
+            self.logger.warning(
                 "[SERVING] Could not resolve client ID for %s — cannot serve.",
                 target.client_name,
             )
@@ -253,14 +250,14 @@ class ServingAgent(BaseAgent):
         try:
             await self.client.serve_dish(dish_name=dish_name, client_id=resolved_id)
             target.served = True
-            logger.info(
+            self.logger.info(
                 "[SERVED] '%s' -> %s (id=%s).",
                 dish_name,
                 target.client_name,
                 resolved_id,
             )
         except Exception as exc:
-            logger.error(
+            self.logger.error(
                 "[SERVING] serve_dish failed '%s' -> %s: %s",
                 dish_name,
                 target.client_name,
@@ -268,14 +265,14 @@ class ServingAgent(BaseAgent):
             )
             self.failed_serves += 1
             if self.failed_serves >= self.config.close_on_missing_ingredients_threshold:
-                logger.warning(
+                self.logger.warning(
                     "[SERVING] Too many failed serves (%d), closing restaurant.",
                     self.failed_serves,
                 )
                 try:
                     await self.client.set_restaurant_open_status(is_open=False)
                 except Exception as exc:
-                    logger.error("[SERVING] Failed to close restaurant: %s", exc)
+                    self.logger.error("[SERVING] Failed to close restaurant: %s", exc)
 
     # ── Programmatic helpers ─────────────────────────────────────────
 
@@ -285,7 +282,7 @@ class ServingAgent(BaseAgent):
             restaurant = await self.client.get_my_restaurant()
             self.menu_items = {item.name for item in restaurant.menu.items}
         except Exception as exc:
-            logger.warning("[SERVING] Could not fetch restaurant state: %s", exc)
+            self.logger.warning("[SERVING] Could not fetch restaurant state: %s", exc)
 
     async def _resolve_client_id(self, order: PendingOrder) -> str | None:
         """Resolve canonical client ID from get_meals (typed MealSchema)."""
@@ -298,7 +295,7 @@ class ServingAgent(BaseAgent):
                 customer_name = meal.customer.name if meal.customer else None
                 if customer_name == order.client_name and meal.request == order.order_text:
                     resolved = str(meal.customer_id)
-                    logger.debug(
+                    self.logger.debug(
                         "[RESOLVE] %s -> %s (meal.customer_id)",
                         order.client_name,
                         resolved,
@@ -340,7 +337,6 @@ async def _ask_llm_for_dish(
     try:
         response = await llm.a_invoke(prompt)
         text = str(response.text).strip()
-        logger.debug("[LLM] Response for %s: %s", order.client_name, text)
 
         # Parse JSON response
         # Strip markdown code fences if present
@@ -353,7 +349,6 @@ async def _ask_llm_for_dish(
         dish = data.get("dish_name")
 
         if not dish:
-            logger.warning("[LLM] Not serving %s.", order.client_name)
             return None
 
         # Resolve exact menu name (case-insensitive)
@@ -364,16 +359,13 @@ async def _ask_llm_for_dish(
                 break
 
         if not matched:
-            logger.warning("[LLM] Dish '%s' not in menu — ignoring.", dish)
             return None
 
         return matched
 
-    except json.JSONDecodeError as exc:
-        logger.error("[LLM] Invalid JSON from LLM: %s", exc)
+    except json.JSONDecodeError:
         return None
-    except Exception as exc:
-        logger.error("[LLM] Call failed: %s", exc)
+    except Exception:
         return None
 
 

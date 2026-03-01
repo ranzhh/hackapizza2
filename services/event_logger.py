@@ -162,7 +162,6 @@ def persist_to_db(event_type: str, data: Dict[str, Any]):
         "client_spawned",
         "preparation_complete",
         "new_message",
-        "message",
     )
 
     try:
@@ -219,18 +218,6 @@ def persist_to_db(event_type: str, data: Dict[str, Any]):
                         message_datetime=data.get("datetime"),
                     )
                 )
-            elif event_type == "message":
-                session.add(
-                    NewMessageEvent(
-                        event_id=event_id,
-                        message_id="",
-                        sender_id="-1",
-                        sender_name=data.get("sender", "unknown"),
-                        text=data.get("payload", ""),
-                        message_datetime=None,
-                    )
-                )
-
             session.commit()
     except Exception as e:
         logger.error(f"Database error: {e}")
@@ -260,6 +247,19 @@ async def handle_sse_payload(json_str: str):
         # Normalize non-dict data (just like File 2)
         if not isinstance(data, dict):
             data = {"value": data}
+
+        # Normalize legacy "message" events into "new_message"
+        if event_type == "message":
+            event_type = "new_message"
+            data = {
+                "messageId": "",
+                "senderId": "-1",
+                "senderName": data.get("sender", "unknown"),
+                "text": data.get("payload", ""),
+                "datetime": None,
+            }
+            event_json["type"] = event_type
+            event_json["data"] = data
 
         # 1. Log it
         persist_to_db(event_type, data)

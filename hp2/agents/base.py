@@ -18,7 +18,10 @@ from hp2.core.api import (
 )
 from hp2.core.settings import get_settings, get_sql_logging_settings
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+)
 
 DEFAULT_AGENT_LOG_DIR = Path("artifacts/logs/agents")
 
