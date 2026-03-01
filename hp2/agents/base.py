@@ -10,10 +10,10 @@ from sqlalchemy.orm import sessionmaker
 
 from hp2.core.api import (
     ClientOrder,
-    GamePhase,
     GameStartedEvent,
     HackapizzaClient,
     IncomingMessage,
+    PhaseChangedEvent,
 )
 from hp2.core.settings import get_settings, get_sql_logging_settings
 
@@ -49,7 +49,7 @@ class BaseAgent:
             await self.on_game_started(event)
 
         @self.client.on_phase_changed
-        async def _on_phase_changed(phase: GamePhase) -> None:
+        async def _on_phase_changed(phase: PhaseChangedEvent) -> None:
             await self.on_phase_changed(phase)
 
         @self.client.on_client_spawned
@@ -65,23 +65,23 @@ class BaseAgent:
             await self.on_new_message(message)
 
     async def on_game_started(self, event: GameStartedEvent) -> None:
-        raise NotImplementedError("Override on_game_started() in your agent.")
+        pass
 
     async def on_start(self) -> None:
         """Optional startup hook executed before the event stream loop starts."""
         return
 
-    async def on_phase_changed(self, phase: GamePhase) -> None:
-        raise NotImplementedError("Override on_phase_changed() in your agent.")
+    async def on_phase_changed(self, event: PhaseChangedEvent) -> None:
+        pass
 
     async def on_client_spawned(self, order: ClientOrder) -> None:
-        raise NotImplementedError("Override on_client_order() in your agent.")
+        pass
 
     async def on_preparation_complete(self, dish_name: str) -> None:
-        raise NotImplementedError("Override on_preparation_complete() in your agent.")
+        pass
 
     async def on_new_message(self, message: IncomingMessage) -> None:
-        raise NotImplementedError("Override on_new_message() in your agent.")
+        pass
 
     async def run(self) -> None:
         """Start consuming events from the Hackapizza event stream."""

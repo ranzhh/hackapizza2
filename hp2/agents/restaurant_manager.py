@@ -14,6 +14,7 @@ from hp2.core.api import (
     GameStartedEvent,
     HackapizzaClient,
     IncomingMessage,
+    PhaseChangedEvent,
 )
 
 
@@ -43,17 +44,17 @@ class RestaurantManager(BaseAgent):
     async def on_start(self) -> None:
         """Best-effort startup sync when process boots mid-turn."""
         await self._open_if_closed(trigger="agent_start")
-
-    async def on_phase_changed(self, phase: GamePhase) -> None:
-        self.logger.info("Phase changed: %s", phase.value)
-
-        if phase == GamePhase.SERVING:
+            
+    async def on_phase_changed(self, event: PhaseChangedEvent) -> None:
+        self.client.set_restaurant_open_status(is_open=True)
+        if event.new_phase == GamePhase.SERVING:
             await self._enter_serving_phase()
+
             return
 
         self._is_serving_phase = False
-        if phase not in [GamePhase.SERVING, GamePhase.STOPPED]:
-            await self._open_if_closed(trigger=f"phase_change:{phase.value}")
+        if event.new_phase not in [GamePhase.SERVING, GamePhase.STOPPED]:
+            await self._open_if_closed(trigger=f"phase_change:{event.new_phase.value}")
 
     async def _enter_serving_phase(self) -> None:
         self._is_serving_phase = True

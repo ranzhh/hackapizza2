@@ -5,10 +5,10 @@ import logging
 from hp2.agents.base import BaseAgent
 from hp2.core.api import (
     ClientOrder,
-    GamePhase,
     GameStartedEvent,
     HackapizzaClient,
     IncomingMessage,
+    PhaseChangedEvent,
 )
 
 
@@ -22,8 +22,8 @@ class ExampleAgent(BaseAgent):
     async def on_game_started(self, event: GameStartedEvent) -> None:
         self.logger.info("Example agent started with turn_id: %s", event.turn_id)
 
-    async def on_phase_changed(self, phase: GamePhase) -> None:
-        self.logger.info("Phase changed to: %s", phase)
+    async def on_phase_changed(self, event: PhaseChangedEvent) -> None:
+        self.logger.info("Phase changed to: %s", event.new_phase.value)
 
     async def on_client_spawned(self, order: ClientOrder) -> None:
         self.logger.info("Client spawned with order: %s", order)

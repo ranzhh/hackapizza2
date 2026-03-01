@@ -11,11 +11,9 @@ from pydantic import BaseModel, Field
 from hp2.agents.base import BaseAgent
 from hp2.core.api import (
     BidRequest,
-    ClientOrder,
     GamePhase,
-    GameStartedEvent,
     HackapizzaClient,
-    IncomingMessage,
+    PhaseChangedEvent,
 )
 from hp2.core.schema.models import RecipeSchema
 
@@ -290,9 +288,11 @@ class BiddingAgent(BaseAgent):
         client: HackapizzaClient | None = None,
         config_path: Path | None = None,
         *,
-        test_mode: bool = False,
+        log_only: bool = False,
     ):
-        self.test_mode = test_mode
+        self.log_only = log_only
+        if self.log_only:
+            logger.info("[INIT] BiddingAgent initialized in LOG-ONLY mode. No actions will be executed, only logged.")
         self.logger = logging.getLogger("BiddingAgent")
 
         self._config_path = config_path
@@ -314,32 +314,16 @@ class BiddingAgent(BaseAgent):
     # SSE event handlers
     # ------------------------------------------------------------------
 
-    async def on_game_started(self, event: GameStartedEvent) -> None:
-        self.logger.info("Game started — turn_id: %s", event.turn_id)
+    async def on_phase_changed(self, event: PhaseChangedEvent) -> None:
+        self.logger.info("Phase changed to: %s", event.new_phase.value)
 
-    async def on_phase_changed(self, phase: GamePhase) -> None:
-        self.logger.info("Phase changed to: %s", phase.value)
-
-        if phase == GamePhase.CLOSED_BID:
+        if event.new_phase == GamePhase.CLOSED_BID:
             await self.phase_closed_bid()
         else:
             self.logger.debug(
                 "Phase '%s' is not handled by BiddingAgent — ignoring.",
-                phase.value,
+                event.new_phase.value,
             )
-
-    async def on_client_spawned(self, order: ClientOrder) -> None:
-        pass
-
-    async def on_preparation_complete(self, dish_name: str) -> None:
-        self.logger.debug("Preparation complete (ignored): %s", dish_name)
-
-    async def on_new_message(self, message: IncomingMessage) -> None:
-        self.logger.debug(
-            "Message from %s (ignored): %s",
-            message.sender_name,
-            message.text[:80],
-        )
 
     # ------------------------------------------------------------------
     # Core closed-bid logic (deterministic, no LLM)
@@ -348,34 +332,13 @@ class BiddingAgent(BaseAgent):
     async def phase_closed_bid(self) -> List[BidRequest]:
         """Execute the deterministic closed-bid workflow.
 
-        Steps
-        -----
-        1. **Reload config** — ``config.json`` is re-read every turn
-           so you can hot-edit prices / recipes between rounds.
-        2. **Fetch balance** — ``get_my_restaurant()`` gives us the current
-           balance which determines the budget cap.
-        3. **Compile bids** — ``_compile_bids()`` deterministically builds
-           the ingredient list, quantities, and bid prices from config.
-        4. **Submit bids** — ``client.submit_closed_bids(bids)`` sends a
-           single MCP ``closed_bid`` call.  This is a standalone function
-           call, NOT an agentic tool use.
-
-        Returns
-        -------
-        list[BidRequest]
-            The bids that were submitted (or would have been, if empty).
+        Returns:
+            list[BidRequest]
+                The bids that were submitted (or would have been, if empty).
         """
         self.logger.info("=== CLOSED BID PHASE START ===")
 
-        # ── 1. Reload config (pick up hot changes) ────────────────────
-        #    In test mode we skip reloading — we use MOCK_CONFIGURATION.
-        if not self.test_mode:
-            try:
-                self._config = _load_config(self._config_path)
-            except Exception as exc:
-                self.logger.warning("Could not reload config (%s); using cached version.", exc)
-
-        # ── 2. Fetch game state and recipe catalogue ──────────────────
+        # ── Fetch game state (we only need the balance for budgeting) ─
         balance = 0.0
         all_recipes: List[RecipeSchema] = []
         try:
@@ -392,7 +355,7 @@ class BiddingAgent(BaseAgent):
 
         self.logger.info("Current balance: %.2f", balance)
 
-        # ── 3. Compute bids deterministically from config ─────────────
+        # ── Compute bids deterministically from config ─────────────
         bids: List[BidRequest] = _compile_bids(
             config=self._config,
             all_recipes=all_recipes,
@@ -421,44 +384,22 @@ class BiddingAgent(BaseAgent):
                 b.bid * b.quantity,
             )
 
-        # ── 4. Submit bids via the closed_bid MCP tool ────────────────
-        #
-        #   submit_closed_bids(bids) sends a JSON-RPC POST to /mcp.
-        #   bids = [BidRequest(ingredient=str, bid=float, quantity=int), ...]
-        #   This is a standalone function call, NOT an agentic tool use.
-        try:
-            result = await self.client.submit_closed_bids(bids)
-            self.logger.info(
-                "submit_closed_bids succeeded — %d bid(s) sent. Response: %s",
-                len(bids),
-                result,
-            )
-        except Exception as exc:
-            self.logger.error("submit_closed_bids FAILED: %s", exc)
+        # ── Submit bids via the closed_bid MCP tool ────────────────
+        if self.log_only:
+            self.logger.info(f"[LOG-ONLY] Would submit {len(bids)} bid(s): {bids}")
+        else:
+            try:
+                result = await self.client.submit_closed_bids(bids)
+                self.logger.info(
+                    "submit_closed_bids succeeded — %d bid(s) sent. Response: %s",
+                    len(bids),
+                    result,
+                )
+            except Exception as exc:
+                self.logger.error("submit_closed_bids FAILED: %s", exc)
 
         self.logger.info("=== CLOSED BID PHASE COMPLETE ===")
         return bids
-
-    # ------------------------------------------------------------------
-    # Entry-point
-    # ------------------------------------------------------------------
-
-    async def run(self) -> None:
-        """Start the agent.
-
-        In test mode runs ``phase_closed_bid()`` once and returns.
-        In live mode connects to the SSE stream.
-        """
-        if self.test_mode:
-            self.logger.info("[TEST MODE] Running phase_closed_bid() once…")
-            bids = await self.phase_closed_bid()
-            self.logger.info(
-                "[TEST MODE] Done. Submitted %d bid(s): %s",
-                len(bids),
-                [(b.ingredient, b.bid, b.quantity) for b in bids],
-            )
-        else:
-            await super().run()
 
 
 # ---------------------------------------------------------------------------
@@ -478,18 +419,17 @@ if __name__ == "__main__":
         description="BiddingAgent — deterministic closed-bid submitter.",
     )
     parser.add_argument(
-        "--test",
-        action="store_true",
-        default=False,
-        help="Dry-run with mock data (no .env / server needed).",
-    )
-    parser.add_argument(
         "--config",
         type=Path,
         default=None,
         help="Path to config.json (live mode only).",
     )
+    parser.add_argument(
+        "--log-only",
+        action="store_true",
+        help="Log actions without executing them.",
+    )
     args = parser.parse_args()
 
-    agent = BiddingAgent(config_path=args.config, test_mode=args.test)
+    agent = BiddingAgent(config_path=args.config, log_only=args.log_only)
     asyncio.run(agent.run())

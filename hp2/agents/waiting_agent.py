@@ -15,6 +15,7 @@ from hp2.core.api import (
     HackapizzaClient,
     IncomingMessage,
     MenuItem,
+    PhaseChangedEvent,
 )
 from hp2.core.schema.models import RecipeSchema
 
@@ -276,12 +277,12 @@ class WaitingAgent(BaseAgent):
     async def on_game_started(self, event: GameStartedEvent) -> None:
         self.logger.info("Game started — turn_id: %s", event.turn_id)
 
-    async def on_phase_changed(self, phase: GamePhase) -> None:
-        self.logger.info("Phase changed to: %s", phase.value)
-        if phase == GamePhase.WAITING:
+    async def on_phase_changed(self, event: PhaseChangedEvent) -> None:
+        self.logger.info("Phase changed to: %s", event.new_phase.value)
+        if event.new_phase == GamePhase.WAITING:
             await self.phase_waiting()
         else:
-            self.logger.debug("Phase '%s' not handled — ignoring.", phase.value)
+            self.logger.debug("Phase '%s' not handled — ignoring.", event.new_phase.value)
 
     async def on_client_spawned(self, order: ClientOrder) -> None:
         pass
