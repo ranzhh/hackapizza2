@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import random
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import DefaultDict
@@ -15,6 +14,7 @@ from hp2.core.api import (
     PhaseChangedEvent,
 )
 from hp2.core.schema.models import RecipeSchema
+from tools.api_unused_recipices import get_dish_stats
 
 logging.basicConfig()
 
@@ -134,26 +134,54 @@ class BiddingAgent(BaseAgent):
 
         return await super().on_start()
 
-    async def _prepare_menu(self, n_recipes: int = 1, n_times: int = 10) -> MenuConfig:
-        """Prepare a menu configuration by selecting recipes and counting required ingredients."""
+    async def _prepare_menu(self, n_recipes: int = 10, n_times: int = 10) -> MenuConfig:
+        """Prepare a menu by ranking recipes on normalised prestige + menu frequency."""
         recipes = await self.client.get_recipes()
+        self.logger.info("Got %d recipes", len(recipes))
 
-        self.logger.info("Got some recipes...")
+        # Fetch how often each dish appears on other restaurants' menus
+        dish_stats = await get_dish_stats()
+        self.logger.info("Got dish stats for %d dishes", len(dish_stats))
 
-        conf = MenuConfig(recipes=[], ingredients=defaultdict(int))
+        # Compute normalisation ceilings
+        max_prestige = max((r.prestige for r in recipes), default=1) or 1
+        max_occurrences = (
+            max((d["times_on_menu"] for d in dish_stats.values()), default=1) or 1
+        )
 
-        # Choose recipes from the available ones
-        chosen_recipes = random.sample(recipes, k=min(n_recipes, len(recipes)))
-        conf.recipes = chosen_recipes
-        self.logger.info("Recipes chosen:\n%s", "\n".join(["\t" + x.name for x in conf.recipes]))
+        # Score each recipe: norm_prestige + norm_occurrences
+        scored: list[tuple[float, RecipeSchema]] = []
+        for recipe in recipes:
+            norm_prestige = recipe.prestige / max_prestige
+            occurrences = dish_stats.get(recipe.name, {}).get("times_on_menu", 0)
+            norm_occurrences = occurrences / max_occurrences
+            score = norm_prestige + norm_occurrences
+            scored.append((score, recipe))
+            self.logger.debug(
+                "  %s  prestige=%.2f  occ=%.2f  score=%.3f",
+                recipe.name, norm_prestige, norm_occurrences, score,
+            )
 
-        # Get all ingredients from the chosen recipes
+        # Sort descending and pick top n_recipes
+        scored.sort(key=lambda t: t[0], reverse=True)
+        chosen_recipes = [recipe for _, recipe in scored[:n_recipes]]
+
+        conf = MenuConfig(recipes=chosen_recipes, ingredients=defaultdict(int))
+        self.logger.info(
+            "Recipes chosen (top %d):\n%s",
+            n_recipes,
+            "\n".join(
+                f"\t{s:.3f}  {r.name}" for s, r in scored[:n_recipes]
+            ),
+        )
+
         for recipe in chosen_recipes:
             for ingredient in recipe.ingredients:
                 conf.ingredients[ingredient] += n_times
 
         self.logger.info(
-            "Ingredients required:\n%s", "\n".join(["\t" + x for x in conf.ingredients])
+            "Ingredients required:\n%s",
+            "\n".join(f"\t{k}: {v}" for k, v in conf.ingredients.items()),
         )
 
         return conf
