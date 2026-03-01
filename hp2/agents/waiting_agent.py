@@ -108,7 +108,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 
 _DEFAULT_CONFIG_PATH = _REPO_ROOT / "config.json"
 
-GLOBAL_MULTIPLIER = 2
+GLOBAL_MULTIPLIER = 0.7
 
 
 def _load_configuration(config_path: Path | None = None) -> Dict[str, Any]:
@@ -180,8 +180,9 @@ def _compute_recipe_price(
     # Sum all per-ingredient costs declared in the config
     total_cost = sum(ing.get("price", 0.0) for ing in ingredient_list)
     # Apply archetype multiplier and round to integer (server requires int > 0)
-    price = max(1, int(round(total_cost * GLOBAL_MULTIPLIER)))
+    price = max(1, round(total_cost * multiplier * GLOBAL_MULTIPLIER))
     return price
+
 
 # ---------------------------------------------------------------------------
 # Pure helper: build the candidate dish list from configuration
@@ -290,8 +291,8 @@ def _compute_feasible_menu(
             continue
 
         # ── Step 3: Recipe is both desired and feasible ────────────────
-        updated_price = float(price) * float(recipe.prestige) / 100.0
-        feasible.append(MenuItem(name=recipe_name, price=updated_price))
+        price = float(price) * (1.0 + (float(recipe.prestige)/100.0))
+        feasible.append(MenuItem(name=recipe_name, price=int(price)))
         logger.info(
             "Recipe '%s' is feasible — will be listed at price %d.",
             recipe_name,
@@ -418,6 +419,7 @@ class WaitingAgent(BaseAgent):
         # ── 2. Fetch all available recipes from the server ─────────────
         try:
             all_recipes: List[RecipeSchema] = await self.client.get_recipes()
+            
         except Exception as exc:
             self.logger.error("Failed to fetch recipes: %s", exc)
             return []

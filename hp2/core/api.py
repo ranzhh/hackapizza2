@@ -150,7 +150,7 @@ class MenuItem:
     """A dish offered on your restaurant's menu."""
 
     name: str
-    price: float
+    price: int
 
 
 @dataclass
