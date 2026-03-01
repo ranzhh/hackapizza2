@@ -223,7 +223,7 @@ class ServingAgent(BaseAgent):
             last_two = ingredients[-1].split(" and ")
 
             ingredients = ingredients[:-1] + last_two
-            ingredients = [x for x in ingredients if x and x != " " and x != ""]
+            ingredients = [x.strip() for x in ingredients if x and x != " " and x != ""]
 
             for x, r in self.recipes.items():
                 if set(r.ingredients) == set(ingredients):
