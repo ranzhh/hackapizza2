@@ -1,9 +1,9 @@
 import asyncio
 import logging
+import random
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import DefaultDict
-import random
 
 from hp2.agents.base import BaseAgent
 from hp2.core.api import (
@@ -16,8 +16,7 @@ from hp2.core.api import (
 )
 from hp2.core.schema.models import RecipeSchema
 from tools.api_unused import get_dish_stats
-
-from tools.find_unused_ingredients import MatrixReturn, get_bids, get_avg_bid_item
+from tools.find_unused_ingredients import MatrixReturn, get_avg_bid_item, get_bids
 
 logging.basicConfig()
 
@@ -90,14 +89,14 @@ class BiddingAgent(BaseAgent):
         if self._config is not None:
             for ing, qty in self._config.ingredients.items():
                 avg_price = (
-                    get_avg_bid_item(self._bid_matrix["bids"], ing)
-                    if self._bid_matrix
-                    else None
+                    get_avg_bid_item(self._bid_matrix["bids"], ing) if self._bid_matrix else None
                 )
                 bid_price = int(avg_price) if avg_price is not None else self.DEFAULT_BID_PRICE
                 self.logger.info(
                     "[BIDDING] %s: qty=%d, bid=%d (avg=%s)",
-                    ing, qty, bid_price,
+                    ing,
+                    qty,
+                    bid_price,
                     f"{avg_price:.1f}" if avg_price is not None else "N/A",
                 )
                 bids.append(BidRequest(ingredient=ing, bid=bid_price, quantity=qty))
@@ -172,7 +171,9 @@ class BiddingAgent(BaseAgent):
 
         return await super().on_start()
 
-    async def _prepare_menu(self, n_recipes: int = 10, n_times: int = 10, random_pool = True) -> MenuConfig:
+    async def _prepare_menu(
+        self, n_recipes: int = 10, n_times: int = 10, random_pool=True
+    ) -> MenuConfig:
         """Prepare a menu by ranking recipes on normalised prestige + menu frequency."""
         recipes = await self.client.get_recipes()
         if random_pool:
@@ -183,7 +184,9 @@ class BiddingAgent(BaseAgent):
             # Choose recipes from the available ones
             chosen_recipes = random.sample(recipes, k=min(n_recipes, len(recipes)))
             conf.recipes = chosen_recipes
-            self.logger.info("Recipes chosen:\n%s", "\n".join(["\t" + x.name for x in conf.recipes]))
+            self.logger.info(
+                "Recipes chosen:\n%s", "\n".join(["\t" + x.name for x in conf.recipes])
+            )
 
             # Get all ingredients from the chosen recipes
             for recipe in chosen_recipes:
@@ -195,7 +198,7 @@ class BiddingAgent(BaseAgent):
             )
 
             return conf
-        
+
         self.logger.info("Got %d recipes", len(recipes))
 
         # Fetch how often each dish appears on other restaurants' menus
@@ -204,9 +207,7 @@ class BiddingAgent(BaseAgent):
 
         # Compute normalisation ceilings
         max_prestige = max((r.prestige for r in recipes), default=1) or 1
-        max_occurrences = (
-            max((d["times_on_menu"] for d in dish_stats.values()), default=1) or 1
-        )
+        max_occurrences = max((d["times_on_menu"] for d in dish_stats.values()), default=1) or 1
 
         # Score each recipe: norm_prestige + norm_occurrences
         scored: list[tuple[float, RecipeSchema]] = []
@@ -218,7 +219,10 @@ class BiddingAgent(BaseAgent):
             scored.append((score, recipe))
             self.logger.debug(
                 "  %s  prestige=%.2f  occ=%.2f  score=%.3f",
-                recipe.name, norm_prestige, norm_occurrences, score,
+                recipe.name,
+                norm_prestige,
+                norm_occurrences,
+                score,
             )
 
         # Sort descending and pick top n_recipes
@@ -229,9 +233,7 @@ class BiddingAgent(BaseAgent):
         self.logger.info(
             "Recipes chosen (top %d):\n%s",
             n_recipes,
-            "\n".join(
-                f"\t{s:.3f}  {r.name}" for s, r in scored[:n_recipes]
-            ),
+            "\n".join(f"\t{s:.3f}  {r.name}" for s, r in scored[:n_recipes]),
         )
 
         for recipe in chosen_recipes:
