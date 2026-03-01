@@ -152,7 +152,7 @@ def persist_to_db(event_type: str, data: Dict[str, Any]):
     # Update Turn Tracking
     if event_type == "game_started":
         _current_turn_id = str(
-            data.get("turnId") or data.get("turn_id") or data.get("value")
+            data.get("turn_id")
         )
 
     # Only store raw JSON for unknown event types
@@ -265,7 +265,10 @@ async def handle_sse_payload(json_str: str):
         persist_to_db(event_type, data)
 
         # 2. Broadcast it
-        await broadcast(json_str)
+        # Inject turn_id
+        if _current_turn_id:
+            event_json["turn_id"] = _current_turn_id
+        await broadcast(json.dumps(event_json))
 
         logger.info(f"Relayed Event: {str(event_json)[:250]}...")
     except json.JSONDecodeError:
