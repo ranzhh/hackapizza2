@@ -1,4 +1,4 @@
-def get_ingredient_frequencies(recipes: list[dict]):
+def get_ingredients_frequencies(recipes: list[dict]):
     ingredients_counts = {}
 
     for recipe in recipes:
