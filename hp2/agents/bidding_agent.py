@@ -402,8 +402,7 @@ class BiddingAgent(BaseAgent):
         self.logger.info("Phase changed to: %s", phase.value)
 
         if phase == GamePhase.CLOSED_BID:
-            #await self.phase_closed_bid()
-            ...
+            await self.phase_closed_bid()
         else:
             self.logger.debug(
                 "Phase '%s' is not handled by BiddingAgent — ignoring.",
