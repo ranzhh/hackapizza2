@@ -217,6 +217,24 @@ class ServingAgent(BaseAgent):
         if not order:
             return "UNKNOWN"
 
+        if order.startswith("I want something with"):
+            ingredients_str = order.removeprefix("I want something with")
+            ingredients = ingredients_str.split(",")
+            last_two = ingredients[-1].split(" and ")
+
+            ingredients = ingredients[:-1] + last_two
+            ingredients = [x for x in ingredients if x and x != " " and x != ""]
+
+            for x, r in self.recipes.items():
+                if set(r.ingredients) == set(ingredients):
+                    self.logger.info(
+                        f"Recipe {x} matches the ingredients: {','.join(ingredients)}"
+                    )
+                    return x
+
+            else:
+                self.logger.warning(f"No recipe found with ingredients: {','.join(ingredients)}")
+
         match = _ORDER_WITH_INTOLERANCE_RE.search(order)
         if match:
             eat = match.group("eat").strip()
