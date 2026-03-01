@@ -38,14 +38,20 @@ Request: "{order_text}"
 {recipes_json}
 
 ## RULES
-1. If the customer's request describes a SPECIFIC dish only select a dish that
-   genuinely matches what the customer is asking for. Do NOT pick "the closest
-   alternative" or a substitute — if we don't have what they want, respond null.
-2. The dish MUST be in our menu.
-3. INTOLERANCE CHECK: Read the order carefully for intolerance / allergy hints.
-   - If the customer mentions an intolerance, match their request only considering
-     dishes that do NOT contain the offending ingredient(s). If we cannot satisfy such order, respond null.
-4. If NO matching dish exists, respond null. Do NOT guess or approximate.
+1. If the customer asks for a SPECIFIC dish by name, only select that exact dish.
+   Do NOT pick "the closest alternative" — if we don't have it, respond null.
+2. If the customer says "I want something with <ingredients>", they are listing
+   the ingredients they want. You MUST:
+   a. Extract all requested ingredients from the message.
+   b. Find a recipe whose ingredient list EXACTLY matches the requested set
+      (same ingredients, no more, no less).
+   c. If no recipe matches exactly, respond null. Do NOT pick a partial match.
+3. INTOLERANCE / ALLERGY CHECK: Read the order carefully for intolerance or
+   allergy mentions (e.g. "I'm intolerant to X", "allergic to Y").
+   - If the customer mentions an intolerance, check that the selected dish does
+     NOT contain that ingredient. If it does, or if no safe dish exists, respond null.
+4. The dish MUST be in our menu.
+5. If NO matching dish exists, respond null. Do NOT guess or approximate.
 
 Respond with ONLY a JSON object, no markdown, no explanation:
 {{"dish_name": "<exact dish name from menu>"}}
@@ -218,8 +224,17 @@ class ServingAgent(BaseAgent):
             return "UNKNOWN"
 
         if order.startswith("I want something with"):
-            ingredients_str = order.removeprefix("I want something with")
-            ingredients = ingredients_str.split(",")
+            # Split off intolerance suffix if present
+            intolerant_ingredient: str | None = None
+            body = order.removeprefix("I want something with")
+            intolerance_match = re.search(
+                r"[.!]?\s*I\s*[''']?m\s+intolerant\s+to\s+(.+?)\.?\s*$", body, re.IGNORECASE
+            )
+            if intolerance_match:
+                intolerant_ingredient = intolerance_match.group(1).strip()
+                body = body[: intolerance_match.start()]
+
+            ingredients = body.split(",")
             last_two = ingredients[-1].split(" and ")
 
             ingredients = ingredients[:-1] + last_two
@@ -227,6 +242,12 @@ class ServingAgent(BaseAgent):
 
             for x, r in self.recipes.items():
                 if set(r.ingredients) == set(ingredients):
+                    # Check intolerance
+                    if intolerant_ingredient and intolerant_ingredient in r.ingredients:
+                        self.logger.info(
+                            f"Recipe {x} matches ingredients but contains intolerant ingredient: {intolerant_ingredient}"
+                        )
+                        return "INTOLERANCE"
                     self.logger.info(
                         f"Recipe {x} matches the ingredients: {','.join(ingredients)}"
                     )
