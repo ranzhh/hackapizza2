@@ -21,8 +21,9 @@ from tools.find_unused_ingredients import get_bids, get_avg_bid_item
 
 logging.basicConfig()
 
-RECIPES_WANTED = 20
-N_TIMES = 3
+RECIPES_WANTED = 50
+N_TIMES = 5
+PRICE_MULTIPLIER = 5.3
 
 
 @dataclass
@@ -111,19 +112,19 @@ class BiddingAgent(BaseAgent):
         if self._config and self.inventory:
             # Create a menu for this phase
             menu_items: list[MenuItem] = []
-            for recipe in self._config.recipes:
+            for recipe in await self.client.get_recipes():
                 if await self._validate_recipe(recipe):
                     menu_items.append(
-                        MenuItem(name=recipe.name, price=int((recipe.prestige + 1) * 1.0))
+                        MenuItem(
+                            name=recipe.name, price=int((recipe.prestige + 1) * PRICE_MULTIPLIER)
+                        )
                     )
                     self.logger.info("Added recipe %s", recipe.name)
                 else:
                     self.logger.warning("Skipped recipe %s due to no inv", recipe.name)
 
             await self.client.save_menu(menu_items)
-            self.logger.info(
-                f"[MENU] Submitted menu with items: {[item.name for item in menu_items]}"
-            )
+            self.logger.info(f"[MENU] Submitted menu with  {len(menu_items)} items.")
 
     async def _update_inventory(self) -> None:
         self.logger.info("Updating inventory...")
