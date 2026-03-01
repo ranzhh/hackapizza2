@@ -95,7 +95,7 @@ def get_weak(ingredients, recipes, match):
     return available_recipes
 
 
-def create_recipe_subset(ingredients: list[str], individual: bool, match = -1):
+def create_recipe_subset(ingredients: list[str], match = -1):
     """Based on the list of ingredients extract the list of available recipes."""
     recipes = get_recipes()
 
