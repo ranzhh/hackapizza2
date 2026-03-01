@@ -40,7 +40,7 @@ class BiddingAgent(BaseAgent):
         self.logger.info("[STARTED] Game started, turn %s", event.turn_id)
         config = await self._prepare_menu(n_recipes=RECIPES_WANTED, n_times=N_TIMES)
         self.logger.info(
-            "[STARTED] Prepared menu config: %s", "\, ".join([x.name for x in config.recipes])
+            "[STARTED] Prepared menu config: %s", ", ".join([x.name for x in config.recipes])
         )
         self._config = config
 
