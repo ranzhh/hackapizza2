@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import DefaultDict
 
 from hp2.agents.base import BaseAgent
-from hp2.core.api import BidRequest, GamePhase, GameStartedEvent, MenuItem, PhaseChangedEvent
+from hp2.core.api import BidRequest, GamePhase, GameStartedEvent, IncomingMessage, MenuItem, PhaseChangedEvent
 from hp2.core.schema.models import RecipeSchema
 
 logging.basicConfig()
@@ -44,6 +44,10 @@ class BiddingAgent(BaseAgent):
 
         else:
             self._handle_unmanaged_phase(event.new_phase)
+
+    async def on_new_message(self, message: IncomingMessage) -> None:
+        if message.sender_name == "server" and "try to buy" in message.text:
+            await self._save_menu()
 
     async def _handle_closed_bid_phase(self) -> None:
         bids: list[BidRequest] = []
