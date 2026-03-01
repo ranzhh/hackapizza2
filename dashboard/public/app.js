@@ -1229,13 +1229,16 @@ function _buildPriceDishRows(our_menu, compMaps) {
     for (const d of Object.keys(c.priceMap)) allDishes.add(d);
   }
   return [...allDishes].map(dish => {
-    const ourPrice = our_menu[dish] ?? null;
+    // our_menu[dish] is now {price, prestige} or a plain number (backward compat)
+    const ourEntry = our_menu[dish];
+    const ourPrice = ourEntry != null ? (typeof ourEntry === 'object' ? ourEntry.price : ourEntry) : null;
+    const prestige = ourEntry != null && typeof ourEntry === 'object' ? (ourEntry.prestige ?? null) : null;
     const compPrices = compMaps.map(c => c.priceMap[dish] ?? null).filter(p => p != null);
     const avgComp = compPrices.length ? compPrices.reduce((a, b) => a + b, 0) / compPrices.length : null;
     const minComp = compPrices.length ? Math.min(...compPrices) : null;
     const maxComp = compPrices.length ? Math.max(...compPrices) : null;
     const delta = (ourPrice != null && avgComp != null) ? ourPrice - avgComp : null;
-    return { dish, ourPrice, avgComp, minComp, maxComp, delta, compCount: compPrices.length, compPrices, perComp: compMaps.map(c => c.priceMap[dish] ?? null) };
+    return { dish, ourPrice, prestige, avgComp, minComp, maxComp, delta, compCount: compPrices.length, compPrices, perComp: compMaps.map(c => c.priceMap[dish] ?? null) };
   });
 }
 
@@ -1262,11 +1265,13 @@ function renderPriceTable() {
     avg_comp: (a, b) => (b.avgComp ?? -1) - (a.avgComp ?? -1),
     delta: (a, b) => (b.delta ?? -Infinity) - (a.delta ?? -Infinity),
     count: (a, b) => b.compCount - a.compCount,
+    prestige: (a, b) => (b.prestige ?? -1) - (a.prestige ?? -1),
   };
   filtered.sort(sortFns[sort] || sortFns.name);
 
   const headerCells =
     `<th class="ing-col">Dish</th>` +
+    `<th style="min-width:60px">Prestige</th>` +
     `<th style="min-width:80px">Us</th>` +
     `<th style="min-width:80px">Avg comp.</th>` +
     `<th style="min-width:70px">Min</th>` +
@@ -1314,13 +1319,82 @@ function renderPriceTable() {
       return `<td class="bid-cell"><span class="mono" style="font-size:12px;${style}">${p}</span></td>`;
     }).join('');
 
-    return `<tr><td class="ing-col">${esc(r.dish)}</td>${ourCell}${avgCell}${minCell}${maxCell}${deltaCell}${countCell}${compCells}</tr>`;
+    const prestigeCell = r.prestige != null
+      ? `<td class="bid-cell"><span class="bid-qty" style="font-size:11px">${r.prestige}</span></td>`
+      : `<td class="bid-cell"><span class="bid-empty">-</span></td>`;
+
+    return `<tr><td class="ing-col">${esc(r.dish)}</td>${prestigeCell}${ourCell}${avgCell}${minCell}${maxCell}${deltaCell}${countCell}${compCells}</tr>`;
   }).join('');
 
   wrap.innerHTML = `<table class="bids-table"><thead><tr>${headerCells}</tr></thead><tbody>${tableRows}</tbody></table>`;
 
-  // Update chart
+  // Update charts
   _renderPriceChart(filtered);
+  _renderPrestigeChart(filtered);
+}
+
+let _prestigeChart = null;
+
+function _renderPrestigeChart(rows) {
+  const chartWrap = $('prestigeChartWrap');
+  const canvas = $('prestigeChart');
+  // Only show dishes that have both price and prestige
+  const ourRows = rows.filter(r => r.ourPrice != null && r.prestige != null);
+  const compRows = rows.filter(r => r.avgComp != null && r.prestige != null);
+  if (!ourRows.length && !compRows.length) { chartWrap.style.display = 'none'; return; }
+  chartWrap.style.display = '';
+
+  if (_prestigeChart) _prestigeChart.destroy();
+
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)';
+  const textColor = isDark ? '#aaa' : '#666';
+
+  const datasets = [];
+  if (ourRows.length) {
+    datasets.push({
+      label: 'Our Price',
+      data: ourRows.map(r => ({ x: r.prestige, y: r.ourPrice, _dish: r.dish })),
+      backgroundColor: 'rgba(124,58,237,0.7)',
+      borderColor: 'rgba(124,58,237,1)',
+      pointRadius: 5,
+      pointHoverRadius: 7,
+    });
+  }
+  if (compRows.length) {
+    datasets.push({
+      label: 'Avg Competitor Price',
+      data: compRows.map(r => ({ x: r.prestige, y: r.avgComp, _dish: r.dish })),
+      backgroundColor: 'rgba(59,130,246,0.5)',
+      borderColor: 'rgba(59,130,246,0.8)',
+      pointRadius: 4,
+      pointHoverRadius: 6,
+    });
+  }
+
+  _prestigeChart = new Chart(canvas, {
+    type: 'scatter',
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: textColor, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const p = ctx.raw;
+              return `${p._dish}: price ${p.y}, prestige ${p.x}`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: { title: { display: true, text: 'Prestige', color: textColor }, ticks: { color: textColor }, grid: { color: gridColor } },
+        y: { title: { display: true, text: 'Price', color: textColor }, ticks: { color: textColor }, grid: { color: gridColor } },
+      },
+    },
+  });
 }
 
 function _renderPriceChart(rows) {
@@ -1416,8 +1490,8 @@ async function loadPriceComparison() {
       _statCard('Avg Delta', avgDelta != null ? (avgDelta > 0 ? '+' : '') + avgDelta.toFixed(0) : '-',
         avgDelta != null ? (avgDelta >= 0 ? 'above market' : 'below market') : '',
         avgDelta != null ? (avgDelta >= 0 ? 'var(--green)' : 'var(--red)') : null),
-      _statCard('Cheaper / Pricier', `${pricier} / ${cheaper}`,
-        `${pricier} above, ${cheaper} below avg`),
+      _statCard('Cheaper / Pricier', `${cheaper} / ${pricier}`,
+        `${cheaper} below, ${pricier} above avg`),
       _statCard('Competitors', competitors.length, 'with menus'),
     ].join('');
 

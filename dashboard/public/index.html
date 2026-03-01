@@ -622,6 +622,7 @@
             <select id="pricesSort" onchange="renderPriceTable()">
               <option value="name">Sort by name</option>
               <option value="our_price">Sort by our price</option>
+              <option value="prestige">Sort by prestige</option>
               <option value="avg_comp">Sort by avg competitor price</option>
               <option value="delta">Sort by delta (us - avg)</option>
               <option value="count">Sort by # competitors</option>
@@ -629,11 +630,19 @@
             <input class="input" id="pricesSearch" placeholder="Search dish..." oninput="renderPriceTable()" style="width:180px">
           </div>
 
-          <!-- Chart -->
+          <!-- Bar chart: Our Price vs Avg Competitor -->
           <div id="pricesChartWrap" style="display:none;background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px 12px;height:360px;margin-bottom:14px;">
             <div style="font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">Our Price vs Avg Competitor Price</div>
             <div style="position:relative;height:calc(100% - 30px);">
               <canvas id="pricesChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Scatter chart: Price vs Prestige correlation -->
+          <div id="prestigeChartWrap" style="display:none;background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px 12px;height:360px;margin-bottom:14px;">
+            <div style="font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">Price vs Prestige</div>
+            <div style="position:relative;height:calc(100% - 30px);">
+              <canvas id="prestigeChart"></canvas>
             </div>
           </div>
 

@@ -765,20 +765,24 @@ _comp_cache: dict[str, Any] = {"data": None, "ts": 0.0}
 _COMP_CACHE_TTL = 60  # seconds
 
 
-async def _fetch_our_menu_from_db() -> dict[str, float | None]:
-    """Read our latest menu prices from the DB (restaurant_menu_items)."""
+async def _fetch_our_menu_from_db() -> dict[str, dict]:
+    """Read our latest menu prices + prestige from the DB."""
     p = await get_pool()
     rows = await p.fetch(
-        """SELECT rmi.name, rmi.price
+        """SELECT rmi.name, rmi.price, rec.prestige
            FROM restaurant_menu_items rmi
            JOIN restaurants r ON r.id = rmi.restaurant_row_id
+           LEFT JOIN recipes rec ON rec.name = rmi.name
            WHERE r.restaurant_id = $1
              AND r.call_id = (
                SELECT MAX(r2.call_id) FROM restaurants r2 WHERE r2.restaurant_id = $1
              )""",
         TEAM_ID,
     )
-    return {r["name"]: r["price"] for r in rows if r["name"]}
+    return {
+        r["name"]: {"price": r["price"], "prestige": r["prestige"]}
+        for r in rows if r["name"]
+    }
 
 
 async def _fetch_competitor_menus() -> list[dict]:
