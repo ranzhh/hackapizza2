@@ -15,10 +15,12 @@ import asyncio
 import json
 import os
 import re
+import time
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Any
 
+import aiohttp
 import asyncpg
 import uvicorn
 from dotenv import load_dotenv
@@ -27,7 +29,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 # Load variables from .env in the project root (no-op if file is absent)
-load_dotenv()
+_project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+load_dotenv(os.path.join(_project_root, ".env"))
 
 # ---------------------------------------------------------------------------
 # Config
@@ -42,6 +45,9 @@ if not DB_CONNSTR:
         "or as an environment variable."
     )
 PORT = int(os.getenv("DASHBOARD_PORT", "3001"))
+TEAM_ID = os.getenv("HACKAPIZZA_TEAM_ID", "6")
+TEAM_API_KEY = os.getenv("HACKAPIZZA_TEAM_API_KEY", "")
+HACKAPIZZA_BASE_URL = "https://hackapizza.datapizza.tech"
 
 # ---------------------------------------------------------------------------
 # DB pool
@@ -685,6 +691,157 @@ async def get_bids(turn_id: str | None = Query(None)):
         "bids": matrix,
         "error": None,
     }
+
+
+# ---------------------------------------------------------------------------
+# NEW: Balance & Reputation history + Price comparison
+# ---------------------------------------------------------------------------
+
+@app.get("/api/balance-history")
+async def get_balance_history():
+    """Return balance over time for our restaurant, plus summary stats."""
+    p = await get_pool()
+    rows = await p.fetch(
+        """SELECT r.balance, c.timestamp_utc, c.turn_id
+           FROM restaurants r
+           JOIN calls c ON c.id = r.call_id
+           WHERE r.restaurant_id = $1
+           ORDER BY c.timestamp_utc ASC""",
+        TEAM_ID,
+    )
+    points = [_row_to_dict(r) for r in rows]
+    summary = _compute_summary(points, "balance")
+    return {"points": points, "summary": summary}
+
+
+@app.get("/api/reputation-history")
+async def get_reputation_history():
+    """Return reputation over time for our restaurant, plus summary stats."""
+    p = await get_pool()
+    rows = await p.fetch(
+        """SELECT r.reputation, c.timestamp_utc, c.turn_id
+           FROM restaurants r
+           JOIN calls c ON c.id = r.call_id
+           WHERE r.restaurant_id = $1
+           ORDER BY c.timestamp_utc ASC""",
+        TEAM_ID,
+    )
+    points = [_row_to_dict(r) for r in rows]
+    summary = _compute_summary(points, "reputation")
+    return {"points": points, "summary": summary}
+
+
+def _compute_summary(points: list[dict], key: str) -> dict:
+    """Compute aggregate stats: current value, last-turn change, min, max."""
+    if not points:
+        return {"current": None, "last_change": None, "min": None, "max": None, "start": None}
+    values = [p[key] for p in points]
+    current = values[-1]
+    start = values[0]
+    # Find last turn change: difference between last two distinct turn_ids
+    last_change = None
+    seen_turns: list[tuple] = []  # (turn_id, last_value_in_turn)
+    prev_turn = object()  # sentinel that won't match any real turn_id
+    for p in points:
+        t = p.get("turn_id")
+        if t != prev_turn:
+            seen_turns.append((t, p[key]))
+            prev_turn = t
+        elif seen_turns:
+            seen_turns[-1] = (t, p[key])
+    if len(seen_turns) >= 2:
+        last_change = seen_turns[-1][1] - seen_turns[-2][1]
+    return {
+        "current": current,
+        "last_change": round(last_change, 2) if last_change is not None else None,
+        "min": min(values),
+        "max": max(values),
+        "start": start,
+    }
+
+
+# Cache for competitor menus (refreshed every 60s)
+_comp_cache: dict[str, Any] = {"data": None, "ts": 0.0}
+_COMP_CACHE_TTL = 60  # seconds
+
+
+async def _fetch_our_menu_from_db() -> dict[str, float | None]:
+    """Read our latest menu prices from the DB (restaurant_menu_items)."""
+    p = await get_pool()
+    rows = await p.fetch(
+        """SELECT rmi.name, rmi.price
+           FROM restaurant_menu_items rmi
+           JOIN restaurants r ON r.id = rmi.restaurant_row_id
+           WHERE r.restaurant_id = $1
+             AND r.call_id = (
+               SELECT MAX(r2.call_id) FROM restaurants r2 WHERE r2.restaurant_id = $1
+             )""",
+        TEAM_ID,
+    )
+    return {r["name"]: r["price"] for r in rows if r["name"]}
+
+
+async def _fetch_competitor_menus() -> list[dict]:
+    """Fetch only competitor menus from the external API."""
+    headers = {"x-api-key": TEAM_API_KEY}
+    competitors: list[dict] = []
+    our_rid = str(TEAM_ID)
+
+    timeout = aiohttp.ClientTimeout(total=30, connect=10, sock_read=25)
+    connector = aiohttp.TCPConnector(limit=3, force_close=True)
+    async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
+        # Get restaurant list
+        restaurant_list: list[dict] = []
+        try:
+            async with session.get(
+                f"{HACKAPIZZA_BASE_URL}/restaurants", headers=headers,
+            ) as resp:
+                if resp.status == 200:
+                    restaurant_list = await resp.json()
+        except Exception as exc:
+            print(f"[price-comparison] /restaurants failed: {exc}")
+
+        name_map: dict[str, str] = {}
+        for r in restaurant_list:
+            rid = str(r.get("id", ""))
+            if rid:
+                name_map[rid] = r.get("name", f"Restaurant {rid}")
+
+        comp_ids = [rid for rid in (name_map.keys() or [str(i) for i in range(1, 26)]) if rid != our_rid]
+
+        for rid in comp_ids:
+            try:
+                url = f"{HACKAPIZZA_BASE_URL}/restaurant/{rid}/menu"
+                async with session.get(url, headers=headers) as resp:
+                    if resp.status != 200:
+                        continue
+                    data = await resp.json()
+                    items = data.get("items", []) if isinstance(data, dict) else data
+                    if isinstance(items, list) and items:
+                        competitors.append({
+                            "restaurant_id": rid,
+                            "restaurant_name": name_map.get(rid, f"Restaurant {rid}"),
+                            "menu": items,
+                        })
+            except Exception as exc:
+                print(f"[price-comparison] R.{rid} failed: {exc}")
+
+    return competitors
+
+
+@app.get("/api/price-comparison")
+async def get_price_comparison():
+    """Our menu from DB + competitor menus from external API (cached 60s)."""
+    # Always read our menu fresh from DB (fast local query)
+    our_menu = await _fetch_our_menu_from_db()
+
+    # Competitor data is cached
+    now = time.time()
+    if _comp_cache["data"] is None or (now - _comp_cache["ts"]) >= _COMP_CACHE_TTL:
+        _comp_cache["data"] = await _fetch_competitor_menus()
+        _comp_cache["ts"] = now
+
+    return {"our_menu": our_menu, "our_id": TEAM_ID, "competitors": _comp_cache["data"]}
 
 
 # ---------------------------------------------------------------------------

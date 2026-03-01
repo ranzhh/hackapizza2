@@ -168,7 +168,8 @@ function switchPanel(panel) {
   const titles = {
     events:'Events', clients:'Clients', preparations:'Preparations',
     messages:'Messages', restaurants:'Restaurants', recipes:'Recipes',
-    stats:'Stats', bids:'Market Bids'
+    stats:'Stats', bids:'Market Bids', balance:'Balance History',
+    reputation:'Reputation History', prices:'Price Comparison'
   };
   $('panelTitle').textContent = titles[panel] || panel;
   $('liveIndicator').style.display = panel === 'events' ? 'flex' : 'none';
@@ -181,6 +182,9 @@ function switchPanel(panel) {
   if (panel === 'recipes')       loadRecipes();
   if (panel === 'stats')         loadStats();
   if (panel === 'bids')          initBids();
+  if (panel === 'balance')       loadBalanceHistory();
+  if (panel === 'reputation')    loadReputationHistory();
+  if (panel === 'prices')        loadPriceComparison();
 }
 
 // ---------------------------------------------------------------------------
@@ -1060,6 +1064,382 @@ async function refreshAll() {
     $('historyStatus').textContent = '';
     await initBids();
   }
+  if (currentPanel === 'balance')    await loadBalanceHistory();
+  if (currentPanel === 'reputation') await loadReputationHistory();
+  if (currentPanel === 'prices')     await loadPriceComparison();
+}
+
+// ---------------------------------------------------------------------------
+// BALANCE HISTORY
+// ---------------------------------------------------------------------------
+let _balanceChart = null;
+
+async function loadBalanceHistory() {
+  try {
+    const data = await api('/api/balance-history');
+    const points = data.points || [];
+    const summary = data.summary || {};
+    if (!points.length) {
+      $('balanceStatsGrid').innerHTML = '';
+      $('balanceEmpty').style.display = 'block';
+      return;
+    }
+    $('balanceEmpty').style.display = 'none';
+    _renderSummaryCards('balanceStatsGrid', summary, 'Balance');
+    _renderTimeSeriesChart('balanceChart', '_balanceChart', points, 'balance', 'Balance', '#34d399');
+  } catch (err) {
+    $('balanceEmpty').style.display = 'block';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// REPUTATION HISTORY
+// ---------------------------------------------------------------------------
+let _reputationChart = null;
+
+async function loadReputationHistory() {
+  try {
+    const data = await api('/api/reputation-history');
+    const points = data.points || [];
+    const summary = data.summary || {};
+    if (!points.length) {
+      $('reputationStatsGrid').innerHTML = '';
+      $('reputationEmpty').style.display = 'block';
+      return;
+    }
+    $('reputationEmpty').style.display = 'none';
+    _renderSummaryCards('reputationStatsGrid', summary, 'Reputation');
+    _renderTimeSeriesChart('reputationChart', '_reputationChart', points, 'reputation', 'Reputation', '#fbbf24');
+  } catch (err) {
+    $('reputationEmpty').style.display = 'block';
+  }
+}
+
+// Summary cards for balance/reputation
+function _renderSummaryCards(gridId, summary, label) {
+  const current = summary.current;
+  const change = summary.last_change;
+  const min = summary.min;
+  const max = summary.max;
+  const start = summary.start;
+
+  const changeColor = change == null ? 'var(--text-1)' : change >= 0 ? 'var(--green)' : 'var(--red)';
+  const changeSign = change != null && change > 0 ? '+' : '';
+  const totalChange = current != null && start != null ? current - start : null;
+  const totalColor = totalChange == null ? 'var(--text-1)' : totalChange >= 0 ? 'var(--green)' : 'var(--red)';
+  const totalSign = totalChange != null && totalChange > 0 ? '+' : '';
+
+  $(gridId).innerHTML = `
+    <div class="stat-card"><div class="stat-label">Current ${label}</div><div class="stat-value">${current != null ? current.toLocaleString() : '—'}</div></div>
+    <div class="stat-card"><div class="stat-label">Last Turn Change</div><div class="stat-value" style="color:${changeColor}">${change != null ? changeSign + change.toLocaleString() : '—'}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Change</div><div class="stat-value" style="color:${totalColor}">${totalChange != null ? totalSign + totalChange.toLocaleString(undefined, {maximumFractionDigits: 2}) : '—'}</div></div>
+    <div class="stat-card"><div class="stat-label">Min</div><div class="stat-value" style="font-size:15px">${min != null ? min.toLocaleString() : '—'}</div></div>
+    <div class="stat-card"><div class="stat-label">Max</div><div class="stat-value" style="font-size:15px">${max != null ? max.toLocaleString() : '—'}</div></div>`;
+}
+
+// Shared line chart renderer for balance/reputation
+function _renderTimeSeriesChart(canvasId, chartVarName, points, valueKey, label, color) {
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const gridColor  = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  const labelColor = isDark ? '#a0a0a8' : '#52525b';
+  const tooltipBg  = isDark ? '#19191c' : '#ffffff';
+  const tooltipFg  = isDark ? '#ececef' : '#18181b';
+
+  // Destroy previous chart
+  if (chartVarName === '_balanceChart' && _balanceChart) { _balanceChart.destroy(); _balanceChart = null; }
+  if (chartVarName === '_reputationChart' && _reputationChart) { _reputationChart.destroy(); _reputationChart = null; }
+
+  const labels = points.map(p => {
+    if (p.turn_id != null) return `T${p.turn_id}`;
+    return formatTime(p.timestamp_utc);
+  });
+
+  const ctx = $(canvasId).getContext('2d');
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label,
+        data: points.map(p => p[valueKey]),
+        borderColor: color,
+        backgroundColor: color + '22',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: color + 'cc',
+        pointBorderColor: color,
+        pointBorderWidth: 1,
+        fill: true,
+        tension: 0.3,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      layout: { padding: { top: 8, right: 8 } },
+      scales: {
+        x: {
+          ticks: { color: labelColor, font: { family: "'JetBrains Mono', monospace", size: 10 }, maxRotation: 0 },
+          grid: { color: gridColor },
+        },
+        y: {
+          beginAtZero: false,
+          ticks: { color: labelColor, font: { family: "'JetBrains Mono', monospace", size: 10 } },
+          grid: { color: gridColor },
+          title: { display: true, text: label, color: labelColor, font: { family: "'Inter', sans-serif", size: 11, weight: '500' } },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: tooltipBg,
+          borderColor: isDark ? '#2a2a2e' : '#d4d4d8',
+          borderWidth: 1,
+          titleColor: tooltipFg,
+          bodyColor: labelColor,
+          titleFont: { family: "'Inter', sans-serif", size: 12, weight: '600' },
+          bodyFont:  { family: "'JetBrains Mono', monospace", size: 11 },
+          padding: 10,
+          callbacks: {
+            title: (items) => labels[items[0].dataIndex],
+            label: (item) => `${label}: ${item.raw}`,
+          },
+        },
+      },
+    },
+  });
+
+  if (chartVarName === '_balanceChart') _balanceChart = chart;
+  if (chartVarName === '_reputationChart') _reputationChart = chart;
+}
+
+// ---------------------------------------------------------------------------
+// PRICE COMPARISON
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Price Comparison — state & helpers
+// ---------------------------------------------------------------------------
+let _priceData = null;  // cached after load
+let _priceChart = null;
+
+function _buildPriceDishRows(our_menu, compMaps) {
+  const allDishes = new Set(Object.keys(our_menu));
+  for (const c of compMaps) {
+    for (const d of Object.keys(c.priceMap)) allDishes.add(d);
+  }
+  return [...allDishes].map(dish => {
+    const ourPrice = our_menu[dish] ?? null;
+    const compPrices = compMaps.map(c => c.priceMap[dish] ?? null).filter(p => p != null);
+    const avgComp = compPrices.length ? compPrices.reduce((a, b) => a + b, 0) / compPrices.length : null;
+    const minComp = compPrices.length ? Math.min(...compPrices) : null;
+    const maxComp = compPrices.length ? Math.max(...compPrices) : null;
+    const delta = (ourPrice != null && avgComp != null) ? ourPrice - avgComp : null;
+    return { dish, ourPrice, avgComp, minComp, maxComp, delta, compCount: compPrices.length, compPrices, perComp: compMaps.map(c => c.priceMap[dish] ?? null) };
+  });
+}
+
+function renderPriceTable() {
+  if (!_priceData) return;
+  const { rows, compMaps, our_id } = _priceData;
+  const wrap = $('pricesWrap');
+  const filter = $('pricesFilter').value;
+  const sort = $('pricesSort').value;
+  const search = ($('pricesSearch').value || '').toLowerCase();
+
+  let filtered = rows.filter(r => {
+    if (search && !r.dish.toLowerCase().includes(search)) return false;
+    if (filter === 'ours') return r.ourPrice != null;
+    if (filter === 'shared') return r.ourPrice != null && r.compCount > 0;
+    if (filter === 'exclusive') return r.ourPrice != null && r.compCount === 0;
+    if (filter === 'missing') return r.ourPrice == null;
+    return true;
+  });
+
+  const sortFns = {
+    name: (a, b) => a.dish.localeCompare(b.dish),
+    our_price: (a, b) => (b.ourPrice ?? -1) - (a.ourPrice ?? -1),
+    avg_comp: (a, b) => (b.avgComp ?? -1) - (a.avgComp ?? -1),
+    delta: (a, b) => (b.delta ?? -Infinity) - (a.delta ?? -Infinity),
+    count: (a, b) => b.compCount - a.compCount,
+  };
+  filtered.sort(sortFns[sort] || sortFns.name);
+
+  const headerCells =
+    `<th class="ing-col">Dish</th>` +
+    `<th style="min-width:80px">Us</th>` +
+    `<th style="min-width:80px">Avg comp.</th>` +
+    `<th style="min-width:70px">Min</th>` +
+    `<th style="min-width:70px">Max</th>` +
+    `<th style="min-width:80px">Delta</th>` +
+    `<th style="min-width:30px">#</th>` +
+    compMaps.map(c => `<th style="min-width:90px" title="${esc(c.restaurant_name)}">${esc(c.restaurant_name || 'R.' + c.restaurant_id)}</th>`).join('');
+
+  const tableRows = filtered.map(r => {
+    const ourCell = r.ourPrice != null
+      ? `<td class="bid-cell"><span class="bid-price">${r.ourPrice}</span></td>`
+      : `<td class="bid-cell"><span class="bid-empty">-</span></td>`;
+
+    const avgCell = r.avgComp != null
+      ? `<td class="bid-cell"><span class="mono" style="font-size:12px">${r.avgComp.toFixed(0)}</span></td>`
+      : `<td class="bid-cell"><span class="bid-empty">-</span></td>`;
+
+    const minCell = r.minComp != null
+      ? `<td class="bid-cell"><span class="mono" style="font-size:11px;color:var(--green)">${r.minComp}</span></td>`
+      : `<td class="bid-cell"><span class="bid-empty">-</span></td>`;
+
+    const maxCell = r.maxComp != null
+      ? `<td class="bid-cell"><span class="mono" style="font-size:11px;color:var(--red)">${r.maxComp}</span></td>`
+      : `<td class="bid-cell"><span class="bid-empty">-</span></td>`;
+
+    let deltaCell;
+    if (r.delta != null) {
+      const sign = r.delta > 0 ? '+' : '';
+      // Green if we charge MORE (more revenue), red if we charge LESS
+      const color = r.delta > 0 ? 'var(--green)' : r.delta < 0 ? 'var(--red)' : 'var(--text-2)';
+      deltaCell = `<td class="bid-cell"><span class="mono" style="font-size:12px;font-weight:600;color:${color}">${sign}${r.delta.toFixed(0)}</span></td>`;
+    } else {
+      deltaCell = `<td class="bid-cell"><span class="bid-empty">-</span></td>`;
+    }
+
+    const countCell = `<td class="bid-cell"><span class="bid-qty">${r.compCount}</span></td>`;
+
+    const compCells = r.perComp.map((p, i) => {
+      if (p == null) return `<td class="bid-cell"><span class="bid-empty">-</span></td>`;
+      let style = '';
+      if (r.ourPrice != null) {
+        if (r.ourPrice > p) style = 'color:var(--green)';       // they're cheaper → good for us (we earn more)
+        else if (r.ourPrice < p) style = 'color:var(--red)';    // they're more expensive → we earn less
+      }
+      return `<td class="bid-cell"><span class="mono" style="font-size:12px;${style}">${p}</span></td>`;
+    }).join('');
+
+    return `<tr><td class="ing-col">${esc(r.dish)}</td>${ourCell}${avgCell}${minCell}${maxCell}${deltaCell}${countCell}${compCells}</tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table class="bids-table"><thead><tr>${headerCells}</tr></thead><tbody>${tableRows}</tbody></table>`;
+
+  // Update chart
+  _renderPriceChart(filtered);
+}
+
+function _renderPriceChart(rows) {
+  const chartWrap = $('pricesChartWrap');
+  const canvas = $('pricesChart');
+  // Only show dishes where we have both our price and competitor avg
+  const chartRows = rows.filter(r => r.ourPrice != null && r.avgComp != null).slice(0, 30);
+  if (!chartRows.length) { chartWrap.style.display = 'none'; return; }
+  chartWrap.style.display = '';
+
+  if (_priceChart) _priceChart.destroy();
+
+  const labels = chartRows.map(r => r.dish.length > 25 ? r.dish.slice(0, 22) + '...' : r.dish);
+  const ourPrices = chartRows.map(r => r.ourPrice);
+  const avgPrices = chartRows.map(r => r.avgComp);
+  const minPrices = chartRows.map(r => r.minComp);
+  const maxPrices = chartRows.map(r => r.maxComp);
+
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)';
+  const textColor = isDark ? '#aaa' : '#666';
+
+  _priceChart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Our Price', data: ourPrices, backgroundColor: 'rgba(124,58,237,0.7)', borderColor: 'rgba(124,58,237,1)', borderWidth: 1, borderRadius: 3 },
+        { label: 'Avg Competitor', data: avgPrices, backgroundColor: 'rgba(59,130,246,0.5)', borderColor: 'rgba(59,130,246,1)', borderWidth: 1, borderRadius: 3 },
+        { label: 'Min Competitor', data: minPrices, backgroundColor: 'rgba(34,197,94,0.3)', borderColor: 'rgba(34,197,94,0.8)', borderWidth: 1, borderRadius: 3 },
+        { label: 'Max Competitor', data: maxPrices, backgroundColor: 'rgba(239,68,68,0.3)', borderColor: 'rgba(239,68,68,0.8)', borderWidth: 1, borderRadius: 3 },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: textColor, font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: textColor, font: { size: 10 }, maxRotation: 45 }, grid: { color: gridColor } },
+        y: { title: { display: true, text: 'Price', color: textColor }, ticks: { color: textColor }, grid: { color: gridColor } },
+      },
+    },
+  });
+}
+
+async function loadPriceComparison() {
+  const loading = $('pricesLoading');
+  const wrap = $('pricesWrap');
+  const empty = $('pricesEmpty');
+  const filtersEl = $('pricesFilters');
+  const statsGrid = $('pricesStatsGrid');
+  loading.textContent = 'Loading price data...';
+  wrap.innerHTML = '';
+  statsGrid.innerHTML = '';
+  empty.style.display = 'none';
+  filtersEl.style.display = 'none';
+
+  try {
+    const data = await api('/api/price-comparison');
+    const { our_menu, our_id, competitors } = data;
+
+    if (!Object.keys(our_menu).length && !competitors.length) {
+      loading.textContent = '';
+      empty.style.display = 'block';
+      return;
+    }
+
+    // Build competitor price maps
+    const compMaps = competitors.map(c => {
+      const map = {};
+      for (const item of (c.menu || [])) {
+        const name = item.name || item.dish_name || '';
+        const price = item.price != null ? item.price : null;
+        if (name) map[name] = price;
+      }
+      return { ...c, priceMap: map };
+    });
+
+    const rows = _buildPriceDishRows(our_menu, compMaps);
+    _priceData = { rows, compMaps, our_id };
+
+    // Compute summary stats
+    const ourDishes = rows.filter(r => r.ourPrice != null);
+    const withDelta = rows.filter(r => r.delta != null);
+    const avgDelta = withDelta.length ? withDelta.reduce((s, r) => s + r.delta, 0) / withDelta.length : null;
+    const cheaper = withDelta.filter(r => r.delta < 0).length;
+    const pricier = withDelta.filter(r => r.delta > 0).length;
+    const avgOur = ourDishes.length ? ourDishes.reduce((s, r) => s + r.ourPrice, 0) / ourDishes.length : null;
+
+    statsGrid.innerHTML = [
+      _statCard('Our Dishes', ourDishes.length, rows.length + ' total'),
+      _statCard('Avg Our Price', avgOur != null ? avgOur.toFixed(0) : '-', ''),
+      _statCard('Avg Delta', avgDelta != null ? (avgDelta > 0 ? '+' : '') + avgDelta.toFixed(0) : '-',
+        avgDelta != null ? (avgDelta >= 0 ? 'above market' : 'below market') : '',
+        avgDelta != null ? (avgDelta >= 0 ? 'var(--green)' : 'var(--red)') : null),
+      _statCard('Cheaper / Pricier', `${pricier} / ${cheaper}`,
+        `${pricier} above, ${cheaper} below avg`),
+      _statCard('Competitors', competitors.length, 'with menus'),
+    ].join('');
+
+    filtersEl.style.display = 'flex';
+    loading.textContent = `${rows.length} dishes across ${competitors.length + 1} restaurants`;
+    loading.style.color = 'var(--text-2)';
+
+    renderPriceTable();
+
+  } catch (err) {
+    loading.textContent = 'Error: ' + String(err);
+    loading.style.color = 'var(--red)';
+  }
+}
+
+function _statCard(label, value, sub, valueColor) {
+  const colorStyle = valueColor ? `color:${valueColor}` : '';
+  return `<div class="stat-card">
+    <div class="stat-label">${esc(label)}</div>
+    <div class="stat-value" style="${colorStyle}">${esc(String(value))}</div>
+    ${sub ? `<div class="stat-sub">${esc(sub)}</div>` : ''}
+  </div>`;
 }
 
 // ---------------------------------------------------------------------------

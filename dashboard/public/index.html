@@ -308,6 +308,21 @@
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           <span>Stats</span>
         </div>
+
+        <div class="nav-sep"></div>
+
+        <div class="nav-item" data-panel="balance">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <span>Balance</span>
+        </div>
+        <div class="nav-item" data-panel="reputation">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span>Reputation</span>
+        </div>
+        <div class="nav-item" data-panel="prices">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          <span>Prices</span>
+        </div>
       </nav>
 
       <div class="sidebar-footer">
@@ -559,6 +574,72 @@
               <thead><tr><th>Event Type</th><th>Count</th></tr></thead>
               <tbody id="statsByEvent"></tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- BALANCE HISTORY -->
+        <div class="panel" id="panel-balance">
+          <div class="stats-row" id="balanceStatsGrid" style="margin-bottom:14px;"></div>
+          <div style="background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px 12px;height:460px;">
+            <div style="position:relative;height:100%;">
+              <canvas id="balanceChart"></canvas>
+            </div>
+          </div>
+          <div class="empty" id="balanceEmpty" style="display:none;">
+            <p>No balance data recorded yet</p>
+          </div>
+        </div>
+
+        <!-- REPUTATION HISTORY -->
+        <div class="panel" id="panel-reputation">
+          <div class="stats-row" id="reputationStatsGrid" style="margin-bottom:14px;"></div>
+          <div style="background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px 12px;height:460px;">
+            <div style="position:relative;height:100%;">
+              <canvas id="reputationChart"></canvas>
+            </div>
+          </div>
+          <div class="empty" id="reputationEmpty" style="display:none;">
+            <p>No reputation data recorded yet</p>
+          </div>
+        </div>
+
+        <!-- PRICE COMPARISON -->
+        <div class="panel" id="panel-prices">
+          <div id="pricesLoading" style="font-size:12px;color:var(--text-2);margin-bottom:10px;"></div>
+
+          <!-- Summary cards -->
+          <div class="stats-row" id="pricesStatsGrid" style="margin-bottom:14px;"></div>
+
+          <!-- Filters -->
+          <div class="filters" id="pricesFilters" style="display:none;margin-bottom:10px;">
+            <select id="pricesFilter" onchange="renderPriceTable()">
+              <option value="all">All dishes</option>
+              <option value="ours">Only our dishes</option>
+              <option value="shared">Shared with competitors</option>
+              <option value="exclusive">Only we have</option>
+              <option value="missing">We don't have</option>
+            </select>
+            <select id="pricesSort" onchange="renderPriceTable()">
+              <option value="name">Sort by name</option>
+              <option value="our_price">Sort by our price</option>
+              <option value="avg_comp">Sort by avg competitor price</option>
+              <option value="delta">Sort by delta (us - avg)</option>
+              <option value="count">Sort by # competitors</option>
+            </select>
+            <input class="input" id="pricesSearch" placeholder="Search dish..." oninput="renderPriceTable()" style="width:180px">
+          </div>
+
+          <!-- Chart -->
+          <div id="pricesChartWrap" style="display:none;background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px 12px;height:360px;margin-bottom:14px;">
+            <div style="font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">Our Price vs Avg Competitor Price</div>
+            <div style="position:relative;height:calc(100% - 30px);">
+              <canvas id="pricesChart"></canvas>
+            </div>
+          </div>
+
+          <div class="table-wrap" style="max-height:calc(100vh - 360px);overflow:auto;" id="pricesWrap"></div>
+          <div class="empty" id="pricesEmpty" style="display:none;">
+            <p>No price data available</p>
           </div>
         </div>
       </div>
