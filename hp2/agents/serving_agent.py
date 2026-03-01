@@ -72,7 +72,7 @@ class PendingOrder:
 
 @dataclass
 class ServingAgentConfig:
-    close_on_missing_ingredients_threshold: int = 1
+    close_on_missing_ingredients_threshold: int = 100
 
 
 class ServingAgent(BaseAgent):
@@ -173,7 +173,9 @@ class ServingAgent(BaseAgent):
             dish_name = "UNKNOWN"
         # ── Single LLM call: pick the dish ──
         if dish_name == "UNKNOWN":
-            dish_name = await _ask_llm_for_dish(self.llm, self.menu_items, list(self.recipes.values()), order)
+            dish_name = await _ask_llm_for_dish(
+                self.llm, self.menu_items, list(self.recipes.values()), order
+            )
         elif dish_name == "INTOLERANCE":
             self.logger.info(
                 "[ORDER] Detected intolerance in order '%s' from %s. Not serving.",
@@ -220,17 +222,14 @@ class ServingAgent(BaseAgent):
             eat = match.group("eat").strip()
             intolerant = match.group("intolerant").strip()
 
-            if (
-                eat in self.recipes
-                and intolerant in self.recipes[eat].ingredients
-            ):
+            if eat in self.recipes and intolerant in self.recipes[eat].ingredients:
                 return "INTOLERANCE"
 
             else:
                 return eat
 
         elif order in self.recipes:
-                return order
+            return order
 
         return "UNKNOWN"
 

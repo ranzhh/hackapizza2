@@ -46,7 +46,7 @@ class RestaurantManager(BaseAgent):
         await self._open_if_closed(trigger="agent_start")
 
     async def on_phase_changed(self, event: PhaseChangedEvent) -> None:
-        self.client.set_restaurant_open_status(is_open=True)
+        await self.client.set_restaurant_open_status(is_open=True)
         if event.new_phase == GamePhase.SERVING:
             await self._enter_serving_phase()
 
@@ -85,9 +85,7 @@ class RestaurantManager(BaseAgent):
             status = await self.client.get_my_restaurant()
             self._is_open = bool(status.is_open)
         except Exception as exc:
-            self.logger.warning(
-                "[%s] Failed to read current open status: %s", trigger, exc
-            )
+            self.logger.warning("[%s] Failed to read current open status: %s", trigger, exc)
             return
 
         if self._is_open:
@@ -205,10 +203,7 @@ class RestaurantManager(BaseAgent):
             recipe = recipes_by_name.get(dish_name)
             if recipe is None:
                 continue
-            if all(
-                float(inventory.get(ing, 0)) >= qty
-                for ing, qty in recipe.ingredients.items()
-            ):
+            if all(float(inventory.get(ing, 0)) >= qty for ing, qty in recipe.ingredients.items()):
                 self.logger.info(
                     "Order '%s' is serviceable with dish '%s'",
                     order.order_text,
@@ -229,9 +224,7 @@ class RestaurantManager(BaseAgent):
 
         recent_total = len(self._recent_serviceable)
         recent_unserviceable = sum(1 for x in self._recent_serviceable if not x)
-        recent_unserviceable_ratio = (
-            recent_unserviceable / recent_total if recent_total else 0.0
-        )
+        recent_unserviceable_ratio = recent_unserviceable / recent_total if recent_total else 0.0
         served_ratio = (self.served / self.spawned) if self.spawned else 1.0
         backlog = max(self.spawned - self.served, 0)
 
@@ -275,15 +268,11 @@ class RestaurantManager(BaseAgent):
                 self._is_open = False
                 self.logger.info("Restaurant closed")
             except Exception as exc:
-                self.logger.warning(
-                    "Failed to close restaurant with existing session: %s", exc
-                )
+                self.logger.warning("Failed to close restaurant with existing session: %s", exc)
             return
 
         timeout = aiohttp.ClientTimeout(total=10)
-        async with aiohttp.ClientSession(
-            timeout=timeout, headers=self.client._headers
-        ) as session:
+        async with aiohttp.ClientSession(timeout=timeout, headers=self.client._headers) as session:
             self.client._session = session
             try:
                 await self.client.set_restaurant_open_status(is_open=False)

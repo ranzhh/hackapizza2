@@ -2,92 +2,38 @@ import asyncio
 import logging
 import random
 from collections import defaultdict
-from dataclasses import dataclass
-from typing import DefaultDict
 
 from hp2.agents.base import BaseAgent
 from hp2.core.api import (
-    BidRequest,
     GamePhase,
     GameStartedEvent,
-    IncomingMessage,
-    MenuItem,
     PhaseChangedEvent,
+    ClientOrder
 )
 from hp2.core.schema.models import RecipeSchema
 
 logging.basicConfig()
 
-RECIPES_WANTED = 50
-N_TIMES = 5
-PRICE_MULTIPLIER = 5.3
+MIN_STOCK = 1
 
 
-@dataclass
-class MenuConfig:
-    recipes: list[RecipeSchema]
-    ingredients: DefaultDict[str, int]
-
-
-class BiddingAgent(BaseAgent):
-    """Agent responsible for bidding on client orders during the BIDDING phase."""
+class QuartermasterAgent(BaseAgent):
+    """Agent responsible for administering the stock of items we need for client orders during the SERVING phase."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._config: MenuConfig | None = None
-        self.inventory: dict[str, int] | None = {}
 
     async def on_game_started(self, event: GameStartedEvent):
         self.logger.info("[STARTED] Game started, turn %s", event.turn_id)
-        config = await self._prepare_menu(n_recipes=RECIPES_WANTED, n_times=N_TIMES)
-        self.logger.info(
-            "[STARTED] Prepared menu config: %s", ", ".join([x.name for x in config.recipes])
-        )
-        self._config = config
 
     async def on_phase_changed(self, event: PhaseChangedEvent):
-        if event.new_phase == GamePhase.CLOSED_BID:
-            await self._handle_closed_bid_phase()
-
-        elif event.new_phase == GamePhase.WAITING:
-            await self._save_menu()
+        if event.new_phase == GamePhase.SERVING:
+            pass
 
         else:
             self._handle_unmanaged_phase(event.new_phase)
 
-    async def on_new_message(self, message: IncomingMessage) -> None:
-        if message.sender_name == "server" and "try to buy" in message.text:
-            await self._save_menu()
-
-    async def _handle_closed_bid_phase(self) -> None:
-        bids: list[BidRequest] = []
-        if self._config is not None:
-            for ing, qty in self._config.ingredients.items():
-                bids.append(BidRequest(ingredient=ing, bid=2, quantity=qty))
-
-            self.logger.info("[BIDDING] Submitted bids for ingredients")
-            await self.client.submit_closed_bids(bids)
-
-    async def _save_menu(self) -> None:
-        self.logger.info("[MENU] Entered phase - submitting menu config")
-        await self._update_inventory()
-
-        if self._config and self.inventory:
-            # Create a menu for this phase
-            menu_items: list[MenuItem] = []
-            for recipe in await self.client.get_recipes():
-                if await self._validate_recipe(recipe):
-                    menu_items.append(
-                        MenuItem(
-                            name=recipe.name, price=int((recipe.prestige + 1) * PRICE_MULTIPLIER)
-                        )
-                    )
-                    self.logger.info("Added recipe %s", recipe.name)
-                else:
-                    self.logger.warning("Skipped recipe %s due to no inv", recipe.name)
-
-            await self.client.save_menu(menu_items)
-            self.logger.info(f"[MENU] Submitted menu with  {len(menu_items)} items.")
+    async def on_client_spawned(self, order: ClientOrder) -> 
 
     async def _update_inventory(self) -> None:
         self.logger.info("Updating inventory...")
@@ -161,5 +107,5 @@ class BiddingAgent(BaseAgent):
 
 
 if __name__ == "__main__":
-    agent = BiddingAgent()
+    agent = QuartermasterAgent()
     asyncio.run(agent.run())
