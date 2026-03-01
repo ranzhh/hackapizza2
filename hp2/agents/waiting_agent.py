@@ -61,7 +61,9 @@ def _load_configuration(config_path: Path | None = None) -> BiddingConfig:
     Raises ``FileNotFoundError`` if the file is missing, or
     ``pydantic.ValidationError`` if the content doesn't match the schema.
     """
-    path = config_path or Path(os.environ.get("WAITING_AGENT_CONFIG", str(_DEFAULT_CONFIG_PATH)))
+    path = config_path or Path(
+        os.environ.get("WAITING_AGENT_CONFIG", str(_DEFAULT_CONFIG_PATH))
+    )
     if not path.exists():
         raise FileNotFoundError(
             f"Configuration file not found at {path}.  "
@@ -282,7 +284,9 @@ class WaitingAgent(BaseAgent):
         if event.new_phase == GamePhase.WAITING:
             await self.phase_waiting()
         else:
-            self.logger.debug("Phase '%s' not handled — ignoring.", event.new_phase.value)
+            self.logger.debug(
+                "Phase '%s' not handled — ignoring.", event.new_phase.value
+            )
 
     async def on_client_spawned(self, order: ClientOrder) -> None:
         pass

@@ -5,10 +5,10 @@ import logging
 from hp2.agents.base import BaseAgent
 from hp2.core.api import (
     ClientOrder,
-    GamePhase,
     GameStartedEvent,
     HackapizzaClient,
     IncomingMessage,
+    PhaseChangedEvent,
 )
 
 
@@ -23,8 +23,8 @@ class RestaurantScanner(BaseAgent):
         # First snapshot as soon as the turn starts.
         await self._log_open_restaurants(trigger="game_started")
 
-    async def on_phase_changed(self, phase: GamePhase) -> None:
-        await self._log_open_restaurants(trigger=f"phase:{phase.value}")
+    async def on_phase_changed(self, event: PhaseChangedEvent) -> None:
+        await self._log_open_restaurants(trigger=f"phase:{event.new_phase.value}")
 
     async def on_client_spawned(self, order: ClientOrder) -> None:
         pass
@@ -43,7 +43,9 @@ class RestaurantScanner(BaseAgent):
             return
 
         open_restaurants = [r for r in restaurants if getattr(r, "is_open", False)]
-        names = ", ".join(r.name for r in open_restaurants) if open_restaurants else "none"
+        names = (
+            ", ".join(r.name for r in open_restaurants) if open_restaurants else "none"
+        )
 
         self.logger.info(
             "[%s] Open restaurants: %d/%d -> %s",
