@@ -1,87 +1,3 @@
-"""
-BiddingAgent — Deterministic bidding agent for the *closed_bid* phase.
-
-This agent implements **only** the ``phase_closed_bid`` logic.  It is fully
-deterministic (no LLM / agentic calls):
-
-  1. Loads the desired recipe list from ``config.json``
-     (located at the repository root).
-  2. Fetches current game state (balance).
-  3. Computes bids deterministically from configuration data.
-  4. Calls ``submit_closed_bids`` as a direct MCP tool call (standalone,
-     not via an agentic loop).
-
-Design rationale
-----------------
-The previous version created a ``datapizza.agents.Agent`` wrapping an LLM
-(``OpenAILikeClient``) and MCP tools, then delegated the entire bid decision
-to a non-deterministic agentic loop.  This was problematic because:
-
-  - The LLM could hallucinate ingredient names or bid amounts.
-  - Behaviour varied unpredictably across runs.
-  - Latency and cost were high (multiple LLM round-trips + tool calls).
-
-The new version mirrors the pattern established by ``WaitingAgent``:
-all logic is pure Python, and the only I/O is fetching game state and
-calling the MCP tool once via ``HackapizzaClient``.
-
-Configuration format
---------------------
-``config.json`` is structured by **customer archetype**::
-
-    {
-        "recipes": {
-            "<archetype>": [
-                {"name": "<dish_name>", "multiplier": <float>},
-                ...
-            ],
-            ...
-        },
-        "ingredients": {
-            "<archetype>": {
-                "<dish_name>": [
-                    {"name": "<ingredient>", "price": <float>},
-                    ...
-                ],
-                ...
-            },
-            ...
-        }
-    }
-
-We compute the cost of 1 portion of every unique dish ("cost per round"),
-then determine how many rounds the budget affords, capped at
-``MAX_PORTIONS_PER_DISH``.  This fully utilises the budget while keeping
-ingredient proportions correct across all recipes.
-
-Environment variables
----------------------
-In live mode the agent reads credentials and connection strings from the
-``.env`` file at the repository root.  The following variables are required:
-
-  - ``HACKAPIZZA_TEAM_API_KEY``
-  - ``HACKAPIZZA_TEAM_ID``
-  - ``REGOLO_API_KEY``
-  - ``EVENT_PROXY_URL``
-  - ``HACKAPIZZA_SQL_CONNSTR``
-
-Test mode
----------
-Pass ``--test`` on the CLI (or ``test_mode=True`` in the constructor) to
-run the entire closed-bid pipeline against **mock data** — no server,
-no SSE, no ``.env`` required.
-
-Usage
------
-Run standalone (live)::
-
-    python -m hp2.agents.bidding_agent
-
-Run in test / dry-run mode::
-
-    python -m hp2.agents.bidding_agent --test
-"""
-
 from __future__ import annotations
 
 import json
@@ -89,6 +5,8 @@ import logging
 import os
 from pathlib import Path
 from typing import Any, Dict, List
+
+from pydantic import BaseModel, Field
 
 from hp2.agents.base import BaseAgent
 from hp2.core.api import (
@@ -99,6 +17,32 @@ from hp2.core.api import (
     HackapizzaClient,
     IncomingMessage,
 )
+from hp2.core.schema.models import RecipeSchema
+
+
+# ---------------------------------------------------------------------------
+# Pydantic configuration models
+# ---------------------------------------------------------------------------
+
+
+class ArchetypeConfig(BaseModel):
+    """Configuration for a single customer archetype."""
+
+    recipes: list[str] = Field(..., min_length=1, description="List of dish names available for this archetype.")
+    profit_multiplier: float = Field(..., gt=0, description="Multiplier applied to profit for dishes served to this archetype.")
+
+
+class IngredientsConfig(BaseModel):
+    """Global ingredient bidding configuration."""
+
+    bidding_price: float = Field(..., gt=0, description="Default bid price for all ingredients.")
+
+
+class BiddingConfig(BaseModel):
+    """Top-level configuration loaded from ``config.json``."""
+
+    recipes: dict[str, ArchetypeConfig] = Field(..., description="Mapping of archetype name to its recipe configuration.")
+    ingredients: IngredientsConfig = Field(..., description="Global ingredient settings.")
 
 # ---------------------------------------------------------------------------
 # Logger
@@ -132,18 +76,28 @@ MAX_PORTIONS_PER_DISH = 5
 _DEFAULT_CONFIG_PATH = _REPO_ROOT / "config.json"
 
 
-def _load_config(config_path: Path | None = None) -> Dict[str, Any]:
-    """Load the config file that lists recipes per archetype + ingredients.
+def _load_config(config_path: Path | None = None) -> BiddingConfig:
+    """Load and validate the config file using Pydantic.
 
-    Expected top-level keys:
+    Expected structure::
 
-    - ``"recipes"``     — dict keyed by archetype, each value is a list of
-                          ``{"name": str, ...}`` (may also contain "multiplier").
-    - ``"ingredients"`` — dict keyed by archetype, each value is a dict
-                          keyed by recipe name, each value is a list of
-                          ``{"name": str, "price": float}``.
+        {
+            "recipes": {
+                "<archetype>": {
+                    "recipes": ["<dish_name>", ...],
+                    "profit_multiplier": <float>
+                },
+                ...
+            },
+            "ingredients": {
+                "bidding_price": <float>
+            }
+        }
 
-    Raises ``FileNotFoundError`` or ``ValueError`` on problems.
+    Returns a fully validated ``BiddingConfig`` instance.
+
+    Raises ``FileNotFoundError`` if the file is missing, or
+    ``pydantic.ValidationError`` if the content doesn't match the schema.
     """
     path = config_path or Path(os.environ.get("BIDDING_AGENT_CONFIG", str(_DEFAULT_CONFIG_PATH)))
     if not path.exists():
@@ -155,10 +109,7 @@ def _load_config(config_path: Path | None = None) -> Dict[str, Any]:
     with open(path, "r", encoding="utf-8") as fh:
         data = json.load(fh)
 
-    if "recipes" not in data or "ingredients" not in data:
-        raise ValueError("config.json must contain top-level 'recipes' and 'ingredients' keys.")
-
-    return data
+    return BiddingConfig.model_validate(data)
 
 
 # ---------------------------------------------------------------------------
@@ -167,7 +118,8 @@ def _load_config(config_path: Path | None = None) -> Dict[str, Any]:
 
 
 def _compile_bids(
-    config: Dict[str, Any],
+    config: BiddingConfig,
+    all_recipes: List[RecipeSchema],
     balance: float,
     budget_fraction: float = BUDGET_FRACTION,
     max_portions_per_dish: int = MAX_PORTIONS_PER_DISH,
@@ -176,34 +128,26 @@ def _compile_bids(
 
     Algorithm
     ---------
-    1. **Collect target dishes** — iterate every archetype in
-       ``config["recipes"]`` and collect unique dish names.
-    2. **Collect ingredient prices** — for each dish, look up its ingredient
-       list in ``config["ingredients"][archetype][dish]``.  Each ingredient
-       entry has a ``"price"`` field which we use as the bid price.  When
-       the same ingredient appears under multiple archetypes we keep the
-       **maximum** price — this maximises our chance of winning the blind
-       auction.
-    3. **Base quantities (1 portion each)** — record how many units of each
-       ingredient are needed to cook exactly 1 portion of every unique dish.
-       Shared ingredients are summed across dishes.
-    4. **Budget-aware scaling** — compute the cost of one full "round"
-       (1 portion of every dish).  The number of rounds we can afford is
-       ``budget / cost_per_round``, capped at ``max_portions_per_dish``.
-       This fully utilises the budget while keeping ingredient proportions
-       correct.
+    1. **Collect all desired dish names** across every archetype in config.
+    2. **Resolve each dish to its real ingredients** using the server
+       recipe catalogue (``all_recipes``).
+    3. **Aggregate ingredient demand** — each ingredient gets
+       ``max_portions_per_dish`` units per dish occurrence (capped).
+    4. **Use the global ``bidding_price``** as the bid price.
+    5. **Budget-aware scaling** — scale down if needed.
 
     Parameters
     ----------
     config :
-        The loaded ``config.json`` dict.
+        Validated ``BiddingConfig`` model.
+    all_recipes :
+        Server recipe catalogue from ``get_recipes()``.
     balance :
         Current restaurant balance.
     budget_fraction :
         Share of balance to allocate for bids (default ``BUDGET_FRACTION``).
     max_portions_per_dish :
-        Hard cap on portions per dish — prevents over-stocking when the
-        balance is large (default ``MAX_PORTIONS_PER_DISH``).
+        Hard cap on portions per dish (default ``MAX_PORTIONS_PER_DISH``).
 
     Returns
     -------
@@ -211,25 +155,20 @@ def _compile_bids(
         Ready to pass to ``client.submit_closed_bids()``.
         Empty list if config yields no ingredients.
     """
-    recipes_section: Dict[str, List[Dict[str, Any]]] = config["recipes"]
-    ingredients_section: Dict[str, Dict[str, List[Dict[str, Any]]]] = config["ingredients"]
+    bid_price: float = config.ingredients.bidding_price
 
-    # ── Step 1+2: Collect per-ingredient max bid price and demand weight ──
-    #
-    # ingredient_info maps ingredient_name → {"bid": max_price, "base_qty": float}
-    #
-    # base_qty is a demand-weighted count: each (archetype, dish) pair
-    # contributes its multiplier to every ingredient that dish requires.
-    # We intentionally do NOT deduplicate across archetypes: a dish listed
-    # under Saggi del Cosmo (1.5) AND Astrobarone (2.0) represents two
-    # independent demand streams, so its ingredients accumulate 3.5 units
-    # of demand — proportionally directing more budget toward high-value
-    # dishes.
-    ingredient_info: Dict[str, Dict[str, float]] = {}
+    # Build a lookup: recipe_name → RecipeSchema
+    recipe_lookup: Dict[str, RecipeSchema] = {r.name: r for r in all_recipes}
 
-    for archetype, dish_list in recipes_section.items():
-        arch_ingredients = ingredients_section.get(archetype, {})
+    # ── Step 1: Collect desired dishes (with demand count) ────────────
+    dish_demand: Dict[str, float] = {}
+    for _archetype_name, archetype_cfg in config.recipes.items():
+        for dish_name in archetype_cfg.recipes:
+            dish_demand[dish_name] = min(
+                dish_demand.get(dish_name, 0.0) + 1, max_portions_per_dish
+            )
 
+<<<<<<< Updated upstream
         for entry in dish_list:
             dish_name = entry["name"]
             ingredient_list = arch_ingredients.get(dish_name, [])
@@ -249,15 +188,36 @@ def _compile_bids(
                 ingredient_info[ing_name]["base_qty"] += MAX_PORTIONS_PER_DISH
 
     if not ingredient_info:
+=======
+    if not dish_demand:
+>>>>>>> Stashed changes
         return []
 
-    # ── Step 3: Determine how many rounds the budget affords ─────────────
+    # ── Step 2: Resolve dishes → real ingredients ─────────────────────
     #
-    # cost_per_round = total cost to buy 1 portion of every unique dish.
-    # rounds = how many full rounds we can fit in the budget, capped at
-    # max_portions_per_dish.  Using a float here keeps proportions exact
-    # before we round to integers below.
+    # ingredient_demand maps ingredient_name → total quantity needed.
+    # For each desired dish, look up its ingredients from the server
+    # catalogue and accumulate demand.
+    ingredient_demand: Dict[str, float] = {}
+    for dish_name, portions in dish_demand.items():
+        recipe = recipe_lookup.get(dish_name)
+        if recipe is None:
+            logger.warning(
+                "Recipe '%s' from config not found in server catalogue — skipping.",
+                dish_name,
+            )
+            continue
+        for ing_name, ing_qty in recipe.ingredients.items():
+            ingredient_demand[ing_name] = (
+                ingredient_demand.get(ing_name, 0.0) + portions * ing_qty
+            )
+
+    if not ingredient_demand:
+        return []
+
+    # ── Step 3: Build raw bid list ────────────────────────────────────
     budget = balance * budget_fraction
+<<<<<<< Updated upstream
     cost_per_round = sum(info["base_qty"] * info["bid"] for info in ingredient_info.values())
 
     if cost_per_round <= 0:
@@ -277,18 +237,19 @@ def _compile_bids(
     for ing_name, info in ingredient_info.items():
         bid = max(1, round(info["bid"]))
         qty = info["base_qty"]
+=======
+    bids_raw: List[Dict[str, Any]] = []
+    for ing_name, demand in ingredient_demand.items():
+        bid = max(1, round(bid_price))
+        qty = round(demand)
+>>>>>>> Stashed changes
         if qty > 0:
             bids_raw.append({"ingredient": ing_name, "bid": bid, "quantity": qty})
 
     if not bids_raw:
         return []
 
-    # ── Step 5: Post-rounding budget check ────────────────────────────────
-    #
-    # Integer rounding can push projected spend slightly above budget.
-    # If that happens, scale quantities down proportionally and re-round.
-    # We do this at most once — a second pass is never needed because the
-    # scale factor is < 1 and rounding can only reduce quantities further.
+    # ── Step 4: Post-rounding budget check ────────────────────────────
     actual_spend = sum(b["bid"] * b["quantity"] for b in bids_raw)
     if actual_spend > budget:
         scale = budget / actual_spend
@@ -305,33 +266,36 @@ def _compile_bids(
                 trimmed.append({**b, "quantity": qty})
         bids_raw = trimmed
 
-    # ── Step 6: Spend leftover budget by topping up highest-demand items ──
+    # ── Step 5: Spend leftover budget by topping up highest-demand items
     #
-    # After integer rounding we typically have some budget left.  We go
-    # through ingredients sorted by demand weight (base_qty) descending
-    # and add +1 to each until the budget is exhausted.  This prioritises
-    # ingredients that are needed by many / high-multiplier dishes.
+    # Cycle through ingredients (sorted by demand weight desc) repeatedly,
+    # adding +1 each pass, until the budget is exhausted.  This distributes
+    # surplus budget proportionally toward high-demand ingredients.
     spend = sum(b["bid"] * b["quantity"] for b in bids_raw)
     remaining = budget - spend
 
-    # Build a lookup for quick quantity updates.
     bid_map: Dict[str, Dict[str, Any]] = {b["ingredient"]: b for b in bids_raw}
 
-    # Sort by demand weight desc (use ingredient_info which is still in scope).
     sorted_by_demand = sorted(
         bids_raw,
-        key=lambda b: ingredient_info[b["ingredient"]]["base_qty"],
+        key=lambda b: ingredient_demand.get(b["ingredient"], 0.0),
         reverse=True,
     )
 
-    for b in sorted_by_demand:
-        if remaining < b["bid"]:
-            break
-        bid_map[b["ingredient"]]["quantity"] += 1
-        remaining -= b["bid"]
+    min_bid = min(b["bid"] for b in bids_raw) if bids_raw else 1
+    topped = True
+    while topped and remaining >= min_bid:
+        topped = False
+        for b in sorted_by_demand:
+            if remaining < b["bid"]:
+                continue  # skip this ingredient, try cheaper ones
+            bid_map[b["ingredient"]]["quantity"] += 1
+            remaining -= b["bid"]
+            topped = True
 
-    if spend < sum(b["bid"] * b["quantity"] for b in bids_raw):
-        logger.info("Topped up ingredients with %.0f leftover budget.", budget - spend)
+    final_spend = sum(b["bid"] * b["quantity"] for b in bids_raw)
+    if final_spend > spend:
+        logger.info("Topped up ingredients with %.0f leftover budget.", final_spend - spend)
 
     return [
         BidRequest(ingredient=b["ingredient"], bid=b["bid"], quantity=b["quantity"])
@@ -379,11 +343,11 @@ class BiddingAgent(BaseAgent):
         super().__init__(client)
 
         # Step 4: Pre-load the configuration.
-        self._config = _load_config(config_path)
+        self._config: BiddingConfig = _load_config(config_path)
         self.logger.info(
             "Loaded config with %d archetype(s) and %d total dish entries.",
-            len(self._config["recipes"]),
-            sum(len(v) for v in self._config["recipes"].values()),
+            len(self._config.recipes),
+            sum(len(a.recipes) for a in self._config.recipes.values()),
         )
 
         # NOTE: No LLM agent, MCP client, or OpenAI client is created here.
@@ -455,19 +419,27 @@ class BiddingAgent(BaseAgent):
             except Exception as exc:
                 self.logger.warning("Could not reload config (%s); using cached version.", exc)
 
-        # ── 2. Fetch game state (we only need the balance for budgeting) ─
+        # ── 2. Fetch game state and recipe catalogue ──────────────────
         balance = 0.0
+        all_recipes: List[RecipeSchema] = []
         try:
             restaurant = await self.client.get_my_restaurant()
             balance = restaurant.balance
         except Exception as exc:
             self.logger.error("Failed to fetch restaurant state: %s", exc)
 
+        try:
+            all_recipes = await self.client.get_recipes()
+            self.logger.info("Fetched %d recipe(s) from the server.", len(all_recipes))
+        except Exception as exc:
+            self.logger.error("Failed to fetch recipes: %s", exc)
+
         self.logger.info("Current balance: %.2f", balance)
 
         # ── 3. Compute bids deterministically from config ─────────────
         bids: List[BidRequest] = _compile_bids(
             config=self._config,
+            all_recipes=all_recipes,
             balance=balance,
         )
 

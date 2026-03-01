@@ -21,27 +21,20 @@ Configuration format
 
     {
         "recipes": {
-            "<archetype>": [
-                {"name": "<dish_name>", "multiplier": <float>},
-                ...
-            ],
+            "<archetype>": {
+                "recipes": ["<dish_name>", ...],
+                "profit_multiplier": <float>
+            },
             ...
         },
         "ingredients": {
-            "<archetype>": {
-                "<dish_name>": [
-                    {"name": "<ingredient>", "price": <float>},
-                    ...
-                ],
-                ...
-            },
-            ...
+            "bidding_price": <float>
         }
     }
 
-The menu price for a dish = sum(ingredient prices) × multiplier, rounded
-to the nearest integer (minimum 1).  When a recipe appears under multiple
-archetypes, the **highest** computed price is used.
+The menu price for a dish = num_ingredients × bidding_price × profit_multiplier,
+rounded to the nearest integer (minimum 1).  When a recipe appears under
+multiple archetypes, the **highest** computed price is used.
 
 Environment variables
 ---------------------
@@ -80,6 +73,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from hp2.agents.base import BaseAgent
+from hp2.agents.bidding_agent import BiddingConfig
 from hp2.core.api import (
     ClientOrder,
     GamePhase,
@@ -108,21 +102,29 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 
 _DEFAULT_CONFIG_PATH = _REPO_ROOT / "config.json"
 
-GLOBAL_MULTIPLIER = 0.7
 
+def _load_configuration(config_path: Path | None = None) -> BiddingConfig:
+    """Load and validate the configuration file using Pydantic.
 
-def _load_configuration(config_path: Path | None = None) -> Dict[str, Any]:
-    """Load and validate the configuration file.
+    Expected structure::
 
-    Expected top-level keys:
+        {
+            "recipes": {
+                "<archetype>": {
+                    "recipes": ["<dish_name>", ...],
+                    "profit_multiplier": <float>
+                },
+                ...
+            },
+            "ingredients": {
+                "bidding_price": <float>
+            }
+        }
 
-    - ``"recipes"``     — dict keyed by archetype name, each value is a list
-                          of ``{"name": str, "multiplier": float}``.
-    - ``"ingredients"`` — dict keyed by archetype name, each value is a dict
-                          keyed by recipe name, each value is a list of
-                          ``{"name": str, "price": float}``.
+    Returns a fully validated ``BiddingConfig`` instance.
 
-    Raises ``FileNotFoundError`` or ``ValueError`` on problems.
+    Raises ``FileNotFoundError`` if the file is missing, or
+    ``pydantic.ValidationError`` if the content doesn't match the schema.
     """
     path = config_path or Path(os.environ.get("WAITING_AGENT_CONFIG", str(_DEFAULT_CONFIG_PATH)))
     if not path.exists():
@@ -134,17 +136,7 @@ def _load_configuration(config_path: Path | None = None) -> Dict[str, Any]:
     with open(path, "r", encoding="utf-8") as fh:
         data = json.load(fh)
 
-    # Validate the two required top-level keys
-    if "recipes" not in data or not isinstance(data["recipes"], dict):
-        raise ValueError(
-            "config.json must contain a top-level 'recipes' dict keyed by archetype name."
-        )
-    if "ingredients" not in data or not isinstance(data["ingredients"], dict):
-        raise ValueError(
-            "config.json must contain a top-level 'ingredients' dict keyed by archetype name."
-        )
-
-    return data
+    return BiddingConfig.model_validate(data)
 
 
 # ---------------------------------------------------------------------------
@@ -153,34 +145,31 @@ def _load_configuration(config_path: Path | None = None) -> Dict[str, Any]:
 
 
 def _compute_recipe_price(
-    recipe_name: str,
-    multiplier: float,
-    ingredients_section: Dict[str, List[Dict[str, Any]]],
+    num_ingredients: int,
+    bidding_price: float,
+    profit_multiplier: float,
 ) -> int:
-    """Compute the integer menu price for a single recipe under one archetype.
+    """Compute the integer menu price for a single recipe.
 
-    price = round(sum_of_ingredient_prices × multiplier), minimum 1.
+    price = round(num_ingredients × bidding_price × profit_multiplier),
+    minimum 1.
 
     Parameters
     ----------
-    recipe_name :
-        Exact recipe name (must match a key in ``ingredients_section``).
-    multiplier :
-        The archetype multiplier from the ``"recipes"`` section.
-    ingredients_section :
-        The ``ingredients[archetype]`` dict mapping recipe names to their
-        ingredient lists (``[{"name": ..., "price": ...}, ...]``).
+    num_ingredients :
+        Number of ingredients in the recipe (from server recipe catalogue).
+    bidding_price :
+        Global bid price per ingredient from config.
+    profit_multiplier :
+        The archetype ``profit_multiplier`` from the ``"recipes"`` section.
 
     Returns
     -------
     int
         The menu price (>= 1).
     """
-    ingredient_list = ingredients_section.get(recipe_name, [])
-    # Sum all per-ingredient costs declared in the config
-    total_cost = sum(ing.get("price", 0.0) for ing in ingredient_list)
-    # Apply archetype multiplier and round to integer (server requires int > 0)
-    price = max(1, round(total_cost * multiplier * GLOBAL_MULTIPLIER))
+    total_cost = num_ingredients * bidding_price
+    price = max(1, round(total_cost * profit_multiplier))
     return price
 
 
@@ -190,48 +179,35 @@ def _compute_recipe_price(
 
 
 def _build_desired_dishes(
-    config: Dict[str, Any],
-) -> Dict[str, int]:
+    config: BiddingConfig,
+) -> Dict[str, float]:
     """Flatten the per-archetype configuration into a single dict of
-    ``{recipe_name: best_price}`` across all archetypes.
+    ``{recipe_name: best_profit_multiplier}`` across all archetypes.
 
     When a recipe appears under **multiple** archetypes (e.g., the same dish
     listed under both Saggi del Cosmo and Astrobarone), we keep the
-    **highest** price — maximise expected revenue.
+    **highest** ``profit_multiplier`` — maximise expected revenue.
 
     Returns
     -------
-    dict[str, int]
-        Mapping from recipe name to its best integer menu price.
+    dict[str, float]
+        Mapping from recipe name to its best profit multiplier.
     """
-    recipes_section: Dict[str, List[Dict[str, Any]]] = config["recipes"]
-    ingredients_section: Dict[str, Dict[str, List[Dict[str, Any]]]] = config["ingredients"]
+    best_multiplier: Dict[str, float] = {}
 
-    best_price: Dict[str, int] = {}
-
-    for archetype, dish_list in recipes_section.items():
-        # Get the ingredients sub-dict for this archetype
-        arch_ingredients = ingredients_section.get(archetype, {})
-
-        for entry in dish_list:
-            name = entry["name"]
-            multiplier = float(entry.get("multiplier", 1.0))
-
-            price = _compute_recipe_price(name, multiplier, arch_ingredients)
-
-            # Keep the highest price across archetypes
-            if name not in best_price or price > best_price[name]:
-                best_price[name] = price
+    for archetype_name, archetype_cfg in config.recipes.items():
+        for dish_name in archetype_cfg.recipes:
+            current = best_multiplier.get(dish_name, 0.0)
+            if archetype_cfg.profit_multiplier > current:
+                best_multiplier[dish_name] = archetype_cfg.profit_multiplier
                 logger.debug(
-                    "Dish '%s' (%s, ×%.2f) → price %d %s",
-                    name,
-                    archetype,
-                    multiplier,
-                    price,
-                    "(new best)" if price == best_price[name] else "(kept previous)",
+                    "Dish '%s' (%s, ×%.2f) → new best multiplier",
+                    dish_name,
+                    archetype_name,
+                    archetype_cfg.profit_multiplier,
                 )
 
-    return best_price
+    return best_multiplier
 
 
 # ---------------------------------------------------------------------------
@@ -240,22 +216,29 @@ def _build_desired_dishes(
 
 
 def _compute_feasible_menu(
-    desired_dishes: Dict[str, int],
+    desired_dishes: Dict[str, float],
     all_recipes: List[RecipeSchema],
     inventory: Dict[str, Any],
+    bidding_price: float,
 ) -> List[MenuItem]:
     """Return ``MenuItem`` objects for recipes that are both *desired*
     (present in configuration) **and** *feasible* (every ingredient is
     present in inventory with qty >= 1).
 
+    The menu price for each dish is computed as:
+    ``num_ingredients × bidding_price × profit_multiplier``.
+
     Parameters
     ----------
     desired_dishes :
-        Flattened ``{recipe_name: price}`` from ``_build_desired_dishes``.
+        Flattened ``{recipe_name: profit_multiplier}`` from
+        ``_build_desired_dishes``.
     all_recipes :
         Full recipe catalogue from the server (``get_recipes()``).
     inventory :
         Post-auction inventory (``RestaurantSchema.inventory``).
+    bidding_price :
+        Global bid price per ingredient from ``config.ingredients``.
 
     Returns
     -------
@@ -267,7 +250,7 @@ def _compute_feasible_menu(
 
     feasible: List[MenuItem] = []
 
-    for recipe_name, price in desired_dishes.items():
+    for recipe_name, profit_multiplier in desired_dishes.items():
         # ── Step 1: Does this recipe exist on the server? ──────────────
         recipe = recipe_lookup.get(recipe_name)
         if recipe is None:
@@ -290,9 +273,19 @@ def _compute_feasible_menu(
             )
             continue
 
+<<<<<<< Updated upstream
         # ── Step 3: Recipe is both desired and feasible ────────────────
         price = float(price) * (1.0 + (float(recipe.prestige)/100.0))
         feasible.append(MenuItem(name=recipe_name, price=int(price)))
+=======
+        # ── Step 3: Compute price and add to menu ──────────────────────
+        price = _compute_recipe_price(
+            num_ingredients=len(recipe.ingredients),
+            bidding_price=bidding_price,
+            profit_multiplier=profit_multiplier,
+        )
+        feasible.append(MenuItem(name=recipe_name, price=float(price)))
+>>>>>>> Stashed changes
         logger.info(
             "Recipe '%s' is feasible — will be listed at price %d.",
             recipe_name,
@@ -342,10 +335,10 @@ class WaitingAgent(BaseAgent):
         super().__init__(client)
 
         # Step 4: Pre-load the configuration.
-        self._config = _load_configuration(config_path)
+        self._config: BiddingConfig = _load_configuration(config_path)
         self.logger.info(
             "Loaded configuration with %d archetype(s).",
-            len(self._config["recipes"]),
+            len(self._config.recipes),
         )
 
     # ------------------------------------------------------------------
@@ -436,12 +429,10 @@ class WaitingAgent(BaseAgent):
                     exc,
                 )
 
-        # ── 4. Build desired dishes with computed prices ───────────────
+        # ── 4. Build desired dishes with best multipliers ──────────────
         #    Flatten the per-archetype structure.  For each recipe,
-        #    price = sum(ingredient_prices) × multiplier.
-        #    When a recipe appears under multiple archetypes we keep
-        #    the highest price to maximise revenue.
-        desired_dishes: Dict[str, int] = _build_desired_dishes(self._config)
+        #    keep the highest profit_multiplier across archetypes.
+        desired_dishes: Dict[str, float] = _build_desired_dishes(self._config)
         self.logger.info(
             "Configuration yields %d unique desired dish(es): %s",
             len(desired_dishes),
@@ -453,6 +444,7 @@ class WaitingAgent(BaseAgent):
             desired_dishes=desired_dishes,
             all_recipes=all_recipes,
             inventory=inventory,
+            bidding_price=self._config.ingredients.bidding_price,
         )
 
         if not menu_items:

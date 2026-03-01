@@ -1,5 +1,6 @@
 {
   "recipes": {
+<<<<<<< Updated upstream
     "Esploratore Galattico": [
       {
         "name": "Dimensioni di Sapori Infusi",
@@ -18633,6 +18634,26 @@
           "price": 1.0
         }
       ]
+=======
+    "Esploratore Galattico": {
+      "recipes": ["Luce e Ombra di Nomea Spaziale", "Essenze dell'Infinito", "Etereo Crepuscolare", "Rintocchi del Cosmo", "Più Lontano delle Stelle"],
+      "profit_multiplier": 3.0
+    },
+    "Famiglie Orbitali": {
+      "recipes": ["Sinfonia Cosmica di Proteine Interstellari", "Universo in Fusilli - Variazione Celestiale", "Risotto Cosmico Multiversale", "Armonia Cosmica alla Tavola d'Oro", "L'Estasi Cosmica di Nova"],
+      "profit_multiplier": 4.0
+    },
+    "Saggi del Cosmo": {
+      "recipes": ["Sinfonia di Multiverso: La Danza degli Elementi", "Sinfonia Quantica dell'Oceano Interstellare", "Più-dimensionale Sinfonia di Sapori: La Carne del Cosmo", "Sinfonia Temporale di Fenice e Xenodonte su Pane degli Abissi con Colata di Plasma Vitale e Polvere di Crononite", "Sinfonia del Multiverso Calante"],
+      "profit_multiplier": 5.0
+    },
+    "Astrobarone": {
+      "recipes": ["Sinfonia di Multiverso: La Danza degli Elementi", "Sinfonia Quantica dell'Oceano Interstellare", "Più-dimensionale Sinfonia di Sapori: La Carne del Cosmo", "Sinfonia Cosmica di Proteine Interstellari", "Sinfonia Cosmica di Mare e Stelle"],
+      "profit_multiplier": 10.0
+>>>>>>> Stashed changes
     }
+  },
+  "ingredients": {
+    "bidding_price": 5.0
   }
 }
