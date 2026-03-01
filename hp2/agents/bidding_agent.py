@@ -263,14 +263,10 @@ def _compile_bids(
 
     if cost_per_round <= 0:
         return []
-
-    rounds = min(max_portions_per_dish, budget / cost_per_round)
+    
     logger.info(
-        "Budget: %.0f  |  cost/round: %.0f  |  rounds: %.2f  (cap: %d)",
+        "Budget: %.0f ",
         budget,
-        cost_per_round,
-        rounds,
-        max_portions_per_dish,
     )
 
     # ── Step 4: Round quantities — no forced floor of 1 ───────────────────
@@ -281,7 +277,7 @@ def _compile_bids(
     bids_raw: List[Dict[str, Any]] = []
     for ing_name, info in ingredient_info.items():
         bid = max(1, round(info["bid"]))
-        qty = round(info["base_qty"] * rounds)
+        qty = info["base_qty"]
         if qty > 0:
             bids_raw.append({"ingredient": ing_name, "bid": bid, "quantity": qty})
 
@@ -406,7 +402,8 @@ class BiddingAgent(BaseAgent):
         self.logger.info("Phase changed to: %s", phase.value)
 
         if phase == GamePhase.CLOSED_BID:
-            await self.phase_closed_bid()
+            #await self.phase_closed_bid()
+            ...
         else:
             self.logger.debug(
                 "Phase '%s' is not handled by BiddingAgent — ignoring.",
