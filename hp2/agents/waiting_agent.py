@@ -108,7 +108,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 
 _DEFAULT_CONFIG_PATH = _REPO_ROOT / "config.json"
 
-GLOBAL_MULTIPLIER = 0.7
+GLOBAL_MULTIPLIER = 2
 
 
 def _load_configuration(config_path: Path | None = None) -> Dict[str, Any]:
@@ -418,7 +418,6 @@ class WaitingAgent(BaseAgent):
         # ── 2. Fetch all available recipes from the server ─────────────
         try:
             all_recipes: List[RecipeSchema] = await self.client.get_recipes()
-            
         except Exception as exc:
             self.logger.error("Failed to fetch recipes: %s", exc)
             return []
