@@ -572,7 +572,7 @@ class HackapizzaClient(SqlLoggingMixin):
         self,
         ws_url: str | None = None,
         *,
-        retry_initial: float = 2.0,
+        retry_initial: float = 0.1,
         retry_max: float = 8.0,
         retry_factor: float = 2.0,
     ):
