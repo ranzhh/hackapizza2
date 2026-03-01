@@ -4,6 +4,14 @@ from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
 from typing import Any
 import re
 from dotenv import load_dotenv
+from typing import TypedDict
+
+class MatrixReturn(TypedDict):
+    turn_id: int 
+    restaurants: list[str]
+    ingredients: list[str]
+    bids: dict[str, dict[str, dict | None]]
+    error: str | None
 
 load_dotenv()
 
@@ -64,7 +72,7 @@ def _coerce_turn_id(turn_id_str: str | None, db_turn_ids: list) -> Any:
             pass
     return turn_id_str
 
-async def get_bids(turn_id: str | None = Query(None)):
+async def get_bids(turn_id: str | None = Query(None)) -> MatrixReturn:
     """
     Parse all server bid messages for a given turn and return a structured matrix.
 
@@ -83,7 +91,7 @@ async def get_bids(turn_id: str | None = Query(None)):
     }
     """
     p = await get_pool()
-    empty = {"turn_id": turn_id, "restaurants": [], "ingredients": [], "bids": {}, "error": None}
+    empty: MatrixReturn = {"turn_id": turn_id, "restaurants": [], "ingredients": [], "bids": {}, "error": None}
 
     # ------------------------------------------------------------------ #
     # Helper: fetch bid-message rows for a specific turn value            #
@@ -168,11 +176,13 @@ async def get_bids(turn_id: str | None = Query(None)):
         all_bids.extend(parsed)
 
     if not all_bids:
-        return {
-            **empty,
-            "turn_id": actual_turn_id,
-            "error": "Messages found but no bids could be parsed (check message format)",
-        }
+        return MatrixReturn(
+            turn_id=actual_turn_id,
+            restaurants=[],
+            ingredients=[],
+            bids={},
+            error="Messages found but no bids could be parsed (check message format)",
+        )
 
     # ------------------------------------------------------------------ #
     # Build matrix                                                        #
@@ -196,13 +206,13 @@ async def get_bids(turn_id: str | None = Query(None)):
             "quantity": bid["quantity"],
         }
 
-    return {
-        "turn_id": actual_turn_id,
-        "restaurants": sorted_restaurants,
-        "ingredients": sorted_ingredients,
-        "bids": matrix,
-        "error": None,
-    }
+    return MatrixReturn(
+        turn_id=actual_turn_id,
+        restaurants=sorted_restaurants,
+        ingredients=sorted_ingredients,
+        bids=matrix,
+        error=None,
+    )
 
 def get_team_bids(bid_matrix, team_id: int):
     team_bids = []
