@@ -14,7 +14,7 @@ from hp2.core.api import (
     PhaseChangedEvent,
 )
 from hp2.core.schema.models import RecipeSchema
-from tools.api_unused_recipices import get_dish_stats
+from tools.api_unused import get_dish_stats
 
 logging.basicConfig()
 
