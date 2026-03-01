@@ -17,7 +17,7 @@ from hp2.core.api import (
 from hp2.core.schema.models import RecipeSchema
 from tools.api_unused import get_dish_stats
 
-from tools.find_unused_ingredients import get_bids, get_avg_bid_item
+from tools.find_unused_ingredients import MatrixReturn, get_bids, get_avg_bid_item
 
 logging.basicConfig()
 
@@ -41,7 +41,7 @@ class BiddingAgent(BaseAgent):
         super().__init__(*args, **kwargs)
         self._config: MenuConfig | None = None
         self.inventory: dict[str, int] | None = {}
-        self._bid_matrix: dict | None = None
+        self._bid_matrix: MatrixReturn | None = None
 
     async def on_game_started(self, event: GameStartedEvent):
         self.logger.info("[STARTED] Game started, turn %s", event.turn_id)
@@ -72,14 +72,14 @@ class BiddingAgent(BaseAgent):
         """Fetch historical bid data so we can price ingredients at the market average."""
         try:
             result = await get_bids(turn_id=None)
-            if result.get("error"):
+            if result["error"]:
                 self.logger.warning("[BIDS] Pre-fetch returned error: %s", result["error"])
                 self._bid_matrix = None
             else:
-                self._bid_matrix = result.get("bids", {})
+                self._bid_matrix = result
                 self.logger.info(
                     "[BIDS] Pre-fetched bid matrix with %d ingredients",
-                    len(self._bid_matrix),
+                    len(result["ingredients"]),
                 )
         except Exception as exc:
             self.logger.warning("[BIDS] Pre-fetch failed: %s", exc)
@@ -90,7 +90,7 @@ class BiddingAgent(BaseAgent):
         if self._config is not None:
             for ing, qty in self._config.ingredients.items():
                 avg_price = (
-                    get_avg_bid_item(self._bid_matrix, ing)
+                    get_avg_bid_item(self._bid_matrix["bids"], ing)
                     if self._bid_matrix
                     else None
                 )
