@@ -80,18 +80,6 @@ def get_all(ingredients, recipes):
     return available_recipes
 
 
-def get_individual(ingredients, recipes):
-    available_recipes = []
-
-    for recipe in recipes:
-        for ingredient in recipe["ingredients"]:
-            if ingredient in ingredients:
-                available_recipes.append(recipe['name'])
-                break
-
-    return available_recipes
-
-
 def get_weak(ingredients, recipes, match):
     available_recipes = []
 
@@ -113,8 +101,6 @@ def create_recipe_subset(ingredients: list[str], individual: bool, match = -1):
 
     if match > 0:
         return get_weak(ingredients, recipes, match)
-    elif individual:
-        return get_individual(ingredients, recipes)
 
     return get_all(ingredients, recipes)
 
