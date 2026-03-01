@@ -166,8 +166,21 @@ class ServingAgent(BaseAgent):
             self.logger.info(f"[LOG-ONLY] Pending order received: {order}")
             return
 
+        dish_name: str | None = None
+        try:
+            dish_name = await self.parse_order_message(order.order_text)
+        except Exception:
+            dish_name = "UNKNOWN"
         # ── Single LLM call: pick the dish ──
-        dish_name = await _ask_llm_for_dish(self.llm, self.menu_items, list(self.recipes.values()), order)
+        if dish_name == "UNKNOWN":
+            dish_name = await _ask_llm_for_dish(self.llm, self.menu_items, list(self.recipes.values()), order)
+        elif dish_name == "INTOLERANCE":
+            self.logger.info(
+                "[ORDER] Detected intolerance in order '%s' from %s. Not serving.",
+                order.order_text,
+                order.client_name,
+            )
+            dish_name = None
 
         if dish_name is None:
             self.logger.warning("[SERVING] LLM decided not to serve %s.", order.client_name)
