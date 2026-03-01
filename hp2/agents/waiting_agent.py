@@ -180,9 +180,8 @@ def _compute_recipe_price(
     # Sum all per-ingredient costs declared in the config
     total_cost = sum(ing.get("price", 0.0) for ing in ingredient_list)
     # Apply archetype multiplier and round to integer (server requires int > 0)
-    price = max(1, round(total_cost * multiplier * GLOBAL_MULTIPLIER))
+    price = max(1, round(total_cost * GLOBAL_MULTIPLIER)) 
     return price
-
 
 # ---------------------------------------------------------------------------
 # Pure helper: build the candidate dish list from configuration
@@ -291,7 +290,8 @@ def _compute_feasible_menu(
             continue
 
         # ── Step 3: Recipe is both desired and feasible ────────────────
-        feasible.append(MenuItem(name=recipe_name, price=float(price)))
+        updated_price = float(price) * float(recipe.prestige) / 100.0
+        feasible.append(MenuItem(name=recipe_name, price=updated_price))
         logger.info(
             "Recipe '%s' is feasible — will be listed at price %d.",
             recipe_name,
