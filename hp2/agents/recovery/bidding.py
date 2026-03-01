@@ -85,8 +85,8 @@ class BiddingAgent(BaseAgent):
             else:
                 raise ValueError("Inventory is None")
 
-        except Exception as e:
-            self.logger.exception("Exception updating inventory", e)
+        except Exception:
+            self.logger.exception("Exception updating inventory")
 
     async def _validate_recipe(self, recipe: RecipeSchema) -> bool:
         if not self.inventory:
