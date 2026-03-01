@@ -117,7 +117,7 @@ class ServingAgent(BaseAgent):
         # Per-turn state
         self.pending_orders: List[PendingOrder] = []
         self.prepared_dishes: List[str] = []
-        self.recipes: List[RecipeSchema] = []
+        self.recipes: dict[str, RecipeSchema] = {}
         self.menu_items: set[str] = set()
         self.meals: List[MealSchema] = []  # type: ignore
         self.failed_serves: int = 0
@@ -135,12 +135,12 @@ class ServingAgent(BaseAgent):
             await self._load_menu()
             logger.info("[SERVING] Entering SERVING phase. Menu items: %s", self.menu_items)
             try:
-                self.recipes = [
-                    r for r in await self.client.get_recipes() if r.name in self.menu_items
-                ]
+                self.recipes = {
+                    r.name: r for r in await self.client.get_recipes() if r.name in self.menu_items
+                }
             except Exception as exc:
                 logger.warning("[SERVING] Could not fetch recipes: %s", exc)
-            logger.info("[SERVING] Loaded recipes: %s", [r.name for r in self.recipes])
+            logger.info("[SERVING] Loaded recipes: %s", list(self.recipes.keys()))
         elif event.new_phase == GamePhase.STOPPED:
             self._reset_state()
 
@@ -173,7 +173,7 @@ class ServingAgent(BaseAgent):
             return
 
         # ── Single LLM call: pick the dish ──
-        dish_name = await _ask_llm_for_dish(self.llm, self.menu_items, self.recipes, order)
+        dish_name = await _ask_llm_for_dish(self.llm, self.menu_items, list(self.recipes.values()), order)
 
         if dish_name is None:
             logger.warning("[SERVING] LLM decided not to serve %s.", order.client_name)
@@ -215,15 +215,14 @@ class ServingAgent(BaseAgent):
 
             if (
                 eat in self.recipes
-                and intolerant in [x for x in self.recipes if x.name == eat][0].ingredients
+                and intolerant in self.recipes[eat].ingredients
             ):
                 return "INTOLERANCE"
 
             else:
                 return eat
 
-        else:
-            if order in [x.name for x in self.recipes]:
+        elif order in self.recipes:
                 return order
 
         return "UNKNOWN"
