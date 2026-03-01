@@ -6,7 +6,14 @@ from dataclasses import dataclass
 from typing import DefaultDict
 
 from hp2.agents.base import BaseAgent
-from hp2.core.api import BidRequest, GamePhase, GameStartedEvent, IncomingMessage, MenuItem, PhaseChangedEvent
+from hp2.core.api import (
+    BidRequest,
+    GamePhase,
+    GameStartedEvent,
+    IncomingMessage,
+    MenuItem,
+    PhaseChangedEvent,
+)
 from hp2.core.schema.models import RecipeSchema
 
 logging.basicConfig()
@@ -32,7 +39,9 @@ class BiddingAgent(BaseAgent):
     async def on_game_started(self, event: GameStartedEvent):
         self.logger.info("[STARTED] Game started, turn %s", event.turn_id)
         config = await self._prepare_menu(n_recipes=RECIPES_WANTED, n_times=N_TIMES)
-        self.logger.info(f"[STARTED] Prepared menu config: {config}")
+        self.logger.info(
+            "[STARTED] Prepared menu config: %s", "\, ".join([x.name for x in config.recipes])
+        )
         self._config = config
 
     async def on_phase_changed(self, event: PhaseChangedEvent):
@@ -55,9 +64,7 @@ class BiddingAgent(BaseAgent):
             for ing, qty in self._config.ingredients.items():
                 bids.append(BidRequest(ingredient=ing, bid=2, quantity=qty))
 
-            self.logger.info(
-                f"[BIDDING] Submitted bids for ingredients: {self._config.ingredients}"
-            )
+            self.logger.info("[BIDDING] Submitted bids for ingredients")
             await self.client.submit_closed_bids(bids)
 
     async def _save_menu(self) -> None:
