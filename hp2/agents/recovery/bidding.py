@@ -6,10 +6,12 @@ from dataclasses import dataclass
 from typing import DefaultDict
 
 from hp2.agents.base import BaseAgent
-from hp2.core.api import BidRequest, GamePhase, GameStartedEvent, MenuItem
+from hp2.core.api import BidRequest, GamePhase, GameStartedEvent, MenuItem, PhaseChangedEvent
 from hp2.core.schema.models import RecipeSchema
 
 logging.basicConfig()
+
+RECIPES_WANTED = 5
 
 
 @dataclass
@@ -24,22 +26,23 @@ class BiddingAgent(BaseAgent):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._config: MenuConfig | None = None
+        self.inventory: dict[str, int] | None = {}
 
     async def on_game_started(self, event: GameStartedEvent):
         self.logger.info("[STARTED] Game started, turn %s", event.turn_id)
-        config = await self._prepare_menu(n_recipes=1, n_times=10)
+        config = await self._prepare_menu(n_recipes=RECIPES_WANTED, n_times=10)
         self.logger.info(f"[STARTED] Prepared menu config: {config}")
         self._config = config
 
-    async def on_phase_changed(self, phase: GamePhase):
-        if phase == GamePhase.CLOSED_BID:
+    async def on_phase_changed(self, event: PhaseChangedEvent):
+        if event.new_phase == GamePhase.CLOSED_BID:
             await self._handle_closed_bid_phase()
 
-        elif phase == GamePhase.WAITING:
+        elif event.new_phase == GamePhase.WAITING:
             await self._save_menu()
 
         else:
-            self._handle_unmanaged_phase(phase)
+            self._handle_unmanaged_phase(event.new_phase)
 
     async def _handle_closed_bid_phase(self) -> None:
         bids: list[BidRequest] = []
@@ -53,23 +56,54 @@ class BiddingAgent(BaseAgent):
             await self.client.submit_closed_bids(bids)
 
     async def _save_menu(self) -> None:
-        self.logger.info("[WAITING] Entered WAITING phase - submitting menu config")
-        if self._config is not None:
+        self.logger.info("[MENU] Entered phase - submitting menu config")
+        await self._update_inventory()
+
+        if self._config and self.inventory:
             # Create a menu for this phase
             menu_items = []
             for recipe in self._config.recipes:
-                menu_items.append(
-                    MenuItem(name=recipe.name, price=int((recipe.prestige + 1) * 1.0))
-                )
+                if self._validate_recipe(recipe):
+                    menu_items.append(
+                        MenuItem(name=recipe.name, price=int((recipe.prestige + 1) * 1.0))
+                    )
+                    self.logger.info("Added recipe %s", recipe.name)
+                else:
+                    self.logger.warning("Skipped recipe %s due to no inv", recipe.name)
 
             await self.client.save_menu(menu_items)
+
+    async def _update_inventory(self) -> None:
+        self.logger.info("Updating inventory...")
+        try:
+            my_restaurant = await self.client.get_my_restaurant()
+            if my_restaurant.inventory:
+                self.inventory = my_restaurant.inventory
+                self.logger.info(
+                    "Inventory %s", "\n".join(f"{k}: {v}" for k, v in self.inventory.items())
+                )
+            else:
+                raise ValueError("Inventory is None")
+
+        except Exception as e:
+            self.logger.exception("Exception updating inventory", e)
+
+    async def _validate_recipe(self, recipe: RecipeSchema) -> bool:
+        if not self.inventory:
+            return False
+
+        for ing, amount in recipe.ingredients.items():
+            if self.inventory.get(ing, 0) < amount:
+                return False
+
+        return True
 
     def _handle_unmanaged_phase(self, phase: GamePhase) -> None:
         self.logger.info(f"{phase} Skipping phase {phase} - no action taken")
 
     async def on_start(self):
         if not self._config:
-            self._config = await self._prepare_menu(5)
+            self._config = await self._prepare_menu(n_recipes=RECIPES_WANTED)
 
         try:
             await self._handle_closed_bid_phase()
