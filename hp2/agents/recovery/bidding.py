@@ -61,7 +61,7 @@ class BiddingAgent(BaseAgent):
 
         if self._config and self.inventory:
             # Create a menu for this phase
-            menu_items = []
+            menu_items: list[MenuItem] = []
             for recipe in self._config.recipes:
                 if self._validate_recipe(recipe):
                     menu_items.append(
@@ -72,6 +72,7 @@ class BiddingAgent(BaseAgent):
                     self.logger.warning("Skipped recipe %s due to no inv", recipe.name)
 
             await self.client.save_menu(menu_items)
+            self.logger.info(f"[MENU] Submitted menu with items: {[item.name for item in menu_items]}")
 
     async def _update_inventory(self) -> None:
         self.logger.info("Updating inventory...")
