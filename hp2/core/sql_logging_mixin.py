@@ -260,6 +260,20 @@ class McpSendMessageEvent(Base):
     text: Mapped[str] = mapped_column(String, nullable=False)
 
 
+class IngredientsBidSuggestion(Base):
+    __tablename__ = "ingredients_bid_suggestion"
+
+    turn_id: Mapped[str] = mapped_column(String, primary_key=True)
+    data: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+
+class RecipesPriceSuggestion(Base):
+    __tablename__ = "recipes_price_suggestions"
+
+    turn_id: Mapped[str] = mapped_column(String, primary_key=True)
+    data: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+
 class SqlLoggingMixin:
     """SQL-backed metadata logger for API/MCP calls."""
 
