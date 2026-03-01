@@ -3,6 +3,7 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import DefaultDict
+import random
 
 from hp2.agents.base import BaseAgent
 from hp2.core.api import (
@@ -15,6 +16,8 @@ from hp2.core.api import (
 )
 from hp2.core.schema.models import RecipeSchema
 from tools.api_unused import get_dish_stats
+
+from tools.find_unused_ingredients import get_bids, get_avg_bid_item
 
 logging.basicConfig()
 
@@ -31,10 +34,13 @@ class MenuConfig:
 class BiddingAgent(BaseAgent):
     """Agent responsible for bidding on client orders during the BIDDING phase."""
 
+    DEFAULT_BID_PRICE = 2  # fallback when no historical avg is available
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._config: MenuConfig | None = None
         self.inventory: dict[str, int] | None = {}
+        self._bid_matrix: dict | None = None
 
     async def on_game_started(self, event: GameStartedEvent):
         self.logger.info("[STARTED] Game started, turn %s", event.turn_id)
@@ -43,6 +49,9 @@ class BiddingAgent(BaseAgent):
             "[STARTED] Prepared menu config: %s", ", ".join([x.name for x in config.recipes])
         )
         self._config = config
+
+        # Pre-fetch bid history so it's ready before the bidding phase
+        await self._prefetch_bids()
 
     async def on_phase_changed(self, event: PhaseChangedEvent):
         if event.new_phase == GamePhase.CLOSED_BID:
@@ -58,11 +67,39 @@ class BiddingAgent(BaseAgent):
         if message.sender_name == "server" and "try to buy" in message.text:
             await self._save_menu()
 
+    async def _prefetch_bids(self) -> None:
+        """Fetch historical bid data so we can price ingredients at the market average."""
+        try:
+            result = await get_bids(turn_id=None)
+            if result.get("error"):
+                self.logger.warning("[BIDS] Pre-fetch returned error: %s", result["error"])
+                self._bid_matrix = None
+            else:
+                self._bid_matrix = result.get("bids", {})
+                self.logger.info(
+                    "[BIDS] Pre-fetched bid matrix with %d ingredients",
+                    len(self._bid_matrix),
+                )
+        except Exception as exc:
+            self.logger.warning("[BIDS] Pre-fetch failed: %s", exc)
+            self._bid_matrix = None
+
     async def _handle_closed_bid_phase(self) -> None:
         bids: list[BidRequest] = []
         if self._config is not None:
             for ing, qty in self._config.ingredients.items():
-                bids.append(BidRequest(ingredient=ing, bid=2, quantity=qty))
+                avg_price = (
+                    get_avg_bid_item(self._bid_matrix, ing)
+                    if self._bid_matrix
+                    else None
+                )
+                bid_price = int(avg_price) if avg_price is not None else self.DEFAULT_BID_PRICE
+                self.logger.info(
+                    "[BIDDING] %s: qty=%d, bid=%d (avg=%s)",
+                    ing, qty, bid_price,
+                    f"{avg_price:.1f}" if avg_price is not None else "N/A",
+                )
+                bids.append(BidRequest(ingredient=ing, bid=bid_price, quantity=qty))
 
             self.logger.info("[BIDDING] Submitted bids for ingredients")
             await self.client.submit_closed_bids(bids)
@@ -134,9 +171,30 @@ class BiddingAgent(BaseAgent):
 
         return await super().on_start()
 
-    async def _prepare_menu(self, n_recipes: int = 10, n_times: int = 10) -> MenuConfig:
+    async def _prepare_menu(self, n_recipes: int = 10, n_times: int = 10, random_pool = True) -> MenuConfig:
         """Prepare a menu by ranking recipes on normalised prestige + menu frequency."""
         recipes = await self.client.get_recipes()
+        if random_pool:
+            self.logger.info("Got some recipes...")
+
+            conf = MenuConfig(recipes=[], ingredients=defaultdict(int))
+
+            # Choose recipes from the available ones
+            chosen_recipes = random.sample(recipes, k=min(n_recipes, len(recipes)))
+            conf.recipes = chosen_recipes
+            self.logger.info("Recipes chosen:\n%s", "\n".join(["\t" + x.name for x in conf.recipes]))
+
+            # Get all ingredients from the chosen recipes
+            for recipe in chosen_recipes:
+                for ingredient in recipe.ingredients:
+                    conf.ingredients[ingredient] += n_times
+
+            self.logger.info(
+                "Ingredients required:\n%s", "\n".join(["\t" + x for x in conf.ingredients])
+            )
+
+            return conf
+        
         self.logger.info("Got %d recipes", len(recipes))
 
         # Fetch how often each dish appears on other restaurants' menus
