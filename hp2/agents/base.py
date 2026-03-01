@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from pathlib import Path
 from typing import Any, Dict
 
 import aiohttp
@@ -19,6 +20,35 @@ from hp2.core.settings import get_settings, get_sql_logging_settings
 
 logging.basicConfig(level=logging.INFO)
 
+DEFAULT_AGENT_LOG_DIR = Path("artifacts/logs/agents")
+
+
+def _build_agent_log_file(logger_name: str) -> Path:
+    safe_name = logger_name.replace(".", "_")
+    return DEFAULT_AGENT_LOG_DIR / f"{safe_name}.log"
+
+
+def _attach_file_handler(
+    logger: logging.Logger, log_file: Path | None = None
+) -> None:
+    """Attach a file handler to the given logger (once per file path)."""
+    if log_file is None:
+        log_file = _build_agent_log_file(logger.name)
+
+    log_path = log_file.resolve()
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    for handler in logger.handlers:
+        if isinstance(handler, logging.FileHandler) and Path(handler.baseFilename) == log_path:
+            return
+
+    file_handler = logging.FileHandler(log_path, encoding="utf-8")
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(
+        logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | %(message)s")
+    )
+    logger.addHandler(file_handler)
+
 
 class BaseAgent:
     """Minimal event-driven agent scaffold for Hackapizza SSE events."""
@@ -26,6 +56,15 @@ class BaseAgent:
     def __init__(self, client: HackapizzaClient | None = None):
         settings = get_settings()
         sql_settings = get_sql_logging_settings()
+
+        existing_logger = getattr(self, "logger", None)
+        logger_name = (
+            existing_logger.name
+            if isinstance(existing_logger, logging.Logger)
+            else self.__class__.__name__
+        )
+        self.logger = logging.getLogger(logger_name)
+        _attach_file_handler(self.logger)
 
         self.client = client or HackapizzaClient(
             team_id=settings.hackapizza_team_id,
@@ -85,7 +124,7 @@ class BaseAgent:
 
     async def run(self) -> None:
         """Start consuming events from the Hackapizza event stream."""
-        self.client.logger.info("Starting agent %s...", self.__class__.__name__)
+        self.logger.info("Starting agent %s...", self.__class__.__name__)
         try:
             await self._run_startup_hook()
             await self.client.start()

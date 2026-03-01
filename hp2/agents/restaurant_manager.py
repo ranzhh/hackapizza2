@@ -97,7 +97,9 @@ class RestaurantManager(BaseAgent):
             self._is_open = True
             self.logger.info("[%s] Restaurant was closed, now opened", trigger)
         except Exception as exc:
-            self.logger.warning("[%s] Could not open restaurant (phase may forbid it): %s", trigger, exc)
+            self.logger.warning(
+                "[%s] Could not open restaurant (phase may forbid it): %s", trigger, exc
+            )
 
     async def on_client_spawned(self, order: ClientOrder) -> None:
         if not self._is_serving_phase:
