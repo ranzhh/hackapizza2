@@ -159,6 +159,7 @@ class ClientOrder:
 
     client_name: str
     order_text: str
+    turn_id: str | None
 
 
 @dataclass
@@ -170,6 +171,7 @@ class IncomingMessage:
     sender_name: str
     text: str
     datetime: str
+    turn_id: str | None
 
 
 @dataclass
@@ -178,6 +180,13 @@ class GameStartedEvent:
 
     turn_id: str
 
+
+@dataclass
+class PhaseChangedEvent:
+    """Payload emitted when the game phase changes."""
+
+    new_phase: GamePhase
+    turn_id: str | None
 
 # ---------------------------------------------------------------------------
 # The SDK Client
@@ -219,11 +228,10 @@ class HackapizzaClient(SqlLoggingMixin):
             "Accept": "application/json, text/event-stream",
         }
         self._session: Optional[aiohttp.ClientSession] = None
-        self._current_turn_id: Optional[str] = None
 
         # Event Callbacks
         self._on_game_started: Optional[Callable[[GameStartedEvent], Awaitable[None]]] = None
-        self._on_phase_changed: Optional[Callable[[GamePhase], Awaitable[None]]] = None
+        self._on_phase_changed: Optional[Callable[[PhaseChangedEvent], Awaitable[None]]] = None
         self._on_client_spawned: Optional[Callable[[ClientOrder], Awaitable[None]]] = None
         self._on_preparation_complete: Optional[Callable[[str], Awaitable[None]]] = None
         self._on_new_message: Optional[Callable[[IncomingMessage], Awaitable[None]]] = None
@@ -234,7 +242,7 @@ class HackapizzaClient(SqlLoggingMixin):
         self._on_game_started = func
         return func
 
-    def on_phase_changed(self, func: Callable[[GamePhase], Awaitable[None]]):
+    def on_phase_changed(self, func: Callable[[PhaseChangedEvent], Awaitable[None]]):
         self._on_phase_changed = func
         return func
 
@@ -541,33 +549,6 @@ class HackapizzaClient(SqlLoggingMixin):
 
     # --- Event Loop / SSE Parsing ---
 
-    async def start_old_sse(self):
-        """[Deprecated] Connects directly to the SSE endpoint. Use start() instead."""
-        timeout = aiohttp.ClientTimeout(total=None, sock_connect=15, sock_read=None)
-
-        async with aiohttp.ClientSession(timeout=timeout, headers=self._headers) as session:
-            self._session = session
-            url = f"{self.base_url}/events/{self.team_id}"
-            self.logger.info(f"Connecting to SSE Event Stream: {url}")
-
-            headers = {"Accept": "text/event-stream"}
-
-            try:
-                async with session.get(url, headers=headers) as response:
-                    response.raise_for_status()
-                    self.logger.info("SSE Connection Established.")
-
-                    # Read line-by-line (SSE is a line-oriented protocol)
-                    while True:
-                        raw_line = await response.content.readline()
-                        if not raw_line:  # EOF
-                            break
-                        await self._parse_sse_line(raw_line)
-            except Exception as e:
-                self.logger.error(f"SSE Connection dropped: {e}")
-            finally:
-                self._session = None
-
     async def start(
         self,
         ws_url: str | None = None,
@@ -605,9 +586,10 @@ class HackapizzaClient(SqlLoggingMixin):
                                 event_json = json.loads(raw_msg)
                                 event_type = event_json.get("type")
                                 data = event_json.get("data", {})
+                                turn_id = event_json.get("turn_id")
                                 if not isinstance(data, dict):
                                     data = {"value": data}
-                                await self._dispatch_event(event_type, data)
+                                await self._dispatch_event(event_type, turn_id, data)
                             except json.JSONDecodeError:
                                 self.logger.warning(
                                     f"Unparseable WS message: {str(raw_msg)[:200]}"
@@ -626,47 +608,14 @@ class HackapizzaClient(SqlLoggingMixin):
 
             self._session = None
 
-    async def _parse_sse_line(self, raw_line: bytes):
-        if not raw_line:
-            return
-
-        line = raw_line.decode("utf-8", errors="ignore").strip()
-        if not line:
-            return
-
-        # Handle SSE "data:" prefix format (used for handshake)
-        if line.startswith("data:"):
-            payload = line[5:].strip()
-            if payload == "connected":
-                self.logger.info("Server handshake: Connected")
-                return
-            json_str = payload
-        elif line.startswith("{"):
-            # Raw JSON line (used for heartbeats and game events)
-            json_str = line
-        else:
-            # Ignore non-data lines (e.g. SSE comments, event: lines)
-            return
-
-        try:
-            event_json = json.loads(json_str)
-            event_type = event_json.get("type")
-            data = event_json.get("data", {})
-
-            # Normalize single values to dict for consistent handling
-            if not isinstance(data, dict):
-                data = {"value": data}
-
-            await self._dispatch_event(event_type, data)
-
-        except json.JSONDecodeError:
-            self.logger.warning(f"Failed to parse SSE line: {json_str}")
-
-    async def _dispatch_event(self, event_type: str, data: Dict[str, Any]):
+    async def _dispatch_event(self, event_type: str, turn_id: str | None, data: Dict[str, Any]):
         try:
             if event_type == "game_started":
-                turn_id = str(data.get("turnId") or data.get("turn_id") or data.get("value") or "")
-                self._current_turn_id = turn_id
+                turn_id = str(data.get("turn_id", turn_id))
+                if not turn_id:
+                    self.logger.warning("Received game_started event without turn_id.")
+                    return
+
                 if self._on_game_started:
                     await self._on_game_started(GameStartedEvent(turn_id=turn_id))
 
@@ -675,14 +624,15 @@ class HackapizzaClient(SqlLoggingMixin):
                     phase = GamePhase(data.get("phase", "unknown"))
                 except ValueError:
                     phase = GamePhase.UNKNOWN
-                await self._on_phase_changed(phase)
+                await self._on_phase_changed(PhaseChangedEvent(turn_id=turn_id, new_phase=phase))
 
             elif event_type == "client_spawned" and self._on_client_spawned:
                 order = ClientOrder(
-                    client_name=data.get("clientName", data.get("name", "unknown")),
+                    client_name=data.get("clientName", "unknown"),
                     order_text=data.get(
-                        "orderText", data.get("order_text", data.get("text", "unknown"))
+                        "orderText", "unknown"
                     ),
+                    turn_id=turn_id,
                 )
                 await self._on_client_spawned(order)
 
@@ -696,6 +646,7 @@ class HackapizzaClient(SqlLoggingMixin):
                     sender_name=data.get("senderName", ""),
                     text=data.get("text", ""),
                     datetime=data.get("datetime", ""),
+                    turn_id=turn_id,
                 )
                 await self._on_new_message(msg)
 

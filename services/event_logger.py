@@ -152,7 +152,7 @@ def persist_to_db(event_type: str, data: Dict[str, Any]):
     # Update Turn Tracking
     if event_type == "game_started":
         _current_turn_id = str(
-            data.get("turnId") or data.get("turn_id") or data.get("value")
+            data.get("turn_id")
         )
 
     # Only store raw JSON for unknown event types
@@ -162,7 +162,6 @@ def persist_to_db(event_type: str, data: Dict[str, Any]):
         "client_spawned",
         "preparation_complete",
         "new_message",
-        "message",
     )
 
     try:
@@ -197,8 +196,8 @@ def persist_to_db(event_type: str, data: Dict[str, Any]):
                 session.add(
                     ClientOrderEvent(
                         event_id=event_id,
-                        client_name=data.get("clientName", data.get("name", "unknown")),
-                        order_text=data.get("orderText", data.get("order_text", data.get("text", "unknown"))),
+                        client_name=data.get("clientName", "unknown"),
+                        order_text=data.get("orderText", "unknown"),
                     )
                 )
             elif event_type == "preparation_complete":
@@ -219,18 +218,6 @@ def persist_to_db(event_type: str, data: Dict[str, Any]):
                         message_datetime=data.get("datetime"),
                     )
                 )
-            elif event_type == "message":
-                session.add(
-                    NewMessageEvent(
-                        event_id=event_id,
-                        message_id="",
-                        sender_id="-1",
-                        sender_name=data.get("sender", "unknown"),
-                        text=data.get("payload", ""),
-                        message_datetime=None,
-                    )
-                )
-
             session.commit()
     except Exception as e:
         logger.error(f"Database error: {e}")
@@ -261,11 +248,27 @@ async def handle_sse_payload(json_str: str):
         if not isinstance(data, dict):
             data = {"value": data}
 
+        # Normalize legacy "message" events into "new_message"
+        if event_type == "message":
+            event_type = "new_message"
+            data = {
+                "messageId": "",
+                "senderId": "-1",
+                "senderName": data.get("sender", "unknown"),
+                "text": data.get("payload", ""),
+                "datetime": None,
+            }
+            event_json["type"] = event_type
+            event_json["data"] = data
+
         # 1. Log it
         persist_to_db(event_type, data)
 
         # 2. Broadcast it
-        await broadcast(json_str)
+        # Inject turn_id
+        if _current_turn_id:
+            event_json["turn_id"] = _current_turn_id
+        await broadcast(json.dumps(event_json))
 
         logger.info(f"Relayed Event: {str(event_json)[:250]}...")
     except json.JSONDecodeError:

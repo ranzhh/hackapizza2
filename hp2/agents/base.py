@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from pathlib import Path
 from typing import Any, Dict
 
 import aiohttp
@@ -10,14 +11,44 @@ from sqlalchemy.orm import sessionmaker
 
 from hp2.core.api import (
     ClientOrder,
-    GamePhase,
     GameStartedEvent,
     HackapizzaClient,
     IncomingMessage,
+    PhaseChangedEvent,
 )
 from hp2.core.settings import get_settings, get_sql_logging_settings
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+)
+
+DEFAULT_AGENT_LOG_DIR = Path("artifacts/logs/agents")
+
+
+def _build_agent_log_file(logger_name: str) -> Path:
+    safe_name = logger_name.replace(".", "_")
+    return DEFAULT_AGENT_LOG_DIR / f"{safe_name}.log"
+
+
+def _attach_file_handler(logger: logging.Logger, log_file: Path | None = None) -> None:
+    """Attach a file handler to the given logger (once per file path)."""
+    if log_file is None:
+        log_file = _build_agent_log_file(logger.name)
+
+    log_path = log_file.resolve()
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    for handler in logger.handlers:
+        if isinstance(handler, logging.FileHandler) and Path(handler.baseFilename) == log_path:
+            return
+
+    file_handler = logging.FileHandler(log_path, encoding="utf-8")
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(
+        logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | %(message)s")
+    )
+    logger.addHandler(file_handler)
 
 
 class BaseAgent:
@@ -26,6 +57,15 @@ class BaseAgent:
     def __init__(self, client: HackapizzaClient | None = None):
         settings = get_settings()
         sql_settings = get_sql_logging_settings()
+
+        existing_logger = getattr(self, "logger", None)
+        logger_name = (
+            existing_logger.name
+            if isinstance(existing_logger, logging.Logger)
+            else self.__class__.__name__
+        )
+        self.logger = logging.getLogger(logger_name)
+        _attach_file_handler(self.logger)
 
         self.client = client or HackapizzaClient(
             team_id=settings.hackapizza_team_id,
@@ -49,7 +89,7 @@ class BaseAgent:
             await self.on_game_started(event)
 
         @self.client.on_phase_changed
-        async def _on_phase_changed(phase: GamePhase) -> None:
+        async def _on_phase_changed(phase: PhaseChangedEvent) -> None:
             await self.on_phase_changed(phase)
 
         @self.client.on_client_spawned
@@ -65,27 +105,27 @@ class BaseAgent:
             await self.on_new_message(message)
 
     async def on_game_started(self, event: GameStartedEvent) -> None:
-        raise NotImplementedError("Override on_game_started() in your agent.")
+        pass
 
     async def on_start(self) -> None:
         """Optional startup hook executed before the event stream loop starts."""
         return
 
-    async def on_phase_changed(self, phase: GamePhase) -> None:
-        raise NotImplementedError("Override on_phase_changed() in your agent.")
+    async def on_phase_changed(self, event: PhaseChangedEvent) -> None:
+        pass
 
     async def on_client_spawned(self, order: ClientOrder) -> None:
-        raise NotImplementedError("Override on_client_order() in your agent.")
+        pass
 
     async def on_preparation_complete(self, dish_name: str) -> None:
-        raise NotImplementedError("Override on_preparation_complete() in your agent.")
+        pass
 
     async def on_new_message(self, message: IncomingMessage) -> None:
-        raise NotImplementedError("Override on_new_message() in your agent.")
+        pass
 
     async def run(self) -> None:
         """Start consuming events from the Hackapizza event stream."""
-        self.client.logger.info("Starting agent %s...", self.__class__.__name__)
+        self.logger.info("Starting agent %s...", self.__class__.__name__)
         try:
             await self._run_startup_hook()
             await self.client.start()
