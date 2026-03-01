@@ -3,8 +3,9 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 from dataclasses import dataclass
-from typing import Any, List, Optional
+from typing import Any, List, Literal, Optional
 
 from datapizza.clients.openai_like import OpenAILikeClient  # type: ignore
 
@@ -54,6 +55,10 @@ Respond with ONLY a JSON object, no markdown, no explanation:
 or
 {{"dish_name": null}}
 """
+
+_ORDER_WITH_INTOLERANCE_RE = re.compile(
+    r"(?i)\b(?:i\s+want\s+to\s+eat|eat)\s+(?P<eat>.+?)\.?\s*(?:i\s*[’']?m\s+)?intolerant\s+to\s+(?P<intolerant>.+?)\.?\s*$"
+)
 
 
 @dataclass
@@ -120,9 +125,7 @@ class ServingAgent(BaseAgent):
     # ── Lifecycle hooks (only serving matters) ───────────────────────
 
     async def on_start(self) -> None:
-        await self.on_phase_changed(
-            PhaseChangedEvent(turn_id="45", new_phase=GamePhase.SERVING)
-        )
+        await self.on_phase_changed(PhaseChangedEvent(turn_id="45", new_phase=GamePhase.SERVING))
 
     async def on_game_started(self, event: GameStartedEvent) -> None:
         self._reset_state()
@@ -130,14 +133,10 @@ class ServingAgent(BaseAgent):
     async def on_phase_changed(self, event: PhaseChangedEvent) -> None:
         if event.new_phase == GamePhase.SERVING:
             await self._load_menu()
-            logger.info(
-                "[SERVING] Entering SERVING phase. Menu items: %s", self.menu_items
-            )
+            logger.info("[SERVING] Entering SERVING phase. Menu items: %s", self.menu_items)
             try:
                 self.recipes = [
-                    r
-                    for r in await self.client.get_recipes()
-                    if r.name in self.menu_items
+                    r for r in await self.client.get_recipes() if r.name in self.menu_items
                 ]
             except Exception as exc:
                 logger.warning("[SERVING] Could not fetch recipes: %s", exc)
@@ -174,9 +173,7 @@ class ServingAgent(BaseAgent):
             return
 
         # ── Single LLM call: pick the dish ──
-        dish_name = await _ask_llm_for_dish(
-            self.llm, self.menu_items, self.recipes, order
-        )
+        dish_name = await _ask_llm_for_dish(self.llm, self.menu_items, self.recipes, order)
 
         if dish_name is None:
             logger.warning("[SERVING] LLM decided not to serve %s.", order.client_name)
@@ -203,6 +200,34 @@ class ServingAgent(BaseAgent):
                 except Exception as exc:
                     logger.error("[SERVING] Failed to close restaurant: %s", exc)
 
+    async def parse_order_message(
+        self,
+        order: str,
+    ) -> Literal["INTOLERANCE", "UNKNOWN"] | str:
+        order = order.strip()
+        if not order:
+            return "UNKNOWN"
+
+        match = _ORDER_WITH_INTOLERANCE_RE.search(order)
+        if match:
+            eat = match.group("eat").strip()
+            intolerant = match.group("intolerant").strip()
+
+            if (
+                eat in self.recipes
+                and intolerant in [x for x in self.recipes if x.name == eat][0].ingredients
+            ):
+                return "INTOLERANCE"
+
+            else:
+                return eat
+
+        else:
+            if order in [x.name for x in self.recipes]:
+                return order
+
+        return "UNKNOWN"
+
     async def _serve_ready_dish(self, dish_name: str) -> None:
         """Dish is ready — find matching customer and serve. Fully programmatic."""
         if self.log_only:
@@ -216,9 +241,7 @@ class ServingAgent(BaseAgent):
                 break
 
         if target is None:
-            logger.warning(
-                "[SERVING] Dish '%s' ready but no matching customer.", dish_name
-            )
+            logger.warning("[SERVING] Dish '%s' ready but no matching customer.", dish_name)
             return
 
         # Resolve canonical client ID from meals endpoint
@@ -277,10 +300,7 @@ class ServingAgent(BaseAgent):
         async def _resolve_client_id():
             for meal in self.meals:
                 customer_name = meal.customer.name if meal.customer else None
-                if (
-                    customer_name == order.client_name
-                    and meal.request == order.order_text
-                ):
+                if customer_name == order.client_name and meal.request == order.order_text:
                     resolved = str(meal.customer_id)
                     logger.debug(
                         "[RESOLVE] %s -> %s (meal.customer_id)",

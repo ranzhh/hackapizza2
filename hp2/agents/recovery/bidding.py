@@ -11,7 +11,8 @@ from hp2.core.schema.models import RecipeSchema
 
 logging.basicConfig()
 
-RECIPES_WANTED = 5
+RECIPES_WANTED = 20
+N_TIMES = 3
 
 
 @dataclass
@@ -30,7 +31,7 @@ class BiddingAgent(BaseAgent):
 
     async def on_game_started(self, event: GameStartedEvent):
         self.logger.info("[STARTED] Game started, turn %s", event.turn_id)
-        config = await self._prepare_menu(n_recipes=RECIPES_WANTED, n_times=10)
+        config = await self._prepare_menu(n_recipes=RECIPES_WANTED, n_times=N_TIMES)
         self.logger.info(f"[STARTED] Prepared menu config: {config}")
         self._config = config
 
@@ -72,7 +73,9 @@ class BiddingAgent(BaseAgent):
                     self.logger.warning("Skipped recipe %s due to no inv", recipe.name)
 
             await self.client.save_menu(menu_items)
-            self.logger.info(f"[MENU] Submitted menu with items: {[item.name for item in menu_items]}")
+            self.logger.info(
+                f"[MENU] Submitted menu with items: {[item.name for item in menu_items]}"
+            )
 
     async def _update_inventory(self) -> None:
         self.logger.info("Updating inventory...")
@@ -104,7 +107,7 @@ class BiddingAgent(BaseAgent):
 
     async def on_start(self):
         if not self._config:
-            self._config = await self._prepare_menu(n_recipes=RECIPES_WANTED)
+            self._config = await self._prepare_menu(n_recipes=RECIPES_WANTED, n_times=N_TIMES)
 
         try:
             await self._handle_closed_bid_phase()
