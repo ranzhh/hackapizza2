@@ -124,9 +124,6 @@ class ServingAgent(BaseAgent):
 
     # ── Lifecycle hooks (only serving matters) ───────────────────────
 
-    async def on_start(self) -> None:
-        await self.on_phase_changed(PhaseChangedEvent(turn_id="45", new_phase=GamePhase.SERVING))
-
     async def on_game_started(self, event: GameStartedEvent) -> None:
         self._reset_state()
 
